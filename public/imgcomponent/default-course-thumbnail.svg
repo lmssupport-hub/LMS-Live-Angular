@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-labelledby="title description">
+  <title id="title">Default course thumbnail</title>
+  <desc id="description">An open book with a graduation cap on a teal background.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#62b9c8"/>
+      <stop offset="1" stop-color="#324f65"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="675" fill="url(#background)"/>
+  <circle cx="600" cy="328" r="220" fill="#fff" opacity=".08"/>
+  <path d="M330 286c98-34 188-14 270 57v190c-82-71-172-91-270-57V286Zm540 0c-98-34-188-14-270 57v190c82-71 172-91 270-57V286Z" fill="#fff" opacity=".94"/>
+  <path d="m600 190 238 98-238 98-238-98 238-98Z" fill="#d9f2f5"/>
+  <path d="M760 322v96c-88 55-232 55-320 0v-96l160 66 160-66Z" fill="#b7e4ea"/>
+  <path d="M838 288v132" fill="none" stroke="#d9f2f5" stroke-width="14" stroke-linecap="round"/>
+  <circle cx="838" cy="438" r="18" fill="#d9f2f5"/>
+</svg>

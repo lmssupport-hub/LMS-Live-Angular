@@ -1,0 +1,8 @@
+[build]
+  command = "ng build --configuration production"
+  publish = "dist/lms-vativahub/browser"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

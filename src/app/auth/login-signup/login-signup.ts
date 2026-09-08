@@ -220,7 +220,7 @@ export class LoginSignup {
         next: ({ user }) => {
           const route =
             user.role === 'SUPER_ADMIN'
-              ? ['/super-admin-dashboard']
+              ? ['/package']
               : user.role === 'ADMIN'
                 ? ['/admin/staff']
                 : ['/courses'];

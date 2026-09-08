@@ -33,12 +33,27 @@ export const routes: Routes = [
     title: 'Reset Password',
   },
 
- {
-  path: 'super-admin-dashboard',
-  loadComponent: () =>
-    import('./dashboard/super-admin-dashboard/super-admin-dashboard').then((m) => m.SuperAdminDashboard),
-  title: 'Super Admin Dashboard',
-},
+  {
+    path: 'super-admin-dashboard',
+    loadComponent: () =>
+      import('./dashboard/super-admin-dashboard/super-admin-dashboard').then((m) => m.SuperAdminDashboard),
+    title: 'Super Admin Dashboard',
+  },
+
+  {
+    path: 'package',
+    loadComponent: () =>
+      import('./access-permission/package-management/package-management').then((m) => m.PackageManagement),
+    title: 'Package Management',
+  },
+  {
+    path: 'package/create/permissions',
+    loadComponent: () =>
+      import('./access-permission/package-permission-step/package-permission-step').then(
+        (m) => m.PackagePermissionStep,
+      ),
+    title: 'Configure Permissions',
+  },
 
   {
     path: '**',

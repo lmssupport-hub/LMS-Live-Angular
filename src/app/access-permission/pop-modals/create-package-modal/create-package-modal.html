@@ -1,0 +1,92 @@
+<div class="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-black/25 p-5 backdrop-blur-[3px]" (click)="cancelled.emit()">
+  <section class="w-full max-w-[600px] rounded-2xl bg-white px-8 py-6 shadow-[0_12px_35px_rgba(0,0,0,.25)] 2xl:max-w-[720px] 2xl:rounded-[20px] 2xl:px-9 2xl:py-8"
+            role="dialog" aria-modal="true" aria-labelledby="create-package-title" (click)="$event.stopPropagation()">
+    <h2 id="create-package-title" class="text-xl font-semibold text-[#505050] 2xl:text-[26px]">Create a new package</h2>
+    <p class="mt-1.5 text-xs text-[#606060] 2xl:mt-2 2xl:text-[14px]">Add package details and configure the features and limits.</p>
+
+    <form class="mt-5 2xl:mt-7" [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+      <div class="grid grid-cols-[1.3fr_1fr] gap-5">
+        <div class="relative">
+          <input formControlName="name" minlength="3" maxlength="100" placeholder="Package Name*"
+                 [attr.aria-invalid]="form.controls.name.touched && form.controls.name.invalid"
+                 class="h-12 w-full rounded-lg border-0 bg-[#f6f6f6] px-4 text-xs outline-none placeholder:text-[#555] 2xl:h-[62px] 2xl:rounded-xl 2xl:px-5 2xl:text-sm" />
+          @if (form.controls.name.touched && form.controls.name.hasError('required')) {
+            <p class="absolute left-1 top-full mt-0.5 text-[9px] text-red-600">Package Name is required</p>
+          } @else if (form.controls.name.touched && (form.controls.name.hasError('minlength') || form.controls.name.hasError('maxlength'))) {
+            <p class="absolute left-1 top-full mt-0.5 text-[9px] text-red-600">Package Name must be between 3 and 100 characters.</p>
+          } @else if (form.controls.name.touched && form.controls.name.hasError('packageNameExists')) {
+            <p class="absolute left-1 top-full mt-0.5 text-[9px] text-red-600">A package with the same name already exists</p>
+          }
+        </div>
+        <div class="relative">
+          <select formControlName="availablePackage" aria-label="Available Package"
+                  [attr.aria-invalid]="form.controls.availablePackage.touched && form.controls.availablePackage.invalid"
+                  class="h-12 w-full rounded-lg border-0 bg-[#f6f6f6] px-4 text-xs outline-none 2xl:h-[62px] 2xl:rounded-xl 2xl:px-5 2xl:text-sm">
+            <option value="" disabled>Available Package*</option>
+            @for (option of availablePackageOptions; track option) { <option [value]="option">{{ option }}</option> }
+          </select>
+          @if (form.controls.availablePackage.touched && form.controls.availablePackage.hasError('required')) {
+            <p class="absolute left-1 top-full mt-0.5 text-[9px] text-red-600">Please select an available package.</p>
+          }
+        </div>
+      </div>
+
+      <div class="relative mt-4 2xl:mt-5">
+        <textarea formControlName="description" rows="5" placeholder="Package description"
+                  class="h-[100px] w-full resize-none rounded-lg border-0 bg-[#f6f6f6] px-4 py-4 text-xs outline-none placeholder:text-[#555] 2xl:h-[138px] 2xl:rounded-xl 2xl:px-5 2xl:py-5 2xl:text-sm"></textarea>
+        <span class="absolute bottom-4 right-4 text-xs">Maximum words {{ descriptionWordCount() }}/500</span>
+      </div>
+      @if (form.controls.description.touched && form.controls.description.hasError('maxWordCount')) {
+        <p class="mt-1 text-[9px] text-red-600">Package Description must contain no more than 500 words.</p>
+      }
+
+      <div class="mt-4 space-y-3 2xl:mt-5 2xl:space-y-5">
+        <div>
+          <input formControlName="price" type="number" min="0.01" step="0.01" placeholder="Price*"
+                 [attr.aria-invalid]="form.controls.price.touched && form.controls.price.invalid"
+                 class="h-12 w-full rounded-lg border-0 bg-[#f6f6f6] px-4 text-xs outline-none placeholder:text-[#555] 2xl:h-[62px] 2xl:rounded-xl 2xl:px-5 2xl:text-sm" />
+          @if (form.controls.price.touched && (form.controls.price.hasError('required') || form.controls.price.hasError('min'))) {
+            <p class="mt-1 text-[9px] text-red-600">Price is required. Price must be greater than zero.</p>
+          }
+        </div>
+        <div>
+          <select formControlName="billingCycle" aria-label="Billing cycle"
+                  [attr.aria-invalid]="form.controls.billingCycle.touched && form.controls.billingCycle.invalid"
+                  class="h-12 w-full rounded-lg border-0 bg-[#f6f6f6] px-4 text-xs outline-none 2xl:h-[62px] 2xl:rounded-xl 2xl:px-5 2xl:text-sm">
+            <option value="" disabled>Billing cycle*</option>
+            <option value="Monthly">Monthly</option>
+            <option value="Yearly">Yearly</option>
+          </select>
+          @if (form.controls.billingCycle.touched && form.controls.billingCycle.hasError('required')) {
+            <p class="mt-1 text-[9px] text-red-600">Please select a billing cycle.</p>
+          }
+        </div>
+        <div>
+          <input formControlName="userLimit" type="number" min="1" step="1" placeholder="User limits*"
+                 [attr.aria-invalid]="form.controls.userLimit.touched && form.controls.userLimit.invalid"
+                 class="h-12 w-full rounded-lg border-0 bg-[#f6f6f6] px-4 text-xs outline-none placeholder:text-[#555] 2xl:h-[62px] 2xl:rounded-xl 2xl:px-5 2xl:text-sm" />
+          @if (form.controls.userLimit.touched && form.controls.userLimit.hasError('required')) {
+            <p class="mt-1 text-[9px] text-red-600">User Limit is required.</p>
+          } @else if (form.controls.userLimit.touched && form.controls.userLimit.hasError('min')) {
+            <p class="mt-1 text-[9px] text-red-600">User Limit must be 1 or greater.</p>
+          }
+        </div>
+        <div>
+          <input formControlName="storageLimit" type="number" min="0" step="1" placeholder="Storage limits"
+                 [attr.aria-invalid]="form.controls.storageLimit.touched && form.controls.storageLimit.invalid"
+                 class="h-12 w-full rounded-lg border-0 bg-[#f6f6f6] px-4 text-xs outline-none placeholder:text-[#555] 2xl:h-[62px] 2xl:rounded-xl 2xl:px-5 2xl:text-sm" />
+          @if (form.controls.storageLimit.touched && form.controls.storageLimit.hasError('min')) {
+            <p class="mt-1 text-[9px] text-red-600">Storage Limit must be zero or greater.</p>
+          }
+        </div>
+      </div>
+
+      <div class="mt-5 flex justify-center gap-4 2xl:mt-7 2xl:gap-5">
+        <button type="button" (click)="cancelled.emit()"
+                class="h-11 w-40 rounded-lg bg-[#f6f6f6] text-xs 2xl:h-[52px] 2xl:w-48 2xl:rounded-xl 2xl:text-sm">Cancel</button>
+        <button type="submit"
+                class="h-11 w-40 rounded-lg bg-[#f6f6f6] text-xs transition enabled:hover:bg-[#61b7c5] enabled:hover:text-white disabled:opacity-50 2xl:h-[52px] 2xl:w-48 2xl:rounded-xl 2xl:text-sm">Next ›</button>
+      </div>
+    </form>
+  </section>
+</div>

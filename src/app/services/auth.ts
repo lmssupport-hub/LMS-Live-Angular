@@ -1,5 +1,5 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
-import { HttpClient, HttpInterceptorFn } from '@angular/common/http';
+import { HttpClient, HttpInterceptorFn, HttpParams } from '@angular/common/http';
 import { map, Observable, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { TokenStorageService } from './token-storage.service';
@@ -37,6 +37,33 @@ interface LoginApiData {
   instructorId?: number | null;
 }
 
+/** Row shape for GET /api/auth/signup/admins — User-table fields only. */
+export interface AdminSummary {
+  id: number;
+  username: string;
+  email: string;
+  role: string;
+  status: 'Active' | 'Inactive';
+  packageId: number | null;
+  packageExpiresAt: string | null;
+  createdAt: string;
+}
+
+export interface AdminPage {
+  content: AdminSummary[];
+  totalElements: number;
+  totalPages: number;
+  number: number;
+  size: number;
+}
+
+export interface AdminListQuery {
+  search?: string;
+  status?: 'All' | 'Active' | 'Inactive';
+  page?: number;
+  size?: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   
@@ -72,8 +99,6 @@ export class AuthService {
         })!,
       })),
       tap((response) => {
-        // Remember Me: persist across browser restarts when checked,
-        // otherwise keep the session scoped to the current tab.
         this.tokenStorage.save(response.token, response.user, credentials.rememberMe);
         this.user.set(response.user);
       }),
@@ -140,6 +165,19 @@ export class AuthService {
       newPassword,
       confirmPassword,
     });
+  }
+
+  /** GET /api/auth/signup/admins — User-table fields only (see PackageService for package fields). */
+  listAdmins(query: AdminListQuery = {}): Observable<AdminPage> {
+    let params = new HttpParams();
+    if (query.search) params = params.set('search', query.search);
+    if (query.status && query.status !== 'All') params = params.set('status', query.status);
+    if (query.page !== undefined) params = params.set('page', query.page);
+    if (query.size !== undefined) params = params.set('size', query.size);
+
+    return this.http
+      .get<ApiResponse<AdminPage>>(`${this.apiUrl}/signup/admins`, { params })
+      .pipe(map(({ data }) => data));
   }
 
   private normalizeUser(user: AuthUser | null): AuthUser | null {

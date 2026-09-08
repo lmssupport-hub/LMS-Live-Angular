@@ -1,0 +1,182 @@
+<div class="relative min-h-screen overflow-hidden rounded-[24px] bg-[#f5f5f5] font-sans text-[#505050]">
+  <header class="relative z-10 flex min-h-[88px] items-center justify-between px-[8.5%]">
+    <p class="text-xs font-medium 2xl:text-[14px]">Content management <span class="mx-1">›</span> Package list</p>
+  </header>
+
+  <main class="relative z-10 px-[8.5%] pb-10 pt-3">
+    <div class="flex items-center gap-4">
+      <label class="flex h-11 w-[180px] items-center rounded-full bg-white px-6 text-xs">
+        <input #searchBox class="w-full border-0 bg-transparent outline-none" type="search" placeholder="Search in list" (input)="onSearch(searchBox.value)" />
+      </label>
+      <label class="flex h-11 w-[180px] items-center justify-center gap-3 rounded-full bg-white px-6 text-xs">
+        <span>Filter</span>
+        <select #filterSelect (change)="onFilter($any(filterSelect.value))" class="border-0 bg-transparent outline-none" aria-label="Filter by status">
+          <option value="All">All</option><option value="Active">Active</option><option value="Inactive">Inactive</option>
+        </select>
+      </label>
+
+      <div class="ml-auto flex items-center gap-3">
+        <button type="button" (click)="openAssignPackagePicker()" class="h-9 rounded-full bg-white px-6 text-[11px] transition-all duration-200 hover:bg-[#3f96a6] hover:text-white hover:ring-1 hover:ring-[#91e2ed] cursor-pointer">Update Package</button>
+        <button type="button" (click)="openCreateDialog()" class="h-9 rounded-full bg-white px-6 text-[11px] transition-all duration-200 hover:bg-[#3f96a6] hover:text-white hover:ring-1 hover:ring-[#91e2ed] cursor-pointer">+ Create Package</button>
+      </div>
+    </div>
+
+    @if (successMessage()) { <div class="fixed right-8 top-24 z-50 rounded-xl bg-[#61b7c5] px-5 py-3 text-sm text-white shadow-lg" role="status">{{ successMessage() }}</div> }
+
+    <section class="mt-7 min-h-[590px] overflow-hidden rounded-[18px] bg-white">
+      @if (loading()) {
+        <div class="grid min-h-[590px] place-items-center text-sm text-[#888]">Loading admin list…</div>
+      } @else if (loadError()) {
+        <div class="flex min-h-[590px] flex-col items-center justify-center gap-4 text-sm">
+          <p>{{ loadError() }}</p>
+          <button type="button" (click)="loadPackages()" class="rounded-full bg-[#61b7c5] px-5 py-2 text-white">Try again</button>
+        </div>
+      } @else if (!filteredRows().length) {
+        <div class="flex min-h-[590px] flex-col items-center justify-center text-sm text-[#777]">
+          <h1 class="text-lg font-semibold text-[#555]">No admins found</h1>
+          <p class="mt-2">Try adjusting your search or filter.</p>
+        </div>
+      } @else {
+        <div class="overflow-x-auto">
+          <table class="w-full min-w-[900px] border-collapse text-left text-xs">
+            <thead>
+              <tr class="border-b border-[#ededed]">
+                <th class="px-11 py-7 font-semibold">Username</th>
+                <th class="px-7 py-7 font-semibold">Role</th>
+                <th class="px-7 py-7 font-semibold">Email</th>
+                <th class="px-7 py-7 font-semibold">Package</th>
+                <th class="px-7 py-7 font-semibold">Price</th>
+                <th class="px-7 py-7 font-semibold">Billing Cycle</th>
+                <th class="px-7 py-7 font-semibold">Status</th>
+                <!-- Popover holds View/Edit (currently placeholder-only, no
+                     modal wired to them yet — see note below) + Delete +
+                     Assign, so back to the wider action column. -->
+                <th class="w-[220px] px-7 py-7 text-right font-semibold">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of filteredRows(); track row.admin.id) {
+                <tr class="group relative border-b border-[#f1f1f1]">
+                  <td class="px-11 py-5 font-semibold">{{ row.admin.username }}</td>
+                  <td class="px-7 py-5">{{ row.admin.role }}</td>
+                  <td class="px-7 py-5">{{ row.admin.email }}</td>
+                  <td class="px-7 py-5">{{ row.package?.name ?? '—' }}</td>
+                  <td class="px-7 py-5">{{ row.package ? (row.package.price | currency) : '—' }}</td>
+                  <td class="px-7 py-5">{{ row.package?.billingCycle ?? '—' }}</td>
+                  <td class="px-7 py-5">{{ row.admin.status }}</td>
+                  <td class="relative w-[220px] px-7 py-5">
+                 
+                    <div class="relative flex justify-end">
+                      @if (openActionMenuId() === row.admin.id) {
+                        <div
+                          class="absolute right-8 top-1/2 z-20 flex -translate-y-1/2 items-center gap-1.5 rounded-full bg-white p-1.5 shadow-[0_8px_24px_rgba(0,0,0,.15)]cursor-pointer"
+                          (click)="$event.stopPropagation()"
+                        >
+                          <button
+                            type="button"
+                            disabled
+                            aria-label="View package (coming soon)"
+                            title="Coming soon"
+                            class="flex h-8 w-8 cursor-not-allowed items-center justify-center rounded-full bg-[#f2f2f2] text-[#c2c2c2]"
+                          >
+                            <svg viewBox="0 0 24 24" fill="none" class="h-4 w-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                              <path d="M1.5 12S5 5 12 5s10.5 7 10.5 7-3.5 7-10.5 7S1.5 12 1.5 12Z" />
+                              <circle cx="12" cy="12" r="3" />
+                            </svg>
+                          </button>
+
+                          <button
+                            type="button"
+                            disabled
+                            aria-label="Edit package (coming soon)"
+                            title="Coming soon"
+                            class="flex h-8 w-8 cursor-not-allowed items-center justify-center rounded-full bg-[#f2f2f2] text-[#c2c2c2]"
+                          >
+                            <svg viewBox="0 0 24 24" fill="none" class="h-4 w-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                              <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                            </svg>
+                          </button>
+
+                          <button
+                            type="button"
+                            (click)="row.package && deletePackageFromMenu(row.package, $event)"
+                            [disabled]="!row.package || deletingPackageId() === row.package.id"
+                            aria-label="Delete package"
+                            title="Delete"
+                            class="flex h-8 w-8 items-center justify-center rounded-full bg-[#e6f6f4] text-[#2f9e8f] transition hover:bg-[#2f9e8f] hover:text-white disabled:cursor-not-allowed disabled:bg-[#f2f2f2] disabled:text-[#c2c2c2] disabled:hover:bg-[#f2f2f2] disabled:hover:text-[#c2c2c2]"
+                          >
+                            <svg viewBox="0 0 24 24" fill="none" class="h-4 w-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                              <path d="M4 7h16" />
+                              <path d="M9 7V4.5A1.5 1.5 0 0 1 10.5 3h3A1.5 1.5 0 0 1 15 4.5V7" />
+                              <path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13" />
+                              <path d="M10 11v6M14 11v6" />
+                            </svg>
+                          </button>
+
+                          <button
+                            type="button"
+                            (click)="openAssignDialog(row.admin); closeActionMenu()"
+                            aria-label="Assign package"
+                            [title]="row.package ? 'Reassign' : 'Assign'"
+                            class="flex h-8 w-8 items-center justify-center rounded-full bg-[#eaf6fb] text-[#3f96a6] transition hover:bg-[#61b7c5] hover:text-white"
+                          >
+                            <svg viewBox="0 0 24 24" fill="none" class="h-4 w-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                              <path d="M12 5v14M5 12h14" />
+                            </svg>
+                          </button>
+                        </div>
+                      }
+
+                      <button
+                        type="button"
+                        (click)="toggleActionMenu(row.admin.id, $event)"
+                        aria-label="More actions"
+                        [attr.aria-expanded]="openActionMenuId() === row.admin.id"
+                        title="More"
+                        class="flex h-8 w-8 items-center justify-center rounded-full bg-[#eef2f2] text-[#8a8a8a] transition hover:bg-[#f4f8f8] hover:text-[#61b7c5]"
+                      >
+                        <svg viewBox="0 0 24 24" fill="currentColor" class="h-4 w-4">
+                          <circle cx="12" cy="5" r="1.6" />
+                          <circle cx="12" cy="12" r="1.6" />
+                          <circle cx="12" cy="19" r="1.6" />
+                        </svg>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <footer class="px-11 py-6 text-xs">Showing {{ filteredRows().length }} of {{ totalElements() }} admins</footer>
+      }
+    </section>
+  </main>
+</div>
+
+<!-- Transparent full-screen backdrop: only present while a row's popover is open, so any outside click closes it. -->
+@if (openActionMenuId() !== null) {
+  <div class="fixed inset-0 z-10" (click)="closeActionMenu()"></div>
+}
+
+@if (createDialogOpen()) {
+  <app-create-package-modal [existingPackages]="packages()" (cancelled)="closeCreateDialog()" (next)="onCreateDetailsSubmitted($event)" />
+}
+
+<!--
+  assigningAdmin() is allowed to be null here (header-button entry has no
+  row context yet). The modal itself shows an admin search picker when
+  [admin]="null" and a readonly email when a row admin was passed in.
+-->
+@if (assignDialogOpen()) {
+  <app-assign-package-modal
+    [admin]="assigningAdmin()"
+    [admins]="admins()"
+    [packages]="packages()"
+    [loading]="packagesLoading()"
+    [submitting]="submitting()"
+    [serverError]="formError() || packagesLoadError()"
+    (cancelled)="closeAssignDialog()"
+    (retryLoadPackages)="retryLoadPackagesForDialogs()"
+    (saved)="onAssignSubmitted($event)" />
+}

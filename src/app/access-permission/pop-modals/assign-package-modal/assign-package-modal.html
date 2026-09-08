@@ -1,0 +1,117 @@
+<div class="fixed inset-0 z-50 grid place-items-center bg-black/25 p-5 backdrop-blur-[3px]" (click)="cancelled.emit()">
+  <section
+    class="w-full max-w-[480px] rounded-[20px] bg-white px-8 py-8 shadow-[0_12px_35px_rgba(0,0,0,.25)]"
+    role="dialog" aria-modal="true" aria-labelledby="update-package-modal-title  "
+    (click)="$event.stopPropagation(); closeEmailDropdown()" 
+  >
+    <h2 id="update-package-modal-title" class="text-[22px] font-medium">Update package</h2>
+    <p class="mt-1.5 text-xs text-[#606060]">Package upgrading</p>
+
+    <div class="mt-6 space-y-4">
+      <div class="relative">
+        <label class="mb-1 block text-xs font-medium text-[#606060]">Email ID<span class="text-red-500">*</span></label>
+
+        @if (admin) {
+          <!-- ROW MODE: admin already known from the table row — no combobox, just show it. -->
+          <div class="flex h-11 w-full items-center rounded-xl border-0 bg-[#f0f0f0] px-4 text-sm text-[#888]">
+            {{ admin.email }}
+          </div>
+        } @else {
+         
+          <button
+            type="button"
+            (click)="$event.stopPropagation(); toggleEmailDropdown()"
+            [attr.aria-expanded]="emailDropdownOpen"
+            aria-haspopup="listbox"
+            class="flex h-11 w-full items-center justify-between rounded-xl border-0 bg-[#f6f6f6] px-4 text-left text-sm outline-none cursor-pointer" >
+            <span [class.text-[#9a9a9a]]="!resolvedEmail">{{ resolvedEmail ?? 'Email ID' }}</span>
+            <svg viewBox="0 0 24 24" fill="none" class="h-4 w-4 shrink-0 text-[#8a8a8a] transition-transform"
+                 [class.rotate-180]="emailDropdownOpen" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 9l6 6 6-6" />
+            </svg>
+          </button>
+
+          @if (emailDropdownOpen) {
+            <div
+              (click)="$event.stopPropagation()"
+              class="absolute left-0 top-full z-10 mt-1.5 w-full overflow-hidden rounded-xl cursor-pointer bg-white shadow-[0_8px_24px_rgba(0,0,0,.15)]">
+              <div class="flex items-center gap-2 border-b border-[#f0f0f0] px-3 py-2 cursor-pointer">
+                <svg viewBox="0 0 24 24" fill="none" class="h-4 w-4 shrink-0 text-[#9a9a9a]" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" />
+                </svg>
+                <input
+                  #emailSearchInput
+                  type="text"
+                  [(ngModel)]="emailSearchQuery"
+                  placeholder="Search"
+                  autocomplete="off"
+                  class="w-full border-0 bg-transparent text-sm outline-none placeholder:text-[#b0b0b0]"
+                />
+              </div>
+
+              <div class="max-h-[168px] overflow-y-auto py-1" role="listbox">
+                @if (!filteredAdmins.length) {
+                  <p class="px-4 py-3 text-xs text-[#9a9a9a]">No matching admins.</p>
+                } @else {
+                  @for (a of filteredAdmins; track a.id) {
+                    <button
+                      type="button"
+                      role="option"
+                      [attr.aria-selected]="a.id === selectedAdminId"
+                      (click)="selectAdmin(a)"
+                      class="flex w-full items-center gap-2.5 px-4 py-2 text-left text-xs transition hover:bg-[#f6f6f6]"
+                      [class.bg-[#eaf6fb]]="a.id === selectedAdminId"
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" class="h-4 w-4 shrink-0 text-[#7ab8c4]" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 21a8 8 0 0 0-16 0" /><circle cx="12" cy="7" r="4" />
+                      </svg>
+                      <span class="truncate">{{ a.email }}</span>
+                    </button>
+                  }
+                }
+              </div>
+            </div>
+          }
+        }
+      </div>
+
+      <div>
+        <label class="mb-1 block text-xs font-medium text-[#606060]">Select package<span class="text-red-500">*</span></label>
+        @if (loading) {
+          <!-- Distinct loading state so the modal never flashes a false "no packages" before the initial fetch resolves. -->
+          <div class="flex items-center gap-2 rounded-xl bg-[#f6f6f6] px-4 py-3 text-xs text-[#606060]" role="status">
+            <span class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#c7c7c7] border-t-[#61b7c5]"></span>
+            Loading packages…
+          </div>
+        } @else if (!packages.length) {
+          <div class="rounded-xl bg-[#fff4f4] px-4 py-3 text-xs text-red-600">
+            <p>No packages available{{ submitting ? '' : '.' }}</p>
+            <button type="button" (click)="retryLoadPackages.emit()"
+                    class="mt-2 rounded-full bg-white px-3 py-1 text-[#61b7c5] underline-offset-2 hover:underline">
+              Retry loading packages
+            </button>
+          </div>
+        } @else {
+          <select [(ngModel)]="selectedPackageId" aria-label="Select package"
+                  class="h-11 w-full rounded-xl border-0 bg-[#f6f6f6] px-4 text-sm outline-none">
+            <option [ngValue]="null" disabled>Select package</option>
+            @for (item of packages; track item.id) {
+              <option [ngValue]="item.id">{{ item.name }} — {{ item.billingCycle }}</option>
+            }
+          </select>
+        }
+      </div>
+    </div>
+
+    @if (serverError) { <p class="mt-4 text-xs text-red-600" role="alert">{{ serverError }}</p> }
+
+    <div class="mt-8 flex justify-center gap-6">
+      <button type="button" (click)="cancelled.emit()" [disabled]="submitting"
+              class="h-11 w-36 rounded-xl bg-[#f6f6f6] text-sm disabled:opacity-50">Cancel</button>
+      <button type="button" (click)="onSubmit()" [disabled]="!canSubmit"
+              class="h-11 w-36 rounded-xl bg-[#f6f6f6] text-sm transition hover:bg-[#61b7c5] hover:text-white disabled:cursor-not-allowed disabled:opacity-50">
+        {{ submitting ? 'Updating…' : 'Update' }}
+      </button>
+    </div>
+  </section>
+</div>

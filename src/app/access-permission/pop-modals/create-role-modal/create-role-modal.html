@@ -1,0 +1,71 @@
+<div
+  class="fixed inset-0 z-50 grid place-items-center bg-black/25 p-5 backdrop-blur-[4px]"
+  (click)="cancelled.emit()"
+>
+  <section
+    class="w-full max-w-[500px] rounded-2xl bg-white p-7 shadow-[0_10px_30px_rgba(0,0,0,.25)]"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="role-dialog-title"
+    (click)="$event.stopPropagation()"
+  >
+    <h2 id="role-dialog-title" class="text-xl font-semibold">
+      {{ editing() ? 'Update Role' : 'Create Role' }}
+    </h2>
+    <p class="mt-1 text-xs">Configure the role name and permissions</p>
+    <form [formGroup]="form()" (ngSubmit)="continued.emit()" class="mt-6 space-y-4">
+      <label for="roleName" class="block text-xs font-medium"
+        >Role Name<span class="text-red-500">*</span></label
+      >
+      <input
+        id="roleName"
+        formControlName="roleName"
+        class="h-12 w-full rounded-xl bg-[#f6f6f6] px-4 text-xs outline-none ring-[#62b9c8]/30 focus:ring-2"
+        placeholder="Select or enter a role name"
+        type="text"
+        maxlength="50"
+        list="accepted-role-names"
+        autocomplete="off"
+        aria-describedby="role-name-guidance"
+      />
+      <datalist id="accepted-role-names">
+        @for (roleName of acceptedRoleNames; track roleName) {
+          <option [value]="roleName"></option>
+        }
+      </datalist>
+      <p id="role-name-guidance" class="text-[10px] text-neutral-500">
+        Choose a suggested role or enter another role name.
+      </p>
+      @if (form().controls['roleName'].touched) {
+        @if (form().controls['roleName'].hasError('required')) {
+          <p class="text-xs text-red-500">Role Name is required.</p>
+        } @else if (form().controls['roleName'].hasError('whitespace')) {
+          <p class="text-xs text-red-500">Role Name cannot contain only spaces.</p>
+        } @else if (form().controls['roleName'].hasError('minlength')) {
+          <p class="text-xs text-red-500">Role Name must contain at least 4 characters.</p>
+        } @else if (form().controls['roleName'].hasError('maxlength')) {
+          <p class="text-xs text-red-500">Role Name must not exceed 50 characters.</p>
+        } @else if (form().controls['roleName'].hasError('duplicateRoleName')) {
+          <p class="text-xs text-red-500">Role already exists.</p>
+        }
+      }
+      @if (error()) {
+        <p class="text-center text-xs text-red-600" role="alert">{{ error() }}</p>
+      }
+      <div class="flex justify-center gap-5 pt-6">
+        <button
+          (click)="cancelled.emit()"
+          class="h-11 w-36 rounded-lg bg-[#f6f6f6] text-xs"
+          type="button"
+        >
+          Cancel</button
+        ><button
+          class="h-11 w-36 rounded-lg bg-[#f6f6f6] text-xs transition hover:bg-[#62b9c8] hover:text-white"
+          type="submit"
+        >
+          Next ›
+        </button>
+      </div>
+    </form>
+  </section>
+</div>

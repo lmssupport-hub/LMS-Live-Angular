@@ -54,6 +54,23 @@ export const routes: Routes = [
       ),
     title: 'Configure Permissions',
   },
+  {
+    path: 'package/create/permissions',
+    loadComponent: () =>
+      import('./access-permission/package-permission-step/package-permission-step').then(
+        (m) => m.PackagePermissionStep,
+      ),
+    title: 'Configure Permissions',
+  },
+
+  {
+    path: 'role',
+    loadComponent: () =>
+      import('./access-permission/role-management/role-management').then(
+        (m) => m.RoleManagement,
+      ),
+    title: 'Role Management',
+  },
 
   {
     path: '**',

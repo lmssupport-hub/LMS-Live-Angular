@@ -2,9 +2,10 @@ import { Component } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { afterNextRender, ChangeDetectionStrategy, inject } from '@angular/core';
 import { AbstractControl, FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 import { AuthService } from '../../services/auth';
+import { InviteService, getInviteErrorMessage } from '../../services/invite.service';
 
 const PHONE_LENGTHS_BY_COUNTRY_CODE: Record<string, readonly [number, number]> = {
   '+1': [10, 10],
@@ -29,7 +30,9 @@ const PHONE_LENGTHS_BY_COUNTRY_CODE: Record<string, readonly [number, number]> =
 export class LoginSignup {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
- 
+  private readonly route = inject(ActivatedRoute);
+  private readonly inviteService = inject(InviteService);
+
   protected showPassword = false;
   protected showLoginPassword = false;
   protected submitting = false;
@@ -37,9 +40,15 @@ export class LoginSignup {
   protected signupError = '';
   protected loginError = '';
   protected loggingIn = false;
- 
-  
- 
+
+  // NEW - invite-signup state. When inviteToken is set, submitSignup()
+  // completes the invite instead of a normal self-signup, and the email
+  // field is locked to whatever the invite was sent to.
+  protected inviteToken: string | null = null;
+  protected inviteRoleName = '';
+  protected inviteLoading = false;
+  protected inviteError = '';
+
   protected readonly loginForm = new FormGroup({
     email: new FormControl('', {
       nonNullable: true,
@@ -51,7 +60,7 @@ export class LoginSignup {
     }),
     rememberMe: new FormControl(false, { nonNullable: true }),
   });
- 
+
   protected readonly signupForm = new FormGroup(
     {
       firstName: new FormControl('', {
@@ -80,11 +89,6 @@ export class LoginSignup {
           Validators.required,
           Validators.minLength(8),
           Validators.maxLength(16),
-          // FIXED: was `\S+` at the end, which rejected any password
-          // containing a space. The backend's SignUpDto pattern uses `.+`
-          // (spaces allowed as long as the other character classes are
-          // satisfied) - this now matches that exactly, so a password the
-          // backend would accept can no longer be rejected client-side.
           Validators.pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).+$/),
         ],
       }),
@@ -99,27 +103,35 @@ export class LoginSignup {
     },
     { validators: [this.passwordsMatch, this.passwordDiffersFromEmail] },
   );
- 
+
   constructor() {
     this.signupForm.controls.countryCode.valueChanges.subscribe(() => {
       this.signupForm.controls.phoneNumber.updateValueAndValidity();
     });
- 
+
     afterNextRender(() => {
+      // NEW - invite-driven signup: ?invite=TOKEN on the URL means someone
+      // clicked the link from the invite email.
+      const token = this.route.snapshot.queryParamMap.get('invite');
+      if (token) {
+        this.loadInvite(token);
+        requestAnimationFrame(() => document.getElementById('signup')?.scrollIntoView({ block: 'start' }));
+        return;
+      }
       if (this.routeView() === 'login') {
         requestAnimationFrame(() => document.getElementById('login')?.scrollIntoView({ block: 'start' }));
       }
     });
   }
- 
+
   protected get signupControls() {
     return this.signupForm.controls;
   }
- 
+
   protected fieldError(field: keyof typeof this.signupForm.controls): string {
     const control = this.signupForm.controls[field];
     if (!control.touched || !control.errors) return '';
- 
+
     if (control.errors['required']) {
       const labels: Record<string, string> = {
         firstName: 'First Name is required.',
@@ -144,16 +156,69 @@ export class LoginSignup {
     if (field === 'password' && control.errors['pattern']) return 'Passwords must include at least one uppercase letter, one lowercase letter, one number, and one special character.';
     return '';
   }
- 
+
+  // NEW - fetches invite details, locks the email field, and shows the role banner.
+  private loadInvite(token: string): void {
+    this.inviteLoading = true;
+    this.inviteError = '';
+    this.inviteService.getDetails(token).subscribe({
+      next: (details) => {
+        this.inviteToken = token;
+        this.inviteRoleName = details.roleName;
+        this.inviteLoading = false;
+        this.signupForm.patchValue({ email: details.email });
+        this.signupForm.controls.email.disable();
+      },
+      error: (err) => {
+        this.inviteLoading = false;
+        this.inviteToken = null;
+        this.inviteError = getInviteErrorMessage(
+          err,
+          'This invite link is invalid or has expired. Please ask your admin to resend it.',
+        );
+      },
+    });
+  }
+
   protected submitSignup(): void {
     this.signupForm.markAllAsTouched();
     if (this.signupForm.invalid || this.submitting) return;
- 
+
     this.submitting = true;
     this.signupCompleted = false;
     this.signupError = '';
- 
+
     const value = this.signupForm.getRawValue();
+
+    // NEW - branch: invite-based signup completes the invite instead of
+    // hitting the normal self-signup endpoint.
+    if (this.inviteToken) {
+      this.inviteService
+        .accept(this.inviteToken, {
+          firstName: value.firstName.trim(),
+          lastName: value.lastName.trim(),
+          countryCode: value.countryCode,
+          phoneNumber: value.phoneNumber.trim(),
+          password: value.password,
+          confirmPassword: value.confirmPassword,
+          acceptTerms: value.acceptTerms,
+        })
+        .pipe(finalize(() => (this.submitting = false)))
+        .subscribe({
+          next: () => {
+            this.signupCompleted = true;
+            this.signupForm.reset();
+            void this.router
+              .navigate(['/auth'], { queryParams: { view: 'login' }, replaceUrl: true })
+              .then(() => this.scrollTo('login'));
+          },
+          error: (error: HttpErrorResponse) => {
+            this.signupError = getInviteErrorMessage(error, 'Unable to complete signup. Please try again.');
+          },
+        });
+      return;
+    }
+
     this.auth
       .register({
         firstName: value.firstName.trim(),
@@ -175,10 +240,6 @@ export class LoginSignup {
             .then(() => this.scrollTo('login'));
         },
         error: (error: HttpErrorResponse) => {
-          // FIXED: was `error?.error?.detail ?? error?.error?.message` -
-          // the backend's ApiResponse (see GlobalExceptionHandler) only
-          // ever populates `message`; `detail` doesn't exist in the
-          // contract. Reading it first implied an API shape you don't have.
           const message = String(error?.error?.message ?? '');
           if (error.status === 0 || error.status >= 500) {
             this.signupError = 'Unable to create an account. Please try again later.';
@@ -195,14 +256,14 @@ export class LoginSignup {
         },
       });
   }
- 
+
   protected scrollTo(sectionId: 'signup' | 'login'): void {
     document.getElementById(sectionId)?.scrollIntoView({
       behavior: 'smooth',
       block: 'start',
     });
   }
- 
+
   protected submitLogin(): void {
     this.loginForm.markAllAsTouched();
     if (this.loginForm.invalid || this.loggingIn) return;
@@ -222,7 +283,7 @@ export class LoginSignup {
             user.role === 'SUPER_ADMIN'
               ? ['/package']
               : user.role === 'ADMIN'
-                ? ['/admin/staff']
+                ? ['/role']
                 : ['/courses'];
           void this.router.navigate(route);
         },
@@ -238,34 +299,34 @@ export class LoginSignup {
         },
       });
   }
- 
+
   private routeView(): string | null {
     return this.router.parseUrl(this.router.url).queryParams['view'] ?? null;
   }
- 
+
   private passwordsMatch(group: AbstractControl): ValidationErrors | null {
     const password = group.get('password')?.value;
     const confirmation = group.get('confirmPassword')?.value;
     return password && confirmation && password !== confirmation ? { passwordsMismatch: true } : null;
   }
- 
+
   private passwordDiffersFromEmail(group: AbstractControl): ValidationErrors | null {
     const email = String(group.get('email')?.value ?? '').toLowerCase();
     const password = String(group.get('password')?.value ?? '').toLowerCase();
     return email && password && email === password ? { passwordMatchesEmail: true } : null;
   }
- 
+
   private phoneNumberValidator(control: AbstractControl): ValidationErrors | null {
     const value = String(control.value ?? '');
     if (!value) return null;
     if (!/^[0-9]+$/.test(value)) return { phoneFormat: true };
- 
+
     const countryCode = String(control.parent?.get('countryCode')?.value ?? '');
     const range = PHONE_LENGTHS_BY_COUNTRY_CODE[countryCode];
     if (!range || value.length < range[0] || value.length > range[1]) {
       return { phoneLength: true };
     }
- 
+
     return null;
   }
 }

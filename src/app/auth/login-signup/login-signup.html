@@ -16,7 +16,21 @@
     <div class="flex min-h-0 items-center px-2 py-3 sm:px-8 sm:py-5 md:px-6 md:py-12 lg:px-12">
       <form class="w-full" [formGroup]="signupForm" (ngSubmit)="submitSignup()" novalidate>
         <h1 id="signup-title" class="text-center text-[64px] font-bold leading-none tracking-[-0.04em] text-[#e6e6e6] lg:text-[96px]">Sign Up</h1>
-        <div class="mt-14"><h2 class="text-[28px] font-bold leading-tight text-[#383838]">Create your account</h2><p class="mt-4 text-[13px] text-[#343434]">Fill in the details below to get started</p></div>
+        <div class="mt-14">
+          <h2 class="text-[28px] font-bold leading-tight text-[#383838]">Create your account</h2>
+          <p class="mt-4 text-[13px] text-[#343434]">Fill in the details below to get started</p>
+
+          <!-- NEW - invite status banner -->
+          @if (inviteLoading) {
+            <p class="mt-3 text-xs text-[#666]">Checking your invite…</p>
+          } @else if (inviteToken) {
+            <div class="mt-3 rounded-md bg-[#eaf7f9] px-3 py-2 text-xs text-[#2a6b73]">
+              You're joining as <b>{{ inviteRoleName }}</b>. Your email is locked to the invite.
+            </div>
+          } @else if (inviteError) {
+            <p class="mt-3 text-xs text-red-600" role="alert">{{ inviteError }}</p>
+          }
+        </div>
         <div class="mt-8 grid grid-cols-1 gap-x-6 gap-y-6 sm:grid-cols-2 md:grid-cols-1 lg:grid-cols-2">
           <div class="relative">
             <label class="sr-only" for="firstName">First Name</label><input id="firstName" formControlName="firstName" maxlength="50" class="h-9 w-full rounded-md border-0 bg-white px-3 text-xs text-[#333] outline-none placeholder:text-[#333] focus:ring-2 focus:ring-neutral-300" type="text" autocomplete="given-name" placeholder="First Name*" />
@@ -27,7 +41,16 @@
             @if (fieldError('lastName')) { <p class="absolute left-1 top-full mt-0.5 text-[9px] text-red-600">{{ fieldError('lastName') }}</p> }
           </div>
           <div class="relative">
-            <label class="sr-only" for="signupEmail">Email</label><input id="signupEmail" formControlName="email" maxlength="100" class="h-9 w-full rounded-md border-0 bg-white px-3 text-xs text-[#333] outline-none placeholder:text-[#333] focus:ring-2 focus:ring-neutral-300" type="email" autocomplete="email" placeholder="Email*" />
+            <label class="sr-only" for="signupEmail">Email</label>
+            <input
+              id="signupEmail"
+              formControlName="email"
+              maxlength="100"
+              class="h-9 w-full rounded-md border-0 bg-white px-3 text-xs text-[#333] outline-none placeholder:text-[#333] focus:ring-2 focus:ring-neutral-300 disabled:bg-neutral-100 disabled:text-neutral-500"
+              type="email"
+              autocomplete="email"
+              placeholder="Email*"
+            />
             @if (fieldError('email')) { <p class="absolute left-1 top-full mt-0.5 text-[9px] text-red-600">{{ fieldError('email') }}</p> }
           </div>
           <div class="relative">
@@ -138,16 +161,12 @@
         </div>
         <div class="mt-6 flex items-center justify-between text-[9px] text-[#333]">
           <label class="flex cursor-pointer items-center gap-2"><input type="checkbox" formControlName="rememberMe" class="h-3.5 w-3.5 appearance-none rounded-sm bg-white checked:bg-neutral-700 focus:ring-2 focus:ring-neutral-300" />Remember Me</label>
-          <!-- FIXED: previously scrolled to a broken inline duplicate section
-               (see Auth.component.ts). Now routes to the real, fully-working
-               Forgot Password flow. Adjust the path if your routing config
-               names it differently. -->
           <a routerLink="/forgot-password" class="hover:underline">Forgot Password?</a>
         </div>
         <div class="mt-10 text-center">
           <button type="submit" [disabled]="loginForm.invalid || loggingIn" class="h-9 min-w-[158px] rounded-md bg-white px-8 text-xs text-[#333] transition enabled:hover:-translate-y-0.5 enabled:hover:bg-neutral-900 enabled:hover:text-white disabled:opacity-50">{{ loggingIn ? 'Logging in…' : 'Login' }}</button>
           @if (loginError) { <p class="mt-3 text-xs text-red-600" role="alert">{{ loginError }}</p> }
-          <p class="mt-7 text-xs text-[#333]">Don’t have an account? <button type="button" class="hover:underline" (click)="scrollTo('signup')">Sign up</button></p>
+          <p class="mt-7 text-xs text-[#333]">Don't have an account? <button type="button" class="hover:underline" (click)="scrollTo('signup')">Sign up</button></p>
         </div>
       </form>
     </div>

@@ -1,1 +1,274 @@
-<p>role-management works!</p>
+<div
+  class="relative min-h-dvh overflow-hidden rounded-[22px] bg-[#f5f5f5] font-sans text-[#4d4d4d]"
+>
+  @if (permissionStep()) {
+    <app-role-permission
+      [role]="selectedRole()"
+      [permissions]="permissions()"
+      [actions]="actions"
+      [isEditing]="editingId() !== null"
+      [isAdmin]="isAdmin()"
+      [submitting]="submitting()"
+      [canSave]="editingId() !== null ? canUpdateRole() : canCreateRole()"
+      (togglePermission)="togglePermission($event.rowIndex, $event.action)"
+      (save)="saveRole()"
+      (cancel)="cancelPermissions()"
+    />
+  } @else {
+
+    <header
+      class="relative z-10 flex min-h-[88px] items-center justify-between gap-5 px-5 md:px-[8.5%]"
+    >
+      <nav
+        class="hidden items-center gap-2 text-xs font-medium md:flex 2xl:text-sm"
+        aria-label="Admin management"
+      >
+        <button
+          type="button"
+          (click)="manageCourses()"
+          class="rounded-full px-3 py-2 transition hover:bg-[#62b9c8] hover:text-white"
+        >
+          Course Module
+        </button>
+        <span class="text-[#999]">›</span>
+        <span class="rounded-full bg-white px-4 py-2 font-semibold text-[#3e8d99]" aria-current="page"
+          >Role Management</span
+        >
+      </nav>
+    </header>
+
+    @if (success()) {
+      <div
+        class="fixed right-6 top-24 z-[70] rounded-xl bg-[#62b9c8] px-5 py-3 text-sm text-white shadow-lg"
+        role="status"
+      >
+        {{ success() }}
+      </div>
+    }
+    @if (actionError() && !dialog()) {
+      <div
+        class="fixed right-6 top-24 z-[70] max-w-sm rounded-xl bg-red-600 px-5 py-3 text-sm text-white shadow-lg"
+        role="alert"
+      >
+        {{ actionError() }}
+      </div>
+    }
+
+    <main class="relative z-10 px-5 pb-6 pt-2 md:px-[8.5%]">
+      <div class="flex flex-wrap items-center gap-3">
+        <label class="flex h-10 w-44 items-center rounded-full bg-white px-4 text-xs">
+          <select aria-label="Available Roles" [disabled]="!isAdmin()" class="w-full bg-transparent outline-none disabled:cursor-not-allowed disabled:opacity-50" value="" (change)="selectAvailableRole($any($event.target).value)">
+            <option value="" disabled>Available Roles</option>
+            @for (role of activeRoles(); track role.id) {
+              <option [value]="role.id">{{ role.name }}</option>
+            }
+          </select>
+        </label>
+        <label class="flex h-10 w-40 items-center rounded-full bg-white px-5 text-xs">
+          <svg viewBox="0 0 24 24" class="mr-2 h-4 w-4 fill-none stroke-[#777]" stroke-width="1.8">
+            <circle cx="11" cy="11" r="7" />
+            <path d="m20 20-4-4" />
+          </svg>
+          <input
+            #findInput
+            (input)="query.set(findInput.value)"
+            class="w-full bg-transparent outline-none"
+            placeholder="Find by User Name, Email Address, or Role"
+            aria-label="Find by User Name, Email Address, or Role"
+            type="search"
+          />
+        </label>
+        <div class="relative z-30" (click)="$event.stopPropagation()">
+          <button
+            type="button"
+            class="flex h-10 w-40 items-center justify-center gap-2 rounded-full border-0 bg-white px-4 text-xs shadow-sm outline-none transition hover:shadow-md focus-visible:ring-2 focus-visible:ring-[#62b9c8]/40"
+            aria-label="Filter roles"
+            aria-haspopup="menu"
+            [attr.aria-expanded]="roleFilterOpen()"
+            (click)="toggleRoleFilter()"
+          >
+            <span class="max-w-28 truncate">{{
+              roleFilterValue() || roleFilterField() || 'Filter'
+            }}</span>
+            <svg
+              viewBox="0 0 24 24"
+              class="h-4 w-4 shrink-0 fill-none stroke-[#666]"
+              stroke-width="2.2"
+              aria-hidden="true"
+            >
+              <path d="M4 6h16M7 12h10M10 18h4" stroke-linecap="round" />
+            </svg>
+          </button>
+          @if (roleFilterOpen()) {
+            <div
+              class="absolute left-0 top-11 max-h-72 w-40 overflow-y-auto rounded-[28px] bg-white py-2 text-center shadow-[0_14px_25px_rgba(0,0,0,.2)] ring-1 ring-black/5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              role="menu"
+            >
+              @if (roleFilterField()) {
+                <button
+                  type="button"
+                  role="menuitem"
+                  class="block h-10 w-full border-b border-neutral-100 px-3 text-[9px] text-[#555] transition last:border-0 hover:bg-[#f6f6f6]"
+                  (click)="clearRoleFilter()"
+                >
+                  All {{ roleFilterField() }} values
+                </button>
+                @for (value of roleFilterValues(); track value) {
+                  <button
+                    type="button"
+                    role="menuitem"
+                    class="block h-10 w-full border-b border-neutral-100 px-3 text-[9px] text-[#555] transition last:border-0 hover:bg-[#f6f6f6]"
+                    [class.font-semibold]="roleFilterValue() === value"
+                    (click)="selectRoleFilterValue(value)"
+                  >
+                    {{ value }}
+                  </button>
+                } @empty {
+                  <p class="px-3 py-3 text-[9px] text-neutral-400">No values available</p>
+                }
+              } @else {
+                @for (field of roleFilterFields; track field) {
+                  <button
+                    type="button"
+                    role="menuitem"
+                    class="block h-10 w-full border-b border-neutral-100 px-3 text-[9px] text-[#555] transition last:border-0 hover:bg-[#f6f6f6]"
+                    [attr.data-role-filter-field]="field"
+                    (click)="selectRoleFilterField(field)"
+                  >
+                    {{ field }}
+                  </button>
+                }
+              }
+            </div>
+          }
+        </div>
+        <button
+          (click)="openInvite()"
+          [disabled]="!isAdmin()"
+          class="ml-auto h-10 rounded-full bg-white px-7 text-xs transition hover:bg-[#62b9c8] hover:text-white"
+          type="button"
+          aria-label="Invite People"
+        >
+          Invite People
+        </button>
+        <button
+          (click)="openRole()"
+          [disabled]="!isAdmin()"
+          class="h-10 rounded-full bg-white px-7 text-xs transition hover:bg-[#62b9c8] hover:text-white"
+          type="button"
+        >
+          + Create Role
+        </button>
+      </div>
+
+      <section class="mt-6 overflow-hidden rounded-2xl bg-white">
+        @if (loading()) {
+          <div class="grid min-h-[420px] place-items-center text-sm text-[#888]">
+            Loading roles…
+          </div>
+        } @else if (loadError()) {
+          <div class="flex min-h-[420px] flex-col items-center justify-center gap-4 text-sm">
+            <p class="max-w-md text-center text-red-600">{{ loadError() }}</p>
+            <button
+              type="button"
+              (click)="loadRoles()"
+              class="rounded-full bg-[#62b9c8] px-5 py-2 text-white"
+            >
+              Try again
+            </button>
+          </div>
+        } @else {
+          <div class="overflow-x-auto">
+            <table class="w-full min-w-[760px] border-collapse text-left text-xs">
+              <thead>
+                <tr class="h-[62px] border-b border-[#ededed]">
+                  <th class="w-[24%] px-8 font-medium">Role Name</th>
+                  <th class="w-[14%] px-4 font-medium">Assigned Users</th>
+                  <th class="w-[14%] px-4 font-medium">Status</th>
+                  <th class="w-[16%] px-4 font-medium">Updated</th>
+                  <th class="w-[11%] px-4 font-medium">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (role of filteredRoles(); track role.id) {
+                  <tr class="h-[68px] transition hover:bg-[#fafafa]">
+                    <td class="px-8">
+                      <div class="flex items-center gap-3">
+                        <span
+                          class="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-gradient-to-br from-[#62b9c8] to-[#324f65] text-[10px] font-semibold text-white"
+                          >{{ role.name.charAt(0) }}</span
+                        ><span>{{ role.name }}</span>
+                      </div>
+                    </td>
+                    <td class="px-4" [attr.data-assigned-users]="role.id">{{ assignedUserCount(role) }}</td>
+                    <td class="px-4">{{ role.status }}</td>
+                    <td class="px-4">{{ relativeLastActive(role) }}</td>
+                    <td class="px-4">
+                      <div class="flex items-center gap-5">
+                        <button
+                          (click)="openRoleDetails(role)"
+                          [disabled]="!isAdmin()"
+                          class="text-[#666] hover:text-[#62b9c8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#62b9c8]/40 disabled:cursor-not-allowed disabled:opacity-50"
+                          type="button"
+                          [attr.aria-label]="'Edit ' + role.name"
+                        >
+                          <svg
+                            viewBox="0 0 24 24"
+                            class="h-[18px] w-[18px] fill-none stroke-current"
+                            stroke-width="2"
+                            aria-hidden="true"
+                          >
+                            <path d="m4 20 4.5-1 10-10a2.1 2.1 0 0 0-3-3l-10 10L4 20Z" />
+                            <path d="m14 7 3 3" />
+                          </svg>
+                        </button>
+                        <button
+                          (click)="deleteRole(role)"
+                          [disabled]="!isAdmin()"
+                          class="text-[#666] hover:text-red-500"
+                          type="button"
+                          [attr.aria-label]="'Delete ' + role.name"
+                        >
+                          <svg viewBox="0 0 24 24" class="h-[18px] w-[18px] fill-current">
+                            <path d="M7 7h10l-.6 13H7.6L7 7Zm2-3h6l1 2H8l1-2Z" />
+                          </svg>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="6" class="h-[340px] text-center text-sm text-[#888]">
+                      No roles match your search.
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </section>
+    </main>
+  }
+</div>
+
+@if (dialog()) {
+  @if (dialog() === 'invite') {
+    <app-invite-peopel
+      [form]="inviteForm"
+      [submitting]="submitting()"
+      [error]="actionError()"
+      [roles]="activeRoles()"
+      (cancelled)="closeDialog()"
+      (submitted)="sendInvite()"
+    />
+  } @else {
+    <app-create-role-modal
+      [form]="roleForm"
+      [editing]="!!editingId()"
+      [error]="actionError()"
+      (cancelled)="closeDialog()"
+      (continued)="nextToPermissions()"
+    />
+  }
+}

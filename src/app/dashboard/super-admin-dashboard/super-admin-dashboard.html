@@ -1,1 +1,37 @@
-<p>super-admin-dashboard works!</p>
+<!-- Decorative curved background shape -->
+<aside class="pointer-events-none fixed inset-y-0 left-0 z-0 hidden h-screen w-[clamp(64px,5.5vw,104px)] text-[#5abacb] sm:block" aria-hidden="true">
+  <svg class="h-full w-full" viewBox="0 0 140 1000" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M0 170 C12 180 25 185 42 185 C98 185 140 230 140 285 L140 715 C140 770 98 815 42 815 C25 815 12 820 0 830 Z" fill="currentColor"></path>
+  </svg>
+</aside>
+
+<!-- Actual clickable icon nav, placed on top of the curve -->
+<nav class="fixed inset-y-0 left-0 z-10 hidden h-screen w-[clamp(64px,5.5vw,104px)] flex-col items-center justify-center gap-8 sm:flex">
+
+  <!-- Role Management -->
+  <a routerLink="/role"
+     routerLinkActive="text-white"
+     class="group flex flex-col items-center gap-1 text-white/90 transition hover:text-white"
+     title="Role Management">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+      <circle cx="12" cy="7" r="4"></circle>
+    </svg>
+    <span class="text-[10px] leading-tight">Role</span>
+  </a>
+
+  <!-- Course Management -->
+  <a routerLink="/courses"
+     routerLinkActive="text-white"
+     class="group flex flex-col items-center gap-1 text-white/90 transition hover:text-white"
+     title="Course Management">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+    </svg>
+    <span class="text-[10px] leading-tight">Course</span>
+  </a>
+
+</nav>

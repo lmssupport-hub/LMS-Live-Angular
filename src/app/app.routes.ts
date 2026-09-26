@@ -73,6 +73,15 @@ export const routes: Routes = [
   },
 
   {
+    path: 'courses',
+    loadComponent: () =>
+      import('./course-module/course-management/course-management').then(
+        (m) => m.CourseManagement,
+      ),
+    title: 'Course Management',
+  },
+
+  {
     path: '**',
     redirectTo: 'auth',
   },

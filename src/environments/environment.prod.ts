@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  apiBaseUrl: 'https://vativa-lms-backend.onrender.com',
+  apiBaseUrl: 'https://lms-live-backend-kma3.onrender.com',
 };

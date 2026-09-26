@@ -281,9 +281,9 @@ export class LoginSignup {
         next: ({ user }) => {
           const route =
             user.role === 'SUPER_ADMIN'
-              ? ['/package']
+              ? ['/courses']
               : user.role === 'ADMIN'
-                ? ['/role']
+                ? ['/super-admin-dashboard']
                 : ['/courses'];
           void this.router.navigate(route);
         },

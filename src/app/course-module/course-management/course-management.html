@@ -1,0 +1,197 @@
+<div class="relative min-h-dvh overflow-hidden rounded-3xl bg-[#f5f5f5] font-sans text-[#505050]">
+
+  <header class="relative z-20 flex min-h-[88px] flex-col justify-center gap-3 px-4 py-3 sm:px-[5%] lg:flex-row lg:items-center lg:justify-between lg:px-[8.5%] lg:py-0">
+    <nav class="flex items-center gap-2 text-sm font-medium" aria-label="Admin management">
+      <span class="rounded-full bg-white px-4 py-2 font-semibold text-[#3e8d99]" aria-current="page">Course Module</span>
+      @if (isAdmin()) {
+        <span class="text-neutral-400">›</span>
+        <button type="button" class="rounded-full px-3 py-2 transition hover:bg-[#62b9c8] hover:text-white" (click)="manageRoles()">Role Management</button>
+      }
+    </nav>
+  </header>
+
+    <main class="relative z-10 px-4 pb-7 sm:px-[5%] lg:px-[8.5%]">
+    <div class="my-2 mb-5 flex flex-wrap items-center gap-3">
+      <label class="flex h-10 w-40 items-center rounded-full bg-white px-5 text-xs">
+        <svg viewBox="0 0 24 24" class="mr-2 h-4 w-4 shrink-0 fill-none stroke-[#777]" stroke-width="1.8" aria-hidden="true">
+          <circle cx="11" cy="11" r="7"></circle>
+          <path d="m20 20-4-4"></path>
+        </svg>
+        <input
+          class="w-full bg-transparent outline-none placeholder:text-[#777]"
+          type="search"
+          placeholder="Find"
+          aria-label="Find courses"
+          pattern="[A-Za-z0-9 ]*"
+          [value]="search()"
+          (input)="updateSearch($any($event.target).value)"
+        />
+      </label>
+      <div class="relative z-30" (click)="$event.stopPropagation()">
+        <button
+          type="button"
+          class="flex h-10 w-40 items-center justify-center gap-2 rounded-full border-0 bg-white px-4 text-xs shadow-sm outline-none transition hover:shadow-md focus-visible:ring-2 focus-visible:ring-[#62b9c8]/40"
+          aria-label="Filter courses"
+          aria-haspopup="menu"
+          [attr.aria-expanded]="openDropdown() === 'filter'"
+          (click)="toggleDropdown('filter')"
+        >
+          <span>{{ courseFilter() === 'ALL' ? 'Filter' : courseFilter().charAt(0) + courseFilter().slice(1).toLowerCase() }}</span>
+          <svg viewBox="0 0 24 24" class="h-4 w-4 fill-none stroke-[#666]" stroke-width="2.2" aria-hidden="true">
+            <path d="M4 6h16M7 12h10M10 18h4" stroke-linecap="round"></path>
+          </svg>
+        </button>
+        @if (openDropdown() === 'filter') {
+          <div class="absolute left-0 top-11 w-40 overflow-y-auto rounded-[28px] bg-white py-2 text-center shadow-[0_14px_25px_rgba(0,0,0,.2)] ring-1 ring-black/5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" role="menu">
+            @for (option of courseFilterOptions; track option) {
+              <button
+                type="button"
+                role="menuitem"
+                class="block h-10 w-full border-b border-neutral-100 px-4 text-[9px] text-[#555] transition last:border-0 hover:bg-[#f6f6f6]"
+                [class.font-semibold]="courseFilter() === option"
+                (click)="selectCourseFilter(option)"
+              >{{ option.charAt(0) + option.slice(1).toLowerCase() }}</button>
+            }
+          </div>
+        }
+      </div>
+      @if (canManage()) {
+        <button #createButton type="button" class="ml-auto h-10 rounded-full border-0 bg-white px-7 text-xs transition hover:bg-[#62b9c8] hover:text-white" (click)="openCreateModal()">
+          + Create course
+        </button>
+      }
+    </div>
+
+    @if (successMessage()) {
+      <div class="fixed bottom-6 right-7 z-[70] rounded-xl bg-emerald-700 px-5 py-3 text-white shadow-xl" role="status" aria-live="polite">{{ successMessage() }}</div>
+    }
+    @if (permissionError()) {
+      <div class="mb-3 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">{{ permissionError() }}</div>
+    }
+    @if (loadError()) {
+      <div class="p-10 text-center text-red-700" role="alert">
+        {{ loadError() }}
+        <button type="button" (click)="loadCourses()">Retry</button>
+      </div>
+    }
+
+    <section class="min-h-[65dvh] overflow-y-auto rounded-2xl bg-white p-4 sm:max-h-[calc(100dvh-210px)] sm:min-h-[calc(100dvh-210px)] sm:p-6" aria-label="Course list">
+      @if (loading() && !courses().length) {
+        <p class="p-12 text-center">Loading courses…</p>
+      } @else if (!filteredCourses().length) {
+        <div class="grid min-h-80 place-content-center p-12 text-center">
+          <h1 class="text-2xl font-semibold">{{ search() ? 'No courses found.' : courseFilter() !== 'ALL' ? 'No courses available for the selected filter.' : isLearner() ? 'No enrolled courses available' : 'No courses yet' }}</h1>
+          <p class="mt-2 text-sm text-neutral-500">{{ search() ? 'Try a different search.' : courseFilter() !== 'ALL' ? 'Try selecting a different filter.' : isLearner() ? 'You have not enrolled in any courses yet.' : 'Create your first course to get started.' }}</p>
+        </div>
+      } @else {
+        <div class="grid grid-cols-1 gap-7 md:grid-cols-2 xl:grid-cols-3">
+          @for (course of filteredCourses(); track course.id) {
+            <article class="group relative h-64 overflow-hidden rounded-2xl bg-neutral-800 text-white shadow-lg">
+              @if (cardThumbnail(course)) {
+                <img [src]="cardThumbnail(course)" [alt]="course.name + ' thumbnail'" class="h-full w-full scale-100 object-cover transition-transform duration-700 ease-out will-change-transform group-hover:scale-[1.20]" />
+              } @else {
+                <div class="grid h-full w-full place-items-center bg-gradient-to-br from-slate-700 to-neutral-950 p-6 text-center text-3xl font-bold" aria-hidden="true">{{ course.name }}</div>
+              }
+              <div class="absolute inset-0 bg-gradient-to-b from-black/5 via-black/20 to-black/90"></div>
+
+              <span
+                class="absolute left-3 top-3 rounded-full px-3 py-1 text-[9px] font-semibold uppercase tracking-wide text-white shadow-sm"
+                [ngClass]="statusBadgeClasses(course.status)"
+              >{{ courseStatusLabel(course.status) }}</span>
+
+              @if (canManage()) {
+                <div class="absolute right-3 top-3 flex gap-2">
+                  <button
+                    type="button"
+                    class="grid size-7 place-items-center rounded-full border-0 bg-[#61b7c5] text-white shadow-sm transition hover:scale-110 hover:bg-[#459aa7]"
+                    data-course-enrollments
+                    (click)="openEnrollments(course.id)"
+                    [attr.aria-label]="'Manage enrollments for ' + course.name"
+                    title="Enrolled course list"
+                  >
+                    <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm10-4v6m3-3h-6" />
+                    </svg>
+                  </button>
+                  <button type="button" class="grid size-7 place-items-center rounded-full border-0 bg-[#61b7c5] text-white shadow-sm transition hover:scale-110 hover:bg-[#459aa7]" (click)="openEditModal(course)" [attr.aria-label]="'Edit ' + course.name">
+                    <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 3.487a2.1 2.1 0 0 1 2.97 2.97L8.7 17.59l-4.2 1.05 1.05-4.2L16.862 3.487Z" />
+                      <path stroke-linecap="round" d="m15.4 4.95 3 3" />
+                    </svg>
+                  </button>
+                  <button type="button" class="grid size-7 place-items-center rounded-full border-0 bg-[#61b7c5] text-white shadow-sm transition hover:scale-110 hover:bg-red-500" (click)="requestDelete(course)" [attr.aria-label]="'Delete ' + course.name">
+                    <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                      <path stroke-linecap="round" d="M4 7h16M9 7V4h6v3m-8 0 1 13h8l1-13M10 11v5m4-5v5" />
+                    </svg>
+                  </button>
+                </div>
+              }
+              <div class="absolute inset-x-4 bottom-3">
+                <h2 class="text-sm font-medium">{{ course.name }}</h2>
+                @if (course.description) {
+                  <p class="mt-1 line-clamp-2 text-[9px] leading-snug text-neutral-200">{{ course.description }}</p>
+                }
+                <div class="mt-3 flex items-end gap-2">
+                  <dl class="grid min-w-0 flex-1 grid-cols-4 gap-1.5">
+                    <div><dt class="text-[10px]">Category</dt><dd class="mt-1 truncate text-[9px]">{{ course.categoryName }}</dd></div>
+                    <div><dt class="text-[10px]">Course Level</dt><dd class="mt-1 truncate text-[9px]">{{ levelLabel(course.level) }}</dd></div>
+                    <div><dt class="text-[10px]">Instructor</dt><dd class="mt-1 truncate text-[9px]">{{ course.instructorName }}</dd></div>
+                    <div><dt class="text-[10px]">Status</dt><dd class="mt-1 truncate text-[9px]">{{ courseStatusLabel(course.status) }}</dd></div>
+                  </dl>
+                  @if (canManage()) {
+                    <button type="button" class="h-6 shrink-0 rounded-full bg-white px-4 text-[9px] font-medium text-neutral-700 shadow-sm transition hover:bg-[#61b7c5] hover:text-white" (click)="openViewModal(course)" [attr.aria-label]="'View ' + course.name">
+                      View
+                    </button>
+                  } @else {
+                    <button type="button" class="h-6 shrink-0 rounded-full bg-white px-4 text-[9px] font-medium text-neutral-700 shadow-sm transition hover:bg-[#61b7c5] hover:text-white" (click)="enrollCourse(course)" [attr.aria-label]="'Enroll in ' + course.name">
+                      Enroll
+                    </button>
+                  }
+                </div>
+              </div>
+            </article>
+          }
+        </div>
+      }
+    </section>
+  </main>
+</div>
+
+@if (modalOpen()) {
+  <app-create-course-modal
+    [form]="form"
+    [categories]="categories"
+    [instructors]="instructors()"
+    [levels]="levels()"
+    [editing]="!!editingCourse()"
+    [viewOnly]="!!viewingCourse()"
+    [viewCourse]="viewingCourse()"
+    [lookupLoading]="lookupLoading()"
+    [lookupError]="lookupError()"
+    [submitting]="submitting()"
+    [thumbnailPreview]="thumbnailPreview()"
+    [thumbnailError]="thumbnailError()"
+    [formError]="formError()"
+    (closeRequested)="requestClose()"
+    (retryLookups)="loadLookups()"
+    (saved)="saveCourse()"
+    (thumbnailSelected)="onThumbnailSelected($event)"
+    (categorySelected)="selectCategory($event)"
+    (instructorSelected)="selectInstructor($event)"
+    (levelSelected)="selectLevel($event)"
+  />
+}
+@if (confirmOpen()) {
+  <div class="fixed inset-0 z-[80] grid place-items-center bg-black/50 p-5 backdrop-blur-sm">
+    <section class="w-[min(430px,92vw)] rounded-2xl bg-white p-7 shadow-2xl" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title" aria-describedby="confirm-message">
+      <h2 id="confirm-title" class="text-xl font-semibold">{{ confirmTitle() }}</h2>
+      <p id="confirm-message" class="mt-2 text-sm text-neutral-500">{{ confirmMessage() }}</p>
+      <div class="mt-6 flex w-full items-center justify-end gap-3">
+        <button type="button" class="rounded-lg bg-neutral-100 px-4 py-2 text-sm text-neutral-700 transition hover:bg-neutral-200" (click)="answerConfirmation(false)">Cancel</button>
+        <button type="button" class="rounded-lg bg-[#ff5d59] px-4 py-2 text-sm text-white" (click)="answerConfirmation(true)">
+          {{ deleteTarget() ? 'Delete course' : 'Discard changes' }}
+        </button>
+      </div>
+    </section>
+  </div>
+}

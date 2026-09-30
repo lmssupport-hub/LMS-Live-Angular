@@ -1,16 +1,6 @@
-<div class="relative min-h-dvh overflow-hidden rounded-3xl bg-[#f5f5f5] font-sans text-[#505050]">
+<div class="relative w-full font-sans text-[#505050]" [class.hidden]="!!organizingCourse()">
 
-  <header class="relative z-20 flex min-h-[88px] flex-col justify-center gap-3 px-4 py-3 sm:px-[5%] lg:flex-row lg:items-center lg:justify-between lg:px-[8.5%] lg:py-0">
-    <nav class="flex items-center gap-2 text-sm font-medium" aria-label="Admin management">
-      <span class="rounded-full bg-white px-4 py-2 font-semibold text-[#3e8d99]" aria-current="page">Course Module</span>
-      @if (isAdmin()) {
-        <span class="text-neutral-400">›</span>
-        <button type="button" class="rounded-full px-3 py-2 transition hover:bg-[#62b9c8] hover:text-white" (click)="manageRoles()">Role Management</button>
-      }
-    </nav>
-  </header>
-
-    <main class="relative z-10 px-4 pb-7 sm:px-[5%] lg:px-[8.5%]">
+  <main class="relative z-10 px-4 pb-7 sm:px-6 lg:px-10">
     <div class="my-2 mb-5 flex flex-wrap items-center gap-3">
       <label class="flex h-10 w-40 items-center rounded-full bg-white px-5 text-xs">
         <svg viewBox="0 0 24 24" class="mr-2 h-4 w-4 shrink-0 fill-none stroke-[#777]" stroke-width="1.8" aria-hidden="true">
@@ -75,7 +65,7 @@
       </div>
     }
 
-    <section class="min-h-[65dvh] overflow-y-auto rounded-2xl bg-white p-4 sm:max-h-[calc(100dvh-210px)] sm:min-h-[calc(100dvh-210px)] sm:p-6" aria-label="Course list">
+    <section class="min-h-[65vh] overflow-y-auto rounded-2xl bg-white p-4 pr-8 pt-5 sm:max-h-[calc(100vh-210px)] sm:min-h-[calc(100vh-210px)] sm:p-6 sm:pr-8" aria-label="Course list">
       @if (loading() && !courses().length) {
         <p class="p-12 text-center">Loading courses…</p>
       } @else if (!filteredCourses().length) {
@@ -86,13 +76,16 @@
       } @else {
         <div class="grid grid-cols-1 gap-7 md:grid-cols-2 xl:grid-cols-3">
           @for (course of filteredCourses(); track course.id) {
-            <article class="group relative h-64 overflow-hidden rounded-2xl bg-neutral-800 text-white shadow-lg">
+            <article class="group relative h-64 rounded-2xl text-white shadow-lg">
+              <!-- clipping wrapper: keeps image zoom inside the rounded card while the action menu can sit outside -->
+              <div class="absolute inset-0 overflow-hidden rounded-2xl bg-neutral-800">
               @if (cardThumbnail(course)) {
                 <img [src]="cardThumbnail(course)" [alt]="course.name + ' thumbnail'" class="h-full w-full scale-100 object-cover transition-transform duration-700 ease-out will-change-transform group-hover:scale-[1.20]" />
               } @else {
                 <div class="grid h-full w-full place-items-center bg-gradient-to-br from-slate-700 to-neutral-950 p-6 text-center text-3xl font-bold" aria-hidden="true">{{ course.name }}</div>
               }
               <div class="absolute inset-0 bg-gradient-to-b from-black/5 via-black/20 to-black/90"></div>
+              </div>
 
               <span
                 class="absolute left-3 top-3 rounded-full px-3 py-1 text-[9px] font-semibold uppercase tracking-wide text-white shadow-sm"
@@ -100,10 +93,33 @@
               >{{ courseStatusLabel(course.status) }}</span>
 
               @if (canManage()) {
-                <div class="absolute right-3 top-3 flex gap-2">
+                <!-- CHANGED: 3-dot button (old position); actions open in an arc OUTSIDE the card, on its right side -->
+                <div class="absolute right-3 top-3 z-20 size-8">
                   <button
                     type="button"
-                    class="grid size-7 place-items-center rounded-full border-0 bg-[#61b7c5] text-white shadow-sm transition hover:scale-110 hover:bg-[#459aa7]"
+                    class="relative z-10 grid size-8 cursor-pointer place-items-center rounded-full border-0 bg-[#61b7c5] text-white shadow-sm outline-none transition hover:bg-[#459aa7] focus-visible:ring-2 focus-visible:ring-white/60"
+                    aria-haspopup="menu"
+                    [attr.aria-expanded]="openCardMenuId() === course.id"
+                    [attr.aria-label]="'Actions for ' + course.name"
+                    title="Actions"
+                    (click)="toggleCardMenu(course.id, $event)"
+                  >
+                    <svg class="size-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                      <circle cx="12" cy="5" r="1.8" />
+                      <circle cx="12" cy="12" r="1.8" />
+                      <circle cx="12" cy="19" r="1.8" />
+                    </svg>
+                  </button>
+
+                  <!-- Enrollments (top-right, outside the card) -->
+                  <button
+                    type="button"
+                    class="absolute left-0.5 top-0.5 grid size-7 cursor-pointer place-items-center rounded-full border-0 bg-[#61b7c5] text-white shadow-md transition-all duration-300 ease-out hover:bg-[#459aa7]"
+                    [class.opacity-0]="openCardMenuId() !== course.id"
+                    [class.pointer-events-none]="openCardMenuId() !== course.id"
+                    [style.transform]="openCardMenuId() === course.id ? 'translate(31px, -31px)' : 'translate(0, 0) scale(0.5)'"
+                    [attr.tabindex]="openCardMenuId() === course.id ? 0 : -1"
+                    role="menuitem"
                     data-course-enrollments
                     (click)="openEnrollments(course.id)"
                     [attr.aria-label]="'Manage enrollments for ' + course.name"
@@ -113,13 +129,40 @@
                       <path stroke-linecap="round" stroke-linejoin="round" d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm10-4v6m3-3h-6" />
                     </svg>
                   </button>
-                  <button type="button" class="grid size-7 place-items-center rounded-full border-0 bg-[#61b7c5] text-white shadow-sm transition hover:scale-110 hover:bg-[#459aa7]" (click)="openEditModal(course)" [attr.aria-label]="'Edit ' + course.name">
+
+                  <!-- Organize sections (right, outside the card) -->
+                  <button
+                    type="button"
+                    class="absolute left-0.5 top-0.5 grid size-7 cursor-pointer place-items-center rounded-full border-0 bg-[#61b7c5] text-white shadow-md transition-all duration-300 ease-out hover:bg-[#459aa7]"
+                    [class.opacity-0]="openCardMenuId() !== course.id"
+                    [class.pointer-events-none]="openCardMenuId() !== course.id"
+                    [style.transform]="openCardMenuId() === course.id ? 'translate(44px, 0)' : 'translate(0, 0) scale(0.5)'"
+                    [attr.tabindex]="openCardMenuId() === course.id ? 0 : -1"
+                    role="menuitem"
+                    data-course-organize
+                    (click)="openOrganize(course)"
+                    [attr.aria-label]="'Organize modules for ' + course.name"
+                    title="Organize modules"
+                  >
                     <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 3.487a2.1 2.1 0 0 1 2.97 2.97L8.7 17.59l-4.2 1.05 1.05-4.2L16.862 3.487Z" />
-                      <path stroke-linecap="round" d="m15.4 4.95 3 3" />
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M9 6h11M9 12h11M9 18h11" />
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h.01M4 12h.01M4 18h.01" />
                     </svg>
                   </button>
-                  <button type="button" class="grid size-7 place-items-center rounded-full border-0 bg-[#61b7c5] text-white shadow-sm transition hover:scale-110 hover:bg-red-500" (click)="requestDelete(course)" [attr.aria-label]="'Delete ' + course.name">
+
+                  <!-- Delete (bottom-right, outside the card) -->
+                  <button
+                    type="button"
+                    class="absolute left-0.5 top-0.5 grid size-7 cursor-pointer place-items-center rounded-full border-0 bg-[#61b7c5] text-white shadow-md transition-all duration-300 ease-out hover:bg-red-500"
+                    [class.opacity-0]="openCardMenuId() !== course.id"
+                    [class.pointer-events-none]="openCardMenuId() !== course.id"
+                    [style.transform]="openCardMenuId() === course.id ? 'translate(31px, 31px)' : 'translate(0, 0) scale(0.5)'"
+                    [attr.tabindex]="openCardMenuId() === course.id ? 0 : -1"
+                    role="menuitem"
+                    (click)="requestDelete(course)"
+                    [attr.aria-label]="'Delete ' + course.name"
+                    title="Delete course"
+                  >
                     <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                       <path stroke-linecap="round" d="M4 7h16M9 7V4h6v3m-8 0 1 13h8l1-13M10 11v5m4-5v5" />
                     </svg>
@@ -139,11 +182,11 @@
                     <div><dt class="text-[10px]">Status</dt><dd class="mt-1 truncate text-[9px]">{{ courseStatusLabel(course.status) }}</dd></div>
                   </dl>
                   @if (canManage()) {
-                    <button type="button" class="h-6 shrink-0 rounded-full bg-white px-4 text-[9px] font-medium text-neutral-700 shadow-sm transition hover:bg-[#61b7c5] hover:text-white" (click)="openViewModal(course)" [attr.aria-label]="'View ' + course.name">
+                    <button type="button" class="h-6 shrink-0 cursor-pointer rounded-full bg-white px-4 text-[9px] font-medium text-neutral-700 shadow-sm transition hover:bg-[#61b7c5] hover:text-white" (click)="openViewModal(course)" [attr.aria-label]="'View ' + course.name">
                       View
                     </button>
                   } @else {
-                    <button type="button" class="h-6 shrink-0 rounded-full bg-white px-4 text-[9px] font-medium text-neutral-700 shadow-sm transition hover:bg-[#61b7c5] hover:text-white" (click)="enrollCourse(course)" [attr.aria-label]="'Enroll in ' + course.name">
+                    <button type="button" class="h-6 shrink-0 cursor-pointer rounded-full bg-white px-4 text-[9px] font-medium text-neutral-700 shadow-sm transition hover:bg-[#61b7c5] hover:text-white" (click)="enrollCourse(course)" [attr.aria-label]="'Enroll in ' + course.name">
                       Enroll
                     </button>
                   }
@@ -194,4 +237,13 @@
       </div>
     </section>
   </div>
+}
+
+<!-- NEW: Organize (sections) screen, opened from the edit icon -->
+@if (organizingCourse(); as organizing) {
+  <app-organize-sections
+    [course]="organizing"
+    (closed)="closeOrganize()"
+    (editCourseRequested)="editFromOrganize()"
+  />
 }

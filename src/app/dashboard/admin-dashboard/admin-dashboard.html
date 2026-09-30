@@ -1,10 +1,10 @@
 <div class="flex min-h-screen flex-col bg-[#f5f5f5]">
 
-  <!-- ============ Global app header (same as admin-dashboard) ============ -->
+  <!-- ============ Global app header ============ -->
   <header class="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-4 bg-[#f5f5f5] px-4 sm:px-6">
 
     <!-- Brand mark -->
-    <a routerLink="/super-admin-dashboard" class="flex shrink-0 items-center gap-2" aria-label="Go to dashboard home">
+    <a routerLink="/admin-dashboard" class="flex shrink-0 items-center gap-2" aria-label="Go to dashboard home">
       <img
         src="/imgcomponent/Vativa%20logo.png"
         alt="VativaHub"
@@ -136,24 +136,51 @@
     </aside>
 
     <!-- Icon nav, placed on top of the curve -->
-    <!-- Super Admin only manages Packages, so this is the ONLY item here -->
     <nav
       class="fixed left-0 top-16 z-10 hidden h-[calc(100vh-4rem)] w-[clamp(48px,4.5vw,84px)] flex-col items-center justify-center gap-8 sm:flex"
     >
-      <!-- Package Management -->
+      <!-- Dashboard Home -->
       <a
-        routerLink="package"
+        routerLink="admin-dashboard-home"
         routerLinkActive="text-white"
         class="group flex flex-col items-center gap-1 text-white/90 transition hover:text-white"
-        title="Package Management"
+        title="Dashboard"
       >
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="m7.5 4.27 9 5.15"></path>
-          <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path>
-          <path d="m3.3 7 8.7 5 8.7-5"></path>
-          <path d="M12 22V12"></path>
+          <rect x="3" y="3" width="7" height="9" rx="1"></rect>
+          <rect x="14" y="3" width="7" height="5" rx="1"></rect>
+          <rect x="14" y="12" width="7" height="9" rx="1"></rect>
+          <rect x="3" y="16" width="7" height="5" rx="1"></rect>
         </svg>
-        <span class="text-[10px] leading-tight">Package</span>
+        <span class="text-[10px] leading-tight">Dashboard</span>
+      </a>
+
+      <!-- Role Management -->
+      <a
+        routerLink="role"
+        routerLinkActive="text-white"
+        class="group flex flex-col items-center gap-1 text-white/90 transition hover:text-white"
+        title="Role Management"
+      >
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+          <circle cx="12" cy="7" r="4"></circle>
+        </svg>
+        <span class="text-[10px] leading-tight">Role</span>
+      </a>
+
+      <!-- Course Management -->
+      <a
+        routerLink="courses"
+        routerLinkActive="text-white"
+        class="group flex flex-col items-center gap-1 text-white/90 transition hover:text-white"
+        title="Course Management"
+      >
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+        </svg>
+        <span class="text-[10px] leading-tight">Course</span>
       </a>
     </nav>
 

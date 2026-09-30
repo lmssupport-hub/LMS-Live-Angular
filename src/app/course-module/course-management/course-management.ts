@@ -4,6 +4,8 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 
 import { CreateCourseModal } from '../pop-modals/create-course-modal/create-course-modal';
+// NEW: Organize (sections) screen. TODO: adjust the path to where your component lives.
+import { OrganizeSections } from '../organize-sections/organize-sections';
 import {
   ALLOWED_THUMBNAIL_TYPES,
   Course,
@@ -24,7 +26,8 @@ type DropdownName = 'filter';
 
 @Component({
   selector: 'app-course-management',
-  imports: [CommonModule, ReactiveFormsModule, CreateCourseModal],
+  // CHANGED: added OrganizeSections
+  imports: [CommonModule, ReactiveFormsModule, CreateCourseModal, OrganizeSections],
   templateUrl: './course-management.html',
   styleUrl: './course-management.css',
 })
@@ -42,6 +45,8 @@ export class CourseManagement {
   readonly courseFilter = signal<CourseFilter>('ALL');
   readonly courseFilterOptions: CourseFilter[] = ['ALL', 'DRAFT', 'PUBLISHED', 'ARCHIVED'];
   readonly openDropdown = signal<DropdownName | null>(null);
+  // NEW: which course card's 3-dot menu is open
+  readonly openCardMenuId = signal<number | null>(null);
   readonly successMessage = signal<string | null>(null);
   readonly permissionError = signal<string | null>(null);
 
@@ -57,15 +62,15 @@ export class CourseManagement {
 
   // ---------- role checks ----------
   readonly isAdmin = computed(() => this.authService.user()?.role === 'ADMIN');
-readonly isLearner = computed(() => this.authService.user()?.role === 'LEARNER');
-readonly canManage = computed(() => {
-  const role = this.authService.user()?.role;
-  return role === 'ADMIN' || role === 'INSTRUCTOR';
-});
+  readonly isLearner = computed(() => this.authService.user()?.role === 'LEARNER');
+  readonly canManage = computed(() => {
+    const role = this.authService.user()?.role;
+    return role === 'ADMIN' || role === 'INSTRUCTOR';
+  });
 
-  // ---------- organize-module (content editor) state ----------
-  readonly contentEditorOpen = signal(false);
-  readonly editorCourse = signal<Course | null>(null);
+  // ---------- organize (sections) state ----------
+  // CHANGED: replaces the old contentEditorOpen / editorCourse pair.
+  readonly organizingCourse = signal<Course | null>(null);
 
   // ---------- create/edit/view modal state (rendered via <app-create-course-modal>) ----------
   readonly modalOpen = signal(false);
@@ -110,6 +115,12 @@ readonly canManage = computed(() => {
       next: courses => {
         this.courses.set(courses);
         this.loading.set(false);
+        // CHANGED: if the Organize screen is open, refresh its course with the edited data
+        const organizing = this.organizingCourse();
+        if (organizing) {
+          const fresh = courses.find(c => c.id === organizing.id);
+          if (fresh) this.organizingCourse.set(fresh);
+        }
       },
       error: (err: Error) => {
         // SRS Edge Case #4/#5: connection lost / server unavailable → show error, allow retry.
@@ -127,6 +138,12 @@ readonly canManage = computed(() => {
     this.openDropdown.update(current => (current === name ? null : name));
   }
 
+  /** NEW: 3-dot button on a course card. */
+  toggleCardMenu(courseId: number, event: Event): void {
+    event.stopPropagation(); // otherwise the document click handler would close it immediately
+    this.openCardMenuId.update(current => (current === courseId ? null : courseId));
+  }
+
   selectCourseFilter(option: CourseFilter): void {
     this.courseFilter.set(option);
     this.openDropdown.set(null);
@@ -135,6 +152,7 @@ readonly canManage = computed(() => {
   @HostListener('document:click')
   closeFilterDropdown(): void {
     this.openDropdown.set(null);
+    this.openCardMenuId.set(null); // NEW: click anywhere else closes the card menu
   }
 
   // ---------- unsaved-changes guard (SRS Edge Cases #2, #3, #7) ----------
@@ -144,6 +162,27 @@ readonly canManage = computed(() => {
       event.preventDefault();
       event.returnValue = '';
     }
+  }
+
+  // ---------- organize (sections) ----------
+  /** NEW: edit (pencil) icon on a course card opens the Organize screen. */
+  openOrganize(course: Course): void {
+    this.organizingCourse.set(course);
+  }
+
+  /** NEW: Back button inside the Organize screen. */
+  closeOrganize(): void {
+    this.organizingCourse.set(null);
+  }
+
+  /**
+   * NEW: "Edit course details" link inside the Organize screen → open the edit-course modal.
+   * CHANGED: the Organize screen stays open behind the modal, so closing / saving the modal
+   * returns the user to the same sections page instead of the course list.
+   */
+  editFromOrganize(): void {
+    const course = this.organizingCourse();
+    if (course) this.openEditModal(course);
   }
 
   // ---------- create / edit / view ----------
@@ -172,12 +211,6 @@ readonly canManage = computed(() => {
     // selectedInstructorName in CreateCourseModal), so lookups aren't strictly required —
     // but loading them keeps behavior consistent if the user flips into Edit from here later.
     this.loadLookups();
-  }
-
-  /** Called from the organize-module panel's (editCourseRequested) output. */
-  editCourseDetails(): void {
-    const course = this.editorCourse();
-    if (course) this.openEditModal(course);
   }
 
   loadLookups(): void {
@@ -444,16 +477,6 @@ readonly canManage = computed(() => {
 
   openEnrollments(courseId: number): void {
     this.router.navigate(['/courses', courseId, 'enrollments']);
-  }
-
-  openContentEditor(course: Course): void {
-    this.editorCourse.set(course);
-    this.contentEditorOpen.set(true);
-  }
-
-  closeContentEditor(): void {
-    this.contentEditorOpen.set(false);
-    this.editorCourse.set(null);
   }
 
   openQuestionBanks(courseId: number, moduleId: unknown): void {

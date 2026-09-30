@@ -1,9 +1,7 @@
-<div class="relative min-h-screen overflow-hidden rounded-[24px] bg-[#f5f5f5] font-sans text-[#505050]">
-  <header class="relative z-10 flex min-h-[88px] items-center justify-between px-[8.5%]">
-    <p class="text-xs font-medium 2xl:text-[14px]">Content management <span class="mx-1">›</span> Package list</p>
-  </header>
+<div class="relative w-full font-sans text-[#505050]">
+ 
 
-  <main class="relative z-10 px-[8.5%] pb-10 pt-3">
+  <main class="relative z-10 px-5 pb-6 pt-2 md:px-10">
     <div class="flex items-center gap-4">
       <label class="flex h-11 w-[180px] items-center rounded-full bg-white px-6 text-xs">
         <input #searchBox class="w-full border-0 bg-transparent outline-none" type="search" placeholder="Search in list" (input)="onSearch(searchBox.value)" />
@@ -23,7 +21,7 @@
 
     @if (successMessage()) { <div class="fixed right-8 top-24 z-50 rounded-xl bg-[#61b7c5] px-5 py-3 text-sm text-white shadow-lg" role="status">{{ successMessage() }}</div> }
 
-    <section class="mt-7 min-h-[590px] overflow-hidden rounded-[18px] bg-white">
+    <section class="mt-6 overflow-hidden rounded-2xl bg-white">
       @if (loading()) {
         <div class="grid min-h-[590px] place-items-center text-sm text-[#888]">Loading admin list…</div>
       } @else if (loadError()) {
@@ -65,7 +63,7 @@
                   <td class="px-7 py-5">{{ row.package?.billingCycle ?? '—' }}</td>
                   <td class="px-7 py-5">{{ row.admin.status }}</td>
                   <td class="relative w-[220px] px-7 py-5">
-                 
+
                     <div class="relative flex justify-end">
                       @if (openActionMenuId() === row.admin.id) {
                         <div

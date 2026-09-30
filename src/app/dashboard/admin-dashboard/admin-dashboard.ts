@@ -4,22 +4,27 @@ import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/rou
 import { AuthService } from '../../services/auth';
 
 @Component({
-  selector: 'app-super-admin-dashboard',
+  selector: 'app-admin-dashboard',
   imports: [RouterLink, RouterLinkActive, RouterOutlet],
-  templateUrl: './super-admin-dashboard.html',
-  styleUrl: './super-admin-dashboard.css',
+  templateUrl: './admin-dashboard.html',
+  styleUrl: './admin-dashboard.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class SuperAdminDashboard {
+export class AdminDashboard {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
 
   // ---------- header: identity ----------
+  // Single source of truth lives in AuthService (firstName + lastName, falls
+  // back to email) - kept DRY instead of re-deriving it here.
   readonly displayName = this.auth.displayName;
   readonly roleLabel = computed(() => this.auth.user()?.role ?? '');
 
+  /** Short form for the header bar itself (limited width) - falls back to the
+   *  full display name (e.g. the email) when firstName isn't available. */
   readonly headerName = computed(() => this.auth.user()?.firstName?.trim() || this.displayName());
 
+  /** Two-letter avatar initials, e.g. "Maxx Doe" -> "MD". Safe against an empty/blank name. */
   readonly initials = computed(() => {
     const parts = this.displayName().trim().split(/\s+/).filter(Boolean);
     if (!parts.length) return '?';
@@ -42,9 +47,12 @@ export class SuperAdminDashboard {
   }
 
   // ---------- header: notification badge ----------
+  // TODO: replace with a real unread count once a notifications endpoint exists.
   readonly unreadNotifications = signal(0);
 
   // ---------- header: action stubs ----------
+  // Kept as real methods (not dead hrefs) so the template never needs to
+  // change when these are wired up to their actual features.
   openNotifications(): void {
     // TODO: open the notifications panel once the backend endpoint is available.
   }
@@ -58,6 +66,9 @@ export class SuperAdminDashboard {
   }
 
   onGlobalSearch(term: string): void {
+    // TODO: wire to a global search endpoint once one exists. Intentionally
+    // NOT coupled to CourseManagement's/RoleManagement's own local search
+    // state - those are page-level concerns owned by their own components.
     void term;
   }
 }

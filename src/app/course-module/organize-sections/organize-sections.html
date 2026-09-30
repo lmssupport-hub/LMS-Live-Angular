@@ -1,0 +1,602 @@
+<div class="relative w-full px-4 pb-7 font-sans text-[#4b4b4b] sm:px-6 lg:px-10">
+  <header
+    class="relative flex min-h-14 w-full flex-wrap items-center justify-between gap-4 py-3"
+  >
+    <div class="flex items-center gap-8 text-xs">
+      <button
+        type="button"
+        class="flex items-center gap-1 text-neutral-600 disabled:opacity-50"
+        [disabled]="sectionsSaving()"
+        (click)="back()"
+      >
+        <span aria-hidden="true">‹</span> Back
+      </button>
+    </div>
+  </header>
+
+  @if (resourceSuccessMessage()) {
+    <div
+      class="fixed right-8 top-24 z-[90] rounded-xl bg-[#61b7c5] px-5 py-3 text-sm text-white shadow-lg"
+      role="status"
+      aria-live="polite"
+    >
+      {{ resourceSuccessMessage() }}
+    </div>
+  }
+
+  <main
+    class="relative mb-5 min-h-[65vh] w-full rounded-2xl bg-white p-5 shadow-sm sm:p-6"
+  >
+    <div class="mb-3 flex min-h-5 items-center justify-between text-[10px]">
+      <span class="text-neutral-400">{{
+        sectionSaveMessage() || 'Changes save automatically'
+      }}</span>
+      <button
+        type="button"
+        class="font-medium text-[#3e8d99] hover:underline"
+        (click)="editCourseRequested.emit()"
+      >
+        Edit course details
+      </button>
+    </div>
+
+    <div class="relative">
+      <section
+        class="relative h-44 overflow-hidden rounded-xl bg-gradient-to-br from-neutral-700 to-neutral-950 sm:h-48"
+        aria-label="Course preview"
+      >
+        @if (cardThumbnail()) {
+          <img
+            [src]="cardThumbnail()"
+            [alt]="course.name + ' thumbnail'"
+            class="h-full w-full object-cover"
+          />
+        }
+        <div class="absolute inset-0 bg-gradient-to-r from-black/70 via-black/35 to-black/50"></div>
+        <div class="absolute inset-x-7 bottom-5 max-w-[70%] text-white">
+          <p class="text-sm font-medium">{{ course.name }}</p>
+          @if (outlinePreviewVisible()) {
+            <p class="mt-1 line-clamp-2 text-[10px] text-white/80">
+              {{ course.description || 'No course description provided.' }}
+            </p>
+            <div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[9px] text-white/70">
+              <span>{{ course.categoryName }}</span
+              ><span>{{ levelLabel(course.level) }}</span
+              ><span>{{ course.instructorName }}</span>
+            </div>
+          }
+        </div>
+        <button
+          type="button"
+          data-no-teal-hover
+          class="absolute right-2 top-2 flex h-9 w-[124px] shrink-0 items-center justify-center gap-2 overflow-hidden rounded-lg border-0 bg-white px-3 text-[10px] text-[#555] shadow-sm outline-none transition hover:bg-neutral-100 focus-visible:ring-2 focus-visible:ring-[#61b7c5]/40"
+          (click)="toggleOutlinePreview()"
+          [attr.aria-expanded]="outlinePreviewVisible()"
+        >
+          <span class="text-[#61b7c5]" aria-hidden="true">▶</span
+          ><span class="whitespace-nowrap">{{
+            outlinePreviewVisible() ? 'Hide Preview' : 'Show Preview'
+          }}</span>
+        </button>
+      </section>
+    </div>
+
+    @if (sectionsError()) {
+      <div class="mt-4 rounded-lg bg-red-50 p-3 text-center text-xs text-red-700" role="alert">
+        {{ sectionsError() }}
+        @if (sectionsRetryAvailable()) {
+          <button
+            type="button"
+            class="ml-2 font-semibold underline"
+            (click)="retrySectionsRequest()"
+          >
+            Retry
+          </button>
+        }
+      </div>
+    }
+
+    @if (sectionsLoading()) {
+      <div class="mt-5 space-y-4">
+        @for (item of [1, 2, 3]; track item) {
+          <div class="h-14 animate-pulse rounded-xl bg-neutral-100"></div>
+        }
+      </div>
+    } @else if (!sections().length) {
+      <div class="mt-5 grid min-h-64 place-content-center rounded-xl bg-[#fafafa] px-5 text-center">
+        <div
+          class="mx-auto grid size-12 place-items-center rounded-full bg-[#e7f5f7] text-xl text-[#61b7c5]"
+        >
+          ＋
+        </div>
+        <h2 class="mt-3 text-sm font-semibold text-neutral-700">Build your course outline</h2>
+        <p class="mt-1 text-xs text-neutral-500">
+          Add the first section to organize lessons and multimedia.
+        </p>
+        <button
+          type="button"
+          class="mx-auto mt-4 h-9 rounded-lg bg-[#61b7c5] px-5 text-xs font-medium text-white"
+          (click)="openAddSection()"
+        >
+          Add first section
+        </button>
+      </div>
+    } @else {
+      <div class="mt-5 space-y-4">
+        @for (section of sections(); track section.id) {
+          <article
+            class="rounded-xl bg-[#f8f8f8] p-2.5 transition"
+            [class]="
+              dragOverSectionId() === section.id && draggedSectionId() !== section.id
+                ? 'ring-2 ring-[#61b7c5] ring-offset-2'
+                : ''
+            "
+            (dragover)="dragOverSection($event, section)"
+            (drop)="dropSection($event, section)"
+          >
+            <div class="flex min-h-10 items-center gap-2">
+              <div
+                class="flex h-10 w-16 shrink-0 flex-col items-center justify-center rounded-lg bg-white"
+                title="Read-only section order"
+              >
+                <span class="text-[7px] uppercase tracking-wide text-neutral-400"
+                  >Section Order</span
+                >
+                <output
+                  class="text-[10px] font-medium"
+                  [attr.aria-label]="'Section Order ' + section.sectionOrder"
+                  [attr.data-section-order]="section.id"
+                  >{{ section.sectionOrder.toString().padStart(2, '0') }}</output
+                >
+              </div>
+              <button
+                type="button"
+                data-no-teal-hover
+                class="flex min-w-0 flex-1 items-center gap-2 bg-transparent text-left text-xs text-neutral-700 outline-none"
+                (click)="toggleSection(section.id)"
+                [attr.aria-expanded]="expandedSectionId() === section.id"
+              >
+                <span class="min-w-0 truncate">{{ section.name }}</span>
+                <svg
+                  viewBox="0 0 20 20"
+                  class="size-3.5 shrink-0 fill-none stroke-current text-neutral-500 transition-transform duration-200"
+                  [class.rotate-90]="expandedSectionId() === section.id"
+                  stroke-width="1.8"
+                  aria-hidden="true"
+                >
+                  <path d="m7 4 6 6-6 6" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </button>
+              <!-- CHANGED: "Actions" dropdown replaced by Edit / Delete icons + drag handle -->
+              <button
+                type="button"
+                class="grid size-7 shrink-0 place-items-center rounded-full bg-[#61b7c5] text-white transition hover:bg-[#489daa] disabled:opacity-50"
+                [disabled]="sectionsSaving()"
+                [attr.aria-label]="'Edit ' + section.name"
+                (click)="openEditSection(section)"
+                title="Edit section"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  class="size-3.5 fill-none stroke-current"
+                  stroke-width="2"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="m4 20 4.5-1 10-10a2.1 2.1 0 0 0-3-3l-10 10L4 20Z"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                  <path d="m14 7 3 3" stroke-linecap="round" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                class="grid size-7 shrink-0 place-items-center rounded-full bg-[#61b7c5] text-white transition hover:bg-red-500 disabled:opacity-50"
+                [disabled]="sectionsSaving()"
+                [attr.aria-label]="'Delete ' + section.name"
+                (click)="requestRemoveSection(section)"
+                title="Delete section"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  class="size-3.5 fill-none stroke-current"
+                  stroke-width="2"
+                  aria-hidden="true"
+                >
+                  <path d="M4 7h16" stroke-linecap="round" />
+                  <path d="M9 7V4h6v3" stroke-linecap="round" stroke-linejoin="round" />
+                  <path d="m7 7 1 13h8l1-13" stroke-linecap="round" stroke-linejoin="round" />
+                  <path d="M10 11v5M14 11v5" stroke-linecap="round" />
+                </svg>
+              </button>
+              <span
+                class="shrink-0 cursor-grab select-none px-1 text-lg leading-none text-neutral-300 active:cursor-grabbing"
+                [attr.draggable]="!sectionsSaving()"
+                (dragstart)="startSectionDrag($event, section)"
+                (dragend)="endSectionDrag()"
+                title="Drag to reorder"
+                [attr.aria-label]="'Drag ' + section.name + ' to reorder'"
+                >⠿</span
+              >
+            </div>
+
+            @if (reorderingSectionId() === section.id) {
+              <div
+                class="mt-2 flex items-center justify-end gap-2 border-t border-neutral-200 px-2 pt-2"
+                [attr.data-reorder-controls]="section.id"
+              >
+                <span
+                  class="mr-auto cursor-grab select-none text-lg leading-none text-neutral-400 active:cursor-grabbing"
+                  draggable="true"
+                  (dragstart)="startSectionDrag($event, section)"
+                  (dragend)="endSectionDrag()"
+                  title="Hold and drag to reorder"
+                  [attr.aria-label]="'Drag ' + section.name + ' to reorder'"
+                  >⠿</span
+                >
+                <button
+                  type="button"
+                  class="h-7 rounded-lg bg-white px-3 text-[10px] text-neutral-600 disabled:cursor-not-allowed disabled:opacity-40"
+                  [disabled]="!canMoveSection(section.id, -1) || sectionsSaving()"
+                  (click)="moveSection(section.id, -1)"
+                  [attr.aria-label]="'Move ' + section.name + ' up'"
+                >
+                  Move up
+                </button>
+                <button
+                  type="button"
+                  class="h-7 rounded-lg bg-white px-3 text-[10px] text-neutral-600 disabled:cursor-not-allowed disabled:opacity-40"
+                  [disabled]="!canMoveSection(section.id, 1) || sectionsSaving()"
+                  (click)="moveSection(section.id, 1)"
+                  [attr.aria-label]="'Move ' + section.name + ' down'"
+                >
+                  Move down
+                </button>
+              </div>
+            }
+
+            @if (expandedSectionId() === section.id) {
+              <div class="mt-2 space-y-2 px-2 pb-1">
+                @for (
+                  activity of activitiesForSection(section.id);
+                  track activity.id;
+                  let activityIndex = $index
+                ) {
+                  <div
+                    class="flex h-10 items-center gap-3 rounded-xl bg-white px-5 text-xs transition"
+                    [class]="
+                      activityDropTarget()?.sectionId === section.id &&
+                      activityDropTarget()?.index === activityIndex &&
+                      draggedActivity()
+                        ? 'ring-2 ring-[#61b7c5] ring-offset-1'
+                        : ''
+                    "
+                    (dragover)="dragOverActivity($event, section.id, activityIndex)"
+                    (drop)="dropActivity($event, section.id, activityIndex)"
+                  >
+                    <span class="text-base text-[#61b7c5]" aria-hidden="true">{{
+                      activity.kind === 'Ebook' ? '▥' : '▧'
+                    }}</span>
+                    <span class="min-w-0 flex-1 truncate">{{ activity.title }}</span
+                    ><span
+                      class="rounded-full bg-[#eef8fa] px-2 py-0.5 text-[8px] text-[#3e8d99]"
+                      >{{ activity.kind }}</span
+                    >
+                    <button
+                      type="button"
+                      class="grid size-7 place-items-center rounded-full bg-[#61b7c5] text-white transition hover:bg-[#489daa]"
+                      [attr.aria-label]="'Edit ' + activity.title"
+                      (click)="openResourceDialog(activity.kind, section.id, activity)"
+                      title="Edit activity"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        class="size-3.5 fill-none stroke-current"
+                        stroke-width="2"
+                        aria-hidden="true"
+                      >
+                        <path
+                          d="m4 20 4.5-1 10-10a2.1 2.1 0 0 0-3-3l-10 10L4 20Z"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                        <path d="m14 7 3 3" stroke-linecap="round" />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      class="grid size-7 place-items-center rounded-full bg-[#61b7c5] text-white transition hover:bg-red-500"
+                      [attr.aria-label]="'Delete ' + activity.title"
+                      (click)="removeActivity(section.id, activity.id)"
+                      title="Delete activity"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        class="size-3.5 fill-none stroke-current"
+                        stroke-width="2"
+                        aria-hidden="true"
+                      >
+                        <path d="M4 7h16" stroke-linecap="round" />
+                        <path d="M9 7V4h6v3" stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="m7 7 1 13h8l1-13" stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="M10 11v5M14 11v5" stroke-linecap="round" />
+                      </svg>
+                    </button>
+                    <span
+                      class="cursor-grab select-none text-lg text-neutral-300 active:cursor-grabbing"
+                      draggable="true"
+                      (dragstart)="startActivityDrag($event, section.id, activityIndex)"
+                      (dragend)="endActivityDrag()"
+                      title="Drag activity within or between sections"
+                      aria-label="Drag activity"
+                      >⠿</span
+                    >
+                  </div>
+                } @empty {
+                  <p
+                    class="rounded-xl bg-white px-5 py-3 text-center text-[10px] text-neutral-500"
+                    [attr.data-empty-activities]="section.id"
+                  >
+                    No activities added yet.
+                  </p>
+                }
+                <div
+                  class="relative"
+                  (dragover)="
+                    dragOverActivity($event, section.id, activitiesForSection(section.id).length)
+                  "
+                  (drop)="dropActivityAtEnd($event, section.id)"
+                >
+                  <button
+                    type="button"
+                    data-no-teal-hover
+                    class="h-12 w-full rounded-xl border-2 border-dashed border-[#61b7c5] bg-white text-xs text-neutral-600 outline-none transition-colors hover:bg-[#f7fcfd] focus-visible:ring-2 focus-visible:ring-[#61b7c5]/40 focus-visible:ring-offset-2"
+                    (click)="
+                      activityMenuSectionId.set(
+                        activityMenuSectionId() === section.id ? null : section.id
+                      )
+                    "
+                    [attr.aria-label]="'Add activity to ' + section.name"
+                    aria-haspopup="menu"
+                    [attr.aria-controls]="'activity-menu-' + section.id"
+                    [attr.aria-expanded]="activityMenuSectionId() === section.id"
+                  >
+                    + Add Activity
+                  </button>
+                  @if (activityMenuSectionId() === section.id) {
+                    <div
+                      [id]="'activity-menu-' + section.id"
+                      class="absolute bottom-[60px] left-1/2 z-30 w-[122px] -translate-x-1/2 overflow-hidden rounded-[14px] border border-neutral-100 bg-white text-center text-[10px] text-[#555] shadow-[0_2px_4px_rgba(0,0,0,0.2)]"
+                      role="menu"
+                      [attr.aria-label]="'Activity types for ' + section.name"
+                    >
+                      <button
+                        type="button"
+                        role="menuitem"
+                        data-no-teal-hover
+                        class="flex h-[29px] w-full items-center justify-center border-b border-neutral-100 bg-white px-4 outline-none transition-colors hover:bg-neutral-50 focus-visible:bg-neutral-50 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#61b7c5]"
+                        (click)="openResourceDialog('Ebook', section.id)"
+                      >
+                        Ebook
+                      </button>
+                      <button
+                        type="button"
+                        role="menuitem"
+                        data-no-teal-hover
+                        class="flex h-[29px] w-full items-center justify-center border-b border-neutral-100 bg-white px-4 outline-none transition-colors hover:bg-neutral-50 focus-visible:bg-neutral-50 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#61b7c5]"
+                        (click)="openResourceDialog('Multimedia', section.id)"
+                      >
+                        Multimedia
+                      </button>
+                      <button
+                        type="button"
+                        role="menuitem"
+                        data-no-teal-hover
+                        class="flex h-[29px] w-full items-center justify-center bg-white px-4 outline-none transition-colors hover:bg-neutral-50 focus-visible:bg-neutral-50 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#61b7c5]"
+                        (click)="openQuestionBankList(section.id)"
+                      >
+                        Question Bank
+                      </button>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </article>
+        }
+
+        <button
+          type="button"
+          data-no-teal-hover
+          class="group flex h-14 w-full items-center justify-center gap-3 rounded-xl border-2 border-dashed border-[#61b7c5]/60 bg-[#fafafa] text-xs font-medium text-[#3e8d99] outline-none transition-all duration-200 hover:border-solid hover:border-[#61b7c5] hover:bg-[#eef8fa] hover:shadow-sm focus-visible:ring-2 focus-visible:ring-[#61b7c5]/40 focus-visible:ring-offset-2"
+          (click)="openAddSection()"
+        >
+          <span
+            class="grid size-7 place-items-center rounded-full bg-[#61b7c5] text-white transition-transform duration-200 group-hover:scale-110"
+            aria-hidden="true"
+          >
+            <svg viewBox="0 0 24 24" class="size-4 fill-none stroke-current" stroke-width="2.4">
+              <path d="M12 5v14M5 12h14" stroke-linecap="round" />
+            </svg>
+          </span>
+          Add Section
+        </button>
+      </div>
+    }
+  </main>
+
+  @if (previewingSection(); as previewSection) {
+    <div class="fixed inset-0 z-[65] grid place-items-center bg-black/45 p-4 backdrop-blur-sm">
+      <section
+        class="w-[min(640px,94vw)] overflow-hidden rounded-2xl bg-white shadow-2xl"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="section-preview-title"
+        [attr.data-section-preview]="previewSection.id"
+      >
+        <header class="flex items-start justify-between border-b border-neutral-100 px-6 py-5">
+          <div>
+            <p class="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#3e8d99]">
+              Preview mode
+            </p>
+            <h2 id="section-preview-title" class="mt-1 text-xl font-semibold text-neutral-800">
+              {{ previewSection.name }}
+            </h2>
+            <p class="mt-1 text-xs text-neutral-500">
+              Section {{ previewSection.sectionOrder }} of {{ sections().length }}
+            </p>
+          </div>
+          <button
+            type="button"
+            class="grid size-8 place-items-center rounded-full bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
+            (click)="closeSectionPreview()"
+            aria-label="Close section preview"
+          >
+            ×
+          </button>
+        </header>
+
+        <div class="max-h-[60vh] overflow-y-auto px-6 py-5">
+          @if (activitiesForSection(previewSection.id).length) {
+            <ol class="space-y-3" aria-label="Section activities preview">
+              @for (activity of activitiesForSection(previewSection.id); track activity.id) {
+                <li class="rounded-xl border border-neutral-100 bg-[#f8f8f8] p-4">
+                  <p class="text-[10px] font-medium uppercase tracking-wide text-[#3e8d99]">
+                    {{ activity.kind }}
+                  </p>
+                  <p class="mt-1 text-sm font-medium text-neutral-700">{{ activity.title }}</p>
+                </li>
+              }
+            </ol>
+          } @else {
+            <div
+              class="rounded-xl border border-dashed border-neutral-200 bg-[#fafafa] p-8 text-center"
+            >
+              <p class="text-sm font-medium text-neutral-600">No activities in this section yet.</p>
+              <p class="mt-1 text-xs text-neutral-400">
+                Activities will appear here in their learner-facing order.
+              </p>
+            </div>
+          }
+        </div>
+
+        <footer class="flex justify-end border-t border-neutral-100 px-6 py-4">
+          <button
+            type="button"
+            class="h-9 rounded-lg bg-[#61b7c5] px-5 text-xs font-medium text-white hover:bg-[#489daa]"
+            (click)="closeSectionPreview()"
+          >
+            Close Preview
+          </button>
+        </footer>
+      </section>
+    </div>
+  }
+
+  <!-- NEW: Multimedia upload / edit dialog (Ebook pop-up is still a next-phase TODO) -->
+  @if (resourceDialog(); as dialog) {
+    <app-multimedia-upload
+      [courseId]="course.id"
+      [sectionId]="dialog.sectionId"
+      [resource]="dialog.resource"
+      (resourceSaved)="onResourceSaved($event)"
+      (closed)="closeResourceDialog()"
+    />
+  }
+
+  @if (sectionDialogOpen()) {
+    <div class="fixed inset-0 z-[70] grid place-items-center bg-black/40 p-4 backdrop-blur-sm">
+      <section
+        class="w-[min(420px,94vw)] rounded-2xl bg-white p-6 shadow-2xl"
+        role="dialog"
+        aria-modal="true"
+      >
+        <h2 class="text-lg font-semibold text-neutral-800">
+          {{ editingSection() ? 'Edit Section' : 'Add Section' }}
+        </h2>
+        <p class="mt-1 text-xs text-neutral-500">
+          Enter a clear title for this part of the course.
+        </p>
+        <label for="sectionName" class="mt-5 block text-xs font-medium">Section name</label
+        ><input
+          id="sectionName"
+          type="text"
+          class="mt-2 h-11 w-full rounded-xl bg-[#f5f5f5] px-4 text-sm outline-none ring-[#61b7c5] focus:ring-2"
+          [attr.maxlength]="maxNameChars"
+          [value]="sectionDraft()"
+          (input)="sectionDraft.set($any($event.target).value)"
+          (keydown.enter)="saveSection()"
+          aria-describedby="section-name-guidance"
+          autofocus
+        />
+        <p id="section-name-guidance" class="mt-1 text-[10px] text-neutral-500">
+          Minimum {{ minNameChars }} characters, maximum {{ maxNameChars }} characters ({{ sectionCharCount() }}/{{ maxNameChars }})
+        </p>
+        @if (sectionError()) {
+          <div class="mt-2 text-xs text-red-600" role="alert">
+            <span>{{ sectionError() }}</span>
+            @if (sectionRetryAvailable()) {
+              <button
+                type="button"
+                class="ml-2 font-semibold underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600/30"
+                data-section-save-retry
+                (click)="retrySectionSave()"
+              >
+                Retry
+              </button>
+            }
+          </div>
+        }
+        <div class="mt-6 flex justify-end gap-2">
+          <button
+            type="button"
+            class="h-9 rounded-lg bg-neutral-100 px-4 text-xs"
+            (click)="closeSectionDialog()"
+          >
+            Cancel</button
+          ><button
+            type="button"
+            class="h-9 rounded-lg bg-[#61b7c5] px-5 text-xs font-medium text-white disabled:opacity-50"
+            [disabled]="sectionSaving()"
+            (click)="saveSection()"
+          >
+            {{ sectionSaving() ? 'Saving…' : 'Save section' }}
+          </button>
+        </div>
+      </section>
+    </div>
+  }
+
+  @if (confirmOpen()) {
+    <div class="fixed inset-0 z-[80] grid place-items-center bg-black/50 p-5 backdrop-blur-sm">
+      <section
+        class="w-[min(430px,92vw)] rounded-2xl bg-white p-7 shadow-2xl"
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="section-confirm-title"
+        aria-describedby="section-confirm-message"
+      >
+        <h2 id="section-confirm-title" class="text-xl font-semibold">Delete section?</h2>
+        <p id="section-confirm-message" class="mt-2 text-sm text-neutral-500">
+          {{ confirmMessage() }}
+        </p>
+        <div class="mt-6 flex w-full items-center justify-end gap-3">
+          <button
+            type="button"
+            class="rounded-lg bg-neutral-100 px-4 py-2 text-sm text-neutral-700 transition hover:bg-neutral-200"
+            (click)="answerRemoveSection(false)"
+          >
+            Cancel</button
+          ><button
+            type="button"
+            class="rounded-lg bg-[#ff5d59] px-4 py-2 text-sm text-white"
+            (click)="answerRemoveSection(true)"
+          >
+            Delete section
+          </button>
+        </div>
+      </section>
+    </div>
+  }
+</div>

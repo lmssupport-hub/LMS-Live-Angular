@@ -74,6 +74,8 @@ export class OrganizeSections implements OnInit, OnDestroy {
   // ---------- add / edit dialog ----------
   readonly sectionDialogOpen = signal(false);
   readonly editingSection = signal<Section | null>(null);
+  /** NEW: when set, the new section is inserted right after this section instead of at the end. */
+  private readonly insertAfterSectionId = signal<number | null>(null);
   readonly sectionDraft = signal('');
   readonly sectionError = signal('');
   readonly sectionRetryAvailable = signal(false);
@@ -217,7 +219,12 @@ export class OrganizeSections implements OnInit, OnDestroy {
   // add / edit section
   // =====================================================================
 
-  openAddSection(): void {
+  /**
+   * CHANGED: optional `afterSectionId` - when given (from the "+" between sections),
+   * the new section is placed right after that section; otherwise it goes at the end.
+   */
+  openAddSection(afterSectionId: number | null = null): void {
+    this.insertAfterSectionId.set(afterSectionId);
     this.editingSection.set(null);
     this.sectionDraft.set('');
     this.sectionError.set('');
@@ -227,6 +234,7 @@ export class OrganizeSections implements OnInit, OnDestroy {
 
   // CHANGED: was private - now public because the template calls it directly (edit icon)
   openEditSection(section: Section): void {
+    this.insertAfterSectionId.set(null);
     this.editingSection.set(section);
     this.sectionDraft.set(section.name);
     this.sectionError.set('');
@@ -241,6 +249,7 @@ export class OrganizeSections implements OnInit, OnDestroy {
 
   /** Unconditional reset - also used by the save success handler. */
   private resetSectionDialog(): void {
+    this.insertAfterSectionId.set(null);
     this.sectionDialogOpen.set(false);
     this.editingSection.set(null);
     this.sectionDraft.set('');
@@ -258,6 +267,8 @@ export class OrganizeSections implements OnInit, OnDestroy {
 
     const editing = this.editingSection();
     const name = this.sectionDraft().trim();
+    // NEW: captured before the dialog is reset in the success handler
+    const afterId = this.insertAfterSectionId();
 
     const validationError = this.validateName(name, editing?.id ?? null);
     if (validationError) {
@@ -287,11 +298,26 @@ export class OrganizeSections implements OnInit, OnDestroy {
         next: saved => {
           if (editing) {
             this.sections.update(list => list.map(s => (s.id === saved.id ? saved : s)));
-          } else {
-            this.sections.update(list => this.sortByOrder([...list, saved]));
+            this.resetSectionDialog(); // NOT closeSectionDialog(): sectionSaving is still true here
+            this.showToast('Section updated successfully.');
+            return;
           }
+
+          // The backend creates the new section at the end.
+          const list = this.sortByOrder([...this.sections(), saved]);
+          this.sections.set(list);
           this.resetSectionDialog(); // NOT closeSectionDialog(): sectionSaving is still true here
-          this.showToast(editing ? 'Section updated successfully.' : 'Section created successfully.');
+
+          // CHANGED: if it was added from a "+" between sections, move it right after that section
+          // using the existing reorder API (no backend change needed).
+          const afterIndex = afterId === null ? -1 : list.findIndex(s => s.id === afterId);
+          if (afterIndex >= 0 && afterIndex < list.length - 2) {
+            const reordered = list.filter(s => s.id !== saved.id);
+            reordered.splice(afterIndex + 1, 0, saved);
+            this.persistOrder(reordered, 'Section created successfully.');
+          } else {
+            this.showToast('Section created successfully.');
+          }
         },
         error: (err: unknown) => {
           this.sectionError.set(this.messageOf(err));
@@ -457,8 +483,11 @@ export class OrganizeSections implements OnInit, OnDestroy {
     this.persistOrder(next);
   }
 
-  /** Optimistic update: show the new order immediately, roll back if the API call fails. */
-  private persistOrder(next: Section[]): void {
+  /**
+   * Optimistic update: show the new order immediately, roll back if the API call fails.
+   * CHANGED: optional `successMessage` so "create after a section" can reuse this with its own toast.
+   */
+  private persistOrder(next: Section[], successMessage = 'Sections reordered successfully.'): void {
     if (this.listSaving() || next.length < 2) return;
 
     const previous = this.sections();
@@ -483,7 +512,7 @@ export class OrganizeSections implements OnInit, OnDestroy {
       .subscribe({
         next: updated => {
           this.sections.set(this.sortByOrder(updated));
-          this.showToast('Sections reordered successfully.');
+          this.showToast(successMessage);
         },
         error: (err: unknown) => {
           this.sections.set(previous);

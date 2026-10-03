@@ -77,7 +77,7 @@
         <div class="grid grid-cols-1 gap-7 md:grid-cols-2 xl:grid-cols-3">
           @for (course of filteredCourses(); track course.id) {
             <article class="group relative h-64 rounded-2xl text-white shadow-lg">
-              <!-- clipping wrapper: keeps image zoom inside the rounded card while the action menu can sit outside -->
+              <!-- clipping wrapper: keeps image zoom inside the rounded card -->
               <div class="absolute inset-0 overflow-hidden rounded-2xl bg-neutral-800">
               @if (cardThumbnail(course)) {
                 <img [src]="cardThumbnail(course)" [alt]="course.name + ' thumbnail'" class="h-full w-full scale-100 object-cover transition-transform duration-700 ease-out will-change-transform group-hover:scale-[1.20]" />
@@ -93,7 +93,7 @@
               >{{ courseStatusLabel(course.status) }}</span>
 
               @if (canManage()) {
-                <!-- CHANGED: 3-dot button (old position); actions open in an arc OUTSIDE the card, on its right side -->
+                <!-- CHANGED: 3-dot stays in the same top-right position; actions now open in an arc BELOW / around it, inside the card -->
                 <div class="absolute right-3 top-3 z-20 size-8">
                   <button
                     type="button"
@@ -111,13 +111,13 @@
                     </svg>
                   </button>
 
-                  <!-- Enrollments (top-right, outside the card) -->
+                  <!-- Enrollments (left of the 3-dot) -->
                   <button
                     type="button"
                     class="absolute left-0.5 top-0.5 grid size-7 cursor-pointer place-items-center rounded-full border-0 bg-[#61b7c5] text-white shadow-md transition-all duration-300 ease-out hover:bg-[#459aa7]"
                     [class.opacity-0]="openCardMenuId() !== course.id"
                     [class.pointer-events-none]="openCardMenuId() !== course.id"
-                    [style.transform]="openCardMenuId() === course.id ? 'translate(31px, -31px)' : 'translate(0, 0) scale(0.5)'"
+                    [style.transform]="openCardMenuId() === course.id ? 'translate(-44px, 0)' : 'translate(0, 0) scale(0.5)'"
                     [attr.tabindex]="openCardMenuId() === course.id ? 0 : -1"
                     role="menuitem"
                     data-course-enrollments
@@ -130,13 +130,13 @@
                     </svg>
                   </button>
 
-                  <!-- Organize sections (right, outside the card) -->
+                  <!-- Organize sections (bottom-left of the 3-dot) -->
                   <button
                     type="button"
                     class="absolute left-0.5 top-0.5 grid size-7 cursor-pointer place-items-center rounded-full border-0 bg-[#61b7c5] text-white shadow-md transition-all duration-300 ease-out hover:bg-[#459aa7]"
                     [class.opacity-0]="openCardMenuId() !== course.id"
                     [class.pointer-events-none]="openCardMenuId() !== course.id"
-                    [style.transform]="openCardMenuId() === course.id ? 'translate(44px, 0)' : 'translate(0, 0) scale(0.5)'"
+                    [style.transform]="openCardMenuId() === course.id ? 'translate(-31px, 31px)' : 'translate(0, 0) scale(0.5)'"
                     [attr.tabindex]="openCardMenuId() === course.id ? 0 : -1"
                     role="menuitem"
                     data-course-organize
@@ -150,13 +150,13 @@
                     </svg>
                   </button>
 
-                  <!-- Delete (bottom-right, outside the card) -->
+                  <!-- Delete (directly below the 3-dot) -->
                   <button
                     type="button"
                     class="absolute left-0.5 top-0.5 grid size-7 cursor-pointer place-items-center rounded-full border-0 bg-[#61b7c5] text-white shadow-md transition-all duration-300 ease-out hover:bg-red-500"
                     [class.opacity-0]="openCardMenuId() !== course.id"
                     [class.pointer-events-none]="openCardMenuId() !== course.id"
-                    [style.transform]="openCardMenuId() === course.id ? 'translate(31px, 31px)' : 'translate(0, 0) scale(0.5)'"
+                    [style.transform]="openCardMenuId() === course.id ? 'translate(0, 44px)' : 'translate(0, 0) scale(0.5)'"
                     [attr.tabindex]="openCardMenuId() === course.id ? 0 : -1"
                     role="menuitem"
                     (click)="requestDelete(course)"
@@ -239,7 +239,7 @@
   </div>
 }
 
-<!-- NEW: Organize (sections) screen, opened from the edit icon -->
+<!-- Organize (sections) screen, opened from the card actions -->
 @if (organizingCourse(); as organizing) {
   <app-organize-sections
     [course]="organizing"

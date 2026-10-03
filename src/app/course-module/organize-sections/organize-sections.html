@@ -12,6 +12,13 @@
         <span aria-hidden="true">‹</span> Back
       </button>
     </div>
+<!-- CHANGED: "Edit course details" link removed from here; it is now the "Edit course" button on the banner -->
+    <div class="mb-3 flex min-h-5 items-center justify-between text-[10px]">
+      <span class="text-neutral-400">{{
+        sectionSaveMessage() || 'Changes save automatically'
+      }}</span>
+    </div>
+
   </header>
 
   @if (resourceSuccessMessage()) {
@@ -27,18 +34,7 @@
   <main
     class="relative mb-5 min-h-[65vh] w-full rounded-2xl bg-white p-5 shadow-sm sm:p-6"
   >
-    <div class="mb-3 flex min-h-5 items-center justify-between text-[10px]">
-      <span class="text-neutral-400">{{
-        sectionSaveMessage() || 'Changes save automatically'
-      }}</span>
-      <button
-        type="button"
-        class="font-medium text-[#3e8d99] hover:underline"
-        (click)="editCourseRequested.emit()"
-      >
-        Edit course details
-      </button>
-    </div>
+    
 
     <div class="relative">
       <section
@@ -78,6 +74,31 @@
             outlinePreviewVisible() ? 'Hide Preview' : 'Show Preview'
           }}</span>
         </button>
+
+        <!-- NEW: notch at the banner's bottom-right (same white as the card) holding the "Edit course" button -->
+        <div class="absolute bottom-0 right-0 rounded-tl-2xl bg-white pl-1.5 pt-1.5">
+          <button
+            type="button"
+            data-no-teal-hover
+            class="flex h-8 w-[112px] items-center justify-center gap-1.5 rounded-lg border border-dashed border-[#61b7c5] bg-[#f5f5f5] text-[10px] text-neutral-600 outline-none transition hover:bg-[#eef8fa] focus-visible:ring-2 focus-visible:ring-[#61b7c5]/40"
+            (click)="editCourseRequested.emit()"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              class="size-3 fill-none stroke-[#3e8d99]"
+              stroke-width="2"
+              aria-hidden="true"
+            >
+              <path
+                d="m4 20 4.5-1 10-10a2.1 2.1 0 0 0-3-3l-10 10L4 20Z"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path d="m14 7 3 3" stroke-linecap="round" />
+            </svg>
+            Edit course
+          </button>
+        </div>
       </section>
     </div>
 
@@ -125,7 +146,7 @@
       <div class="mt-5 space-y-4">
         @for (section of sections(); track section.id) {
           <article
-            class="rounded-xl bg-[#f8f8f8] p-2.5 transition"
+            class="relative rounded-xl bg-[#f8f8f8] p-2.5 transition"
             [class]="
               dragOverSectionId() === section.id && draggedSectionId() !== section.id
                 ? 'ring-2 ring-[#61b7c5] ring-offset-2'
@@ -167,7 +188,7 @@
                   <path d="m7 4 6 6-6 6" stroke-linecap="round" stroke-linejoin="round" />
                 </svg>
               </button>
-              <!-- CHANGED: "Actions" dropdown replaced by Edit / Delete icons + drag handle -->
+              <!-- Edit / Delete icons + drag handle -->
               <button
                 type="button"
                 class="grid size-7 shrink-0 place-items-center rounded-full bg-[#61b7c5] text-white transition hover:bg-[#489daa] disabled:opacity-50"
@@ -403,25 +424,29 @@
                 </div>
               </div>
             }
+
+            <!-- NEW: "+" centered on this section card's bottom edge -> adds a section right after it.
+                 On the last section it simply adds at the end. -->
+            <button
+              type="button"
+              data-no-teal-hover
+              class="absolute bottom-0 left-1/2 z-10 grid size-6 -translate-x-1/2 translate-y-1/2 place-items-center rounded-full border border-dashed border-[#61b7c5] bg-white text-[#3e8d99] outline-none transition hover:scale-110 hover:bg-[#eef8fa] focus-visible:ring-2 focus-visible:ring-[#61b7c5]/40 disabled:opacity-50"
+              [disabled]="sectionsSaving()"
+              [attr.aria-label]="'Add section after ' + section.name"
+              title="Add section here"
+              (click)="openAddSection(section.id)"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                class="size-3.5 fill-none stroke-current"
+                stroke-width="2.4"
+                aria-hidden="true"
+              >
+                <path d="M12 5v14M5 12h14" stroke-linecap="round" />
+              </svg>
+            </button>
           </article>
         }
-
-        <button
-          type="button"
-          data-no-teal-hover
-          class="group flex h-14 w-full items-center justify-center gap-3 rounded-xl border-2 border-dashed border-[#61b7c5]/60 bg-[#fafafa] text-xs font-medium text-[#3e8d99] outline-none transition-all duration-200 hover:border-solid hover:border-[#61b7c5] hover:bg-[#eef8fa] hover:shadow-sm focus-visible:ring-2 focus-visible:ring-[#61b7c5]/40 focus-visible:ring-offset-2"
-          (click)="openAddSection()"
-        >
-          <span
-            class="grid size-7 place-items-center rounded-full bg-[#61b7c5] text-white transition-transform duration-200 group-hover:scale-110"
-            aria-hidden="true"
-          >
-            <svg viewBox="0 0 24 24" class="size-4 fill-none stroke-current" stroke-width="2.4">
-              <path d="M12 5v14M5 12h14" stroke-linecap="round" />
-            </svg>
-          </span>
-          Add Section
-        </button>
       </div>
     }
   </main>
@@ -494,7 +519,7 @@
     </div>
   }
 
-  <!-- NEW: Multimedia upload / edit dialog (Ebook pop-up is still a next-phase TODO) -->
+  <!-- Multimedia upload / edit dialog (Ebook pop-up is still a next-phase TODO) -->
   @if (resourceDialog(); as dialog) {
     <app-multimedia-upload
       [courseId]="course.id"

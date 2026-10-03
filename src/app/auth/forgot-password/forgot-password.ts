@@ -1,9 +1,19 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { afterNextRender, ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import {
+  afterNextRender,
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  inject,
+  signal,
+} from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { finalize } from 'rxjs';
+import { finalize, TimeoutError, timeout } from 'rxjs';
 import { AuthService } from '../../services/auth';
+
+const RESEND_COOLDOWN_SECONDS = 30;
+const REQUEST_TIMEOUT_MS = 15000;
 
 @Component({
   selector: 'app-forgot-password',
@@ -11,28 +21,22 @@ import { AuthService } from '../../services/auth';
   templateUrl: './forgot-password.html',
   styleUrl: './forgot-password.css',
   host: {
-    class: 'block h-screen overflow-hidden',
+    class: 'block',
   },
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ForgotPassword {
   private readonly authService = inject(AuthService);
+  private readonly destroyRef = inject(DestroyRef);
+  private cooldownTimer: ReturnType<typeof setInterval> | undefined;
 
-  protected submitting = false;
-  protected completed = false;
-  protected serverError = '';
-  protected submitted = false;
-
-  // FIXED: was a plain `protected entering = true;` boolean, mutated to
-  // `false` inside a requestAnimationFrame callback. Under OnPush change
-  // detection, a plain property write from an async callback does NOT mark
-  // the view dirty, so the template's `[class.opacity-0]="entering"` /
-  // `[class.translate-y-6]="entering"` bindings never re-evaluated - the
-  // whole page stayed permanently at opacity-0, which is exactly why the
-  // page rendered as a blank/white screen. Using a signal instead makes
-  // Angular re-check the view automatically when the value changes,
-  // regardless of change detection strategy.
+  // All UI state is signals so OnPush views re-render after async callbacks.
+  protected readonly submitting = signal(false);
+  protected readonly completed = signal(false);
+  protected readonly serverError = signal('');
+  protected readonly submitted = signal(false);
   protected readonly entering = signal(true);
+  protected readonly resendCooldown = signal(0);
 
   protected readonly form = new FormGroup({
     email: new FormControl('', {
@@ -48,43 +52,73 @@ export class ForgotPassword {
         const { emailNotRegistered: _, ...remainingErrors } = emailControl.errors ?? {};
         emailControl.setErrors(Object.keys(remainingErrors).length ? remainingErrors : null);
       }
-      this.serverError = '';
+      this.serverError.set('');
+      this.completed.set(false);
     });
 
     afterNextRender(() => {
       requestAnimationFrame(() => this.entering.set(false));
     });
+
+    this.destroyRef.onDestroy(() => clearInterval(this.cooldownTimer));
   }
 
   protected submit(): void {
-    this.submitted = true;
+    this.submitted.set(true);
     this.form.markAllAsTouched();
-    if (this.form.invalid || this.submitting) return;
+    if (this.form.invalid) return;
+    this.send();
+  }
 
-    this.submitting = true;
-    this.completed = false;
-    this.serverError = '';
+  protected resend(): void {
+    if (this.resendCooldown() > 0) return;
+    this.send();
+  }
 
-    // FIXED: lowercased for consistency with Login/Signup, which both treat
-    // email as a case-insensitive identifier client-side. The backend
-    // already does this via findByEmailIgnoreCase, so behavior is unchanged
-    // - this just keeps all three forms consistent with each other.
+  private send(): void {
+    if (this.submitting()) return;
+
+    this.submitting.set(true);
+    this.completed.set(false);
+    this.serverError.set('');
+
     this.authService
       .sendForgotPassword(this.form.controls.email.value.trim().toLowerCase())
-      .pipe(finalize(() => (this.submitting = false)))
+      .pipe(
+        timeout(REQUEST_TIMEOUT_MS),
+        finalize(() => this.submitting.set(false)),
+      )
       .subscribe({
-        next: () => (this.completed = true),
-        error: (error: HttpErrorResponse) => this.handleRequestError(error),
+        next: () => {
+          this.completed.set(true);
+          this.startCooldown();
+        },
+        error: (error: unknown) => this.handleRequestError(error),
       });
   }
 
-  private handleRequestError(error: HttpErrorResponse): void {
-    // FIXED: was `error.error?.message ?? error.error?.detail` - the
-    // backend's ApiResponse (see GlobalExceptionHandler) only ever
-    // populates `message`; `detail` isn't part of the contract.
-    const responseMessage = String(error.error?.message ?? '');
+  private startCooldown(): void {
+    clearInterval(this.cooldownTimer);
+    this.resendCooldown.set(RESEND_COOLDOWN_SECONDS);
+    this.cooldownTimer = setInterval(() => {
+      const next = this.resendCooldown() - 1;
+      this.resendCooldown.set(Math.max(next, 0));
+      if (next <= 0) clearInterval(this.cooldownTimer);
+    }, 1000);
+  }
+
+  private handleRequestError(error: unknown): void {
+    if (error instanceof TimeoutError) {
+      this.serverError.set(
+        'This is taking longer than expected. Please check your inbox or try again.',
+      );
+      return;
+    }
+
+    const httpError = error as HttpErrorResponse;
+    const responseMessage = String(httpError.error?.message ?? '');
     const emailNotRegistered =
-      error.status === 404 ||
+      httpError.status === 404 ||
       responseMessage.toLowerCase().includes('email id is not registered');
 
     if (emailNotRegistered) {
@@ -96,11 +130,13 @@ export class ForgotPassword {
       return;
     }
 
-    if (error.status === 0 || error.status >= 500) {
-      this.serverError = 'Unable to process the request. Please try again later.';
+    if (httpError.status === 0 || httpError.status >= 500) {
+      this.serverError.set('Unable to process the request. Please try again later.');
       return;
     }
 
-    this.serverError = responseMessage || 'The request could not be completed. Please try again.';
+    this.serverError.set(
+      responseMessage || 'The request could not be completed. Please try again.',
+    );
   }
 }

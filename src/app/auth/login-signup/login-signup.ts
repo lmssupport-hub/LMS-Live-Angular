@@ -158,6 +158,8 @@ export class LoginSignup {
 
   /* ---- UI state (signals => OnPush-safe, async updates re-render automatically) ---- */
   protected readonly showSignupPassword = signal(false);
+  // CHANGED: separate visibility state for the Confirm Password field (was sharing showSignupPassword)
+  protected readonly showSignupConfirmPassword = signal(false);
   protected readonly showLoginPassword = signal(false);
 
   protected readonly submitting = signal(false);
@@ -266,6 +268,11 @@ export class LoginSignup {
 
   protected toggleSignupPassword(): void {
     this.showSignupPassword.update((visible) => !visible);
+  }
+
+  // CHANGED: new toggle for the Confirm Password field only
+  protected toggleSignupConfirmPassword(): void {
+    this.showSignupConfirmPassword.update((visible) => !visible);
   }
 
   protected toggleLoginPassword(): void {

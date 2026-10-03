@@ -90,7 +90,8 @@
           <div class="relative">
             <label class="sr-only" for="createPassword">Create Password</label>
             <input id="createPassword" formControlName="password" [maxlength]="limits.passwordMax" class="h-9 w-full rounded-md border-0 bg-white px-3 pr-10 text-xs text-[#333] outline-none placeholder:text-[#333] focus:ring-2 focus:ring-neutral-300" [type]="showSignupPassword() ? 'text' : 'password'" autocomplete="new-password" placeholder="Create Password*" [attr.aria-invalid]="fieldError('password') ? 'true' : null" />
-            <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 transition hover:text-neutral-800 focus-visible:outline-2 focus-visible:outline-neutral-400" (click)="toggleSignupPassword()" [attr.aria-label]="showSignupPassword() ? 'Hide passwords' : 'Show passwords'" [attr.aria-pressed]="showSignupPassword()">
+            <!-- CHANGED: aria-label is now singular (this button only controls the Create Password field) -->
+            <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 transition hover:text-neutral-800 focus-visible:outline-2 focus-visible:outline-neutral-400" (click)="toggleSignupPassword()" [attr.aria-label]="showSignupPassword() ? 'Hide password' : 'Show password'" [attr.aria-pressed]="showSignupPassword()">
               <ng-container [ngTemplateOutlet]="eyeIcon" [ngTemplateOutletContext]="{ $implicit: showSignupPassword() }" />
             </button>
             @if (fieldError('password'); as message) {
@@ -103,9 +104,11 @@
           <!-- Confirm password -->
           <div class="relative">
             <label class="sr-only" for="confirmPassword">Confirm Password</label>
-            <input id="confirmPassword" formControlName="confirmPassword" [maxlength]="limits.passwordMax" class="h-9 w-full rounded-md border-0 bg-white px-3 pr-10 text-xs text-[#333] outline-none placeholder:text-[#333] focus:ring-2 focus:ring-neutral-300" [type]="showSignupPassword() ? 'text' : 'password'" autocomplete="new-password" placeholder="Confirm Password*" [attr.aria-invalid]="fieldError('confirmPassword') ? 'true' : null" />
-            <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 transition hover:text-neutral-800 focus-visible:outline-2 focus-visible:outline-neutral-400" (click)="toggleSignupPassword()" [attr.aria-label]="showSignupPassword() ? 'Hide passwords' : 'Show passwords'" [attr.aria-pressed]="showSignupPassword()">
-              <ng-container [ngTemplateOutlet]="eyeIcon" [ngTemplateOutletContext]="{ $implicit: showSignupPassword() }" />
+            <!-- CHANGED: [type] now uses its own showSignupConfirmPassword() signal -->
+            <input id="confirmPassword" formControlName="confirmPassword" [maxlength]="limits.passwordMax" class="h-9 w-full rounded-md border-0 bg-white px-3 pr-10 text-xs text-[#333] outline-none placeholder:text-[#333] focus:ring-2 focus:ring-neutral-300" [type]="showSignupConfirmPassword() ? 'text' : 'password'" autocomplete="new-password" placeholder="Confirm Password*" [attr.aria-invalid]="fieldError('confirmPassword') ? 'true' : null" />
+            <!-- CHANGED: separate toggle (toggleSignupConfirmPassword) so it no longer flips the Create Password field -->
+            <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 transition hover:text-neutral-800 focus-visible:outline-2 focus-visible:outline-neutral-400" (click)="toggleSignupConfirmPassword()" [attr.aria-label]="showSignupConfirmPassword() ? 'Hide confirm password' : 'Show confirm password'" [attr.aria-pressed]="showSignupConfirmPassword()">
+              <ng-container [ngTemplateOutlet]="eyeIcon" [ngTemplateOutletContext]="{ $implicit: showSignupConfirmPassword() }" />
             </button>
             @if (fieldError('confirmPassword'); as message) {
               <p class="absolute left-1 top-full mt-0.5 text-[9px] text-red-600" role="alert">{{ message }}</p>

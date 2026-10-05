@@ -89,6 +89,14 @@ export const routes: Routes = [
           ),
         title: 'Course Management',
       },
+
+      {
+  path: 'courses/:courseId/enrollments',
+  loadComponent: () =>
+    import('./course-module/enrolled-course-list/enrolled-course-list').then((m) => m.EnrolledCourseList),
+  title: 'Enrolled Course List',
+},
+
     ],
   },
 

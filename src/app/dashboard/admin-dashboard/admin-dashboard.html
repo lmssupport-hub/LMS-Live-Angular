@@ -16,6 +16,28 @@
       </span>
     </a>
 
+        <!-- Breadcrumb (only on nested pages, e.g. Enrolled Course List) -->
+    @if (breadcrumbs().length) {
+      <nav
+        class="ml-2 flex min-w-0 items-center gap-1 overflow-x-auto whitespace-nowrap text-xs font-medium text-[#555] sm:ml-4"
+        aria-label="Breadcrumb"
+      >
+        @for (crumb of breadcrumbs(); track crumb.label; let last = $last) {
+          @if (crumb.link && !last) {
+            <a
+              [routerLink]="crumb.link"
+              class="rounded-full px-2 py-2 outline-none transition hover:bg-white hover:text-[#3e8d99] focus-visible:ring-2 focus-visible:ring-[#61b7c5]/60"
+            >{{ crumb.label }}</a>
+            <span class="text-neutral-400" aria-hidden="true">›</span>
+          } @else {
+            <span class="rounded-full bg-white px-3 py-2 font-semibold text-[#3e8d99]" aria-current="page">
+              {{ crumb.label }}
+            </span>
+          }
+        }
+      </nav>
+    }
+
     <!-- Everything else lives on the right: search, then the icon actions, then account -->
     <div class="ml-auto flex items-center gap-3">
       <!-- Global search -->

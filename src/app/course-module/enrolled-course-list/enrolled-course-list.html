@@ -1,0 +1,252 @@
+<div class="relative w-full font-sans text-[#505050]">
+
+<main class="relative z-10 px-4 pb-7 pt-4 sm:px-6 lg:px-10">
+        <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <h1 class="text-xl font-semibold text-[#454545]">Enrolled Course List</h1>
+        <p class="mt-1 text-xs text-neutral-500">
+          Give permission for students who can access the course
+        </p>
+        @if (courseLoading()) {
+          <p class="mt-1 text-[11px] text-neutral-400">Loading selected course…</p>
+        } @else if (course(); as selectedCourse) {
+          <p class="mt-1 text-[11px] font-medium text-[#398995]">{{ selectedCourse.name }}</p>
+        }
+      </div>
+
+      @if (canManage()) {
+        <button
+          #enrollButton
+          type="button"
+          data-enroll-course
+          class="h-10 self-start rounded-full bg-white px-7 text-xs outline-none transition hover:bg-[#61b7c5] hover:text-white focus-visible:ring-2 focus-visible:ring-[#61b7c5]/60 disabled:cursor-not-allowed disabled:opacity-50 sm:self-auto"
+          [disabled]="courseLoading() || !course()"
+          (click)="openEnrollPopup()"
+        >
+          Enroll Course
+        </button>
+      }
+    </div>
+
+    @if (successMessage()) {
+      <div
+        class="fixed bottom-6 right-7 z-[70] rounded-xl bg-emerald-700 px-5 py-3 text-sm text-white shadow-xl"
+        role="status"
+        aria-live="polite"
+      >
+        {{ successMessage() }}
+      </div>
+    }
+
+    @if (courseLoadError()) {
+      <div
+        class="mb-3 flex items-center justify-between gap-3 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700"
+        role="alert"
+      >
+        <span>{{ courseLoadError() }}</span>
+        <button type="button" class="shrink-0 font-semibold underline" (click)="loadCourse()">
+          Retry
+        </button>
+      </div>
+    }
+    @if (actionError() && !enrollPopupOpen()) {
+      <div class="mb-3 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+        {{ actionError() }}
+      </div>
+    }
+
+    <section
+      class="min-h-[65dvh] overflow-hidden rounded-2xl bg-white sm:min-h-[calc(100dvh-210px)]"
+      aria-label="Enrolled users"
+    >
+      @if (loadError()) {
+        <div
+          class="grid min-h-80 place-content-center gap-4 p-10 text-center text-sm text-red-700"
+          role="alert"
+        >
+          <p>{{ loadError() }}</p>
+          <button
+            type="button"
+            class="mx-auto rounded-full bg-[#61b7c5] px-5 py-2 text-white"
+            (click)="loadEnrollments()"
+          >
+            Retry
+          </button>
+        </div>
+      } @else if (loading() && !enrollments().length) {
+        <p class="p-12 text-center text-sm text-neutral-500" role="status">
+          Loading enrolled users…
+        </p>
+      } @else if (!enrollments().length) {
+        <div class="grid min-h-80 place-content-center p-12 text-center">
+          <h2 class="text-xl font-semibold text-[#454545]">No enrolled users yet</h2>
+          <p class="mt-2 text-sm text-neutral-500">
+            Enroll eligible users to give them access to this course.
+          </p>
+        </div>
+      } @else {
+        <div class="overflow-x-auto pb-24">
+          <table class="w-full min-w-[1080px] table-fixed border-collapse text-left text-[11px]">
+            <caption class="sr-only">
+              Users enrolled in
+              {{
+                course()?.name || 'the selected course'
+              }}
+            </caption>
+            <colgroup>
+              <col class="w-[5%]" />
+              <col class="w-[12%]" />
+              <col class="w-[11%]" />
+              <col class="w-[11%]" />
+              <col class="w-[11%]" />
+              <col class="w-[10%]" />
+              <col class="w-[11%]" />
+              <col class="w-[8%]" />
+              <col class="w-[11%]" />
+              <col class="w-[10%]" />
+            </colgroup>
+            <thead>
+              <tr class="h-14 border-b border-neutral-100 text-[#3f3f3f]">
+                <th scope="col" class="px-4 text-center font-medium">
+                  <input
+                    type="checkbox"
+                    class="size-3.5 cursor-pointer accent-[#61b7c5]"
+                    aria-label="Select all enrolled users"
+                    [checked]="allSelected()"
+                    [indeterminate]="someSelected()"
+                    (change)="toggleAll($any($event.target).checked)"
+                  />
+                </th>
+                <th scope="col" class="px-2 font-medium">Username</th>
+                <th scope="col" class="px-2 font-medium">Enrollment Date</th>
+                <th scope="col" class="px-2 font-medium">Completion Date</th>
+                <th scope="col" class="px-2 font-medium">Expiration Date</th>
+                <th scope="col" class="px-2 font-medium">% Progress</th>
+                <th scope="col" class="px-2 font-medium">Status</th>
+                <th scope="col" class="px-2 font-medium">Score %</th>
+                <th scope="col" class="px-2 font-medium">Completion</th>
+                <th scope="col" class="px-2 text-center font-medium">More Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (enrollment of enrollments(); track enrollment.id) {
+                <tr class="h-12 border-b border-neutral-50 last:border-0 hover:bg-[#fbfefe]">
+                  <td class="px-4 text-center">
+                    <input
+                      type="checkbox"
+                      class="size-3.5 cursor-pointer accent-[#61b7c5]"
+                      [checked]="isSelected(enrollment.userId)"
+                      [attr.aria-label]="'Select ' + enrollment.username"
+                      (change)="toggleSelection(enrollment.userId)"
+                    />
+                  </td>
+                  <td class="truncate px-2 font-medium" [title]="enrollment.username">
+                    {{ enrollment.username }}
+                  </td>
+                  <td class="px-2">{{ formatDate(enrollment.enrollmentDate) }}</td>
+                  <td class="px-2">{{ formatDate(enrollment.completionDate) }}</td>
+                  <td class="px-2">{{ formatDate(enrollment.expirationDate) }}</td>
+                  <td class="px-2">
+                    @if (enrollment.progress !== null) {
+                      <div
+                        class="relative h-3.5 w-full max-w-20 overflow-hidden rounded-full bg-[#e7e7e7]"
+                        role="progressbar"
+                        aria-label="Course progress"
+                        aria-valuemin="0"
+                        aria-valuemax="100"
+                        [attr.aria-valuenow]="enrollment.progress"
+                        [attr.aria-valuetext]="progressLabel(enrollment.progress)"
+                      >
+                        <span
+                          class="absolute inset-y-0 left-0 rounded-full bg-[#61b7c5] transition-[width] motion-reduce:transition-none"
+                          [style.width.%]="enrollment.progress"
+                          data-progress-fill
+                        ></span>
+                        <span
+                          class="absolute inset-0 flex items-center px-1.5 text-[8px] leading-none text-[#3f6870]"
+                        >
+                          {{ progressLabel(enrollment.progress) }}
+                        </span>
+                      </div>
+                    } @else {
+                      <span aria-label="Progress unavailable">—</span>
+                    }
+                  </td>
+                  <td class="px-2">
+                    <span
+                      class="inline-flex min-w-[74px] items-center justify-center rounded-full bg-[#f2f2f2] px-2 py-1 text-[9px]"
+                      [class.bg-[#e8f8fb]]="enrollment.status === 'IN_PROGRESS'"
+                      [class.text-[#267d8a]]="enrollment.status === 'IN_PROGRESS'"
+                      [class.bg-emerald-50]="enrollment.status === 'COMPLETED'"
+                      [class.text-emerald-700]="enrollment.status === 'COMPLETED'"
+                    >
+                      {{ statusLabel(enrollment.status) }}
+                    </span>
+                  </td>
+                  <td class="px-2">{{ progressLabel(enrollment.score) }}</td>
+                  <td class="truncate px-2" [title]="enrollment.completion || ''">
+                    {{ enrollment.completion || '—' }}
+                  </td>
+                  <td class="relative px-2 text-center">
+                    <div class="relative inline-block" (click)="$event.stopPropagation()">
+                      <button
+                        type="button"
+                        class="grid size-7 place-items-center rounded-full bg-[#f5f5f5] text-[#555] outline-none transition hover:bg-[#e7f6f8] focus-visible:ring-2 focus-visible:ring-[#61b7c5]/60"
+                        aria-haspopup="menu"
+                        [attr.aria-expanded]="openActionFor() === enrollment.userId"
+                        [attr.aria-label]="'More actions for ' + enrollment.username"
+                        (click)="toggleActionMenu($event, enrollment.userId)"
+                      >
+                        <svg viewBox="0 0 24 24" class="size-4 fill-current" aria-hidden="true">
+                          <circle cx="12" cy="5" r="1.6" />
+                          <circle cx="12" cy="12" r="1.6" />
+                          <circle cx="12" cy="19" r="1.6" />
+                        </svg>
+                      </button>
+                      @if (openActionFor() === enrollment.userId) {
+                        <div
+                          class="absolute right-7 top-0 z-30 w-36 rounded-xl border border-neutral-100 bg-white p-1.5 text-left shadow-xl"
+                          role="menu"
+                        >
+                          <button
+                            type="button"
+                            role="menuitem"
+                            class="w-full rounded-lg px-3 py-2 text-left text-[10px] text-red-700 outline-none transition hover:bg-red-50 focus-visible:bg-red-50 disabled:opacity-50"
+                            [disabled]="unenrolling()"
+                            (click)="unenrollSelectedUsers($event)"
+                          >
+                            {{
+                              unenrolling()
+                                ? 'Unenrolling…'
+                                : selectedCount() > 1
+                                  ? 'Unenroll selected'
+                                  : 'Unenroll'
+                            }}
+                          </button>
+                        </div>
+                      }
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+  </main>
+</div>
+
+@if (enrollPopupOpen() && course(); as selectedCourse) {
+  <app-enroll-user-pop-up
+    [course]="selectedCourse"
+    [users]="eligibleUsers()"
+    [loading]="eligibleUsersLoading()"
+    [loadError]="eligibleUsersError()"
+    [submitting]="enrolling()"
+    [formError]="actionError()"
+    (closeRequested)="closeEnrollPopup()"
+    (retryRequested)="loadEligibleUsers()"
+    (submitted)="enrollSelectedUsers($event)"
+  />
+}

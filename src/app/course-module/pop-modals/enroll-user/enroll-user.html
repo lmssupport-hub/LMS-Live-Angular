@@ -1,0 +1,178 @@
+<div
+  class="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-black/45 p-4 backdrop-blur-sm"
+  data-enroll-user-backdrop
+  (mousedown)="$event.target === $event.currentTarget && closeRequested.emit()"
+>
+  <section
+    #dialog
+    class="relative w-[min(460px,94vw)] rounded-2xl bg-white px-6 pb-6 pt-7 text-[#484848] shadow-2xl sm:px-7"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="enroll-user-title"
+    aria-describedby="enroll-user-description"
+    (mousedown)="$event.stopPropagation()"
+  >
+    <button
+      type="button"
+      class="absolute right-0 top-0 grid h-10 w-12 place-items-center rounded-bl-xl rounded-tr-2xl bg-[#ff5d59] text-2xl font-light text-white outline-none transition hover:bg-[#e94f4b] focus-visible:ring-2 focus-visible:ring-[#b73d39] focus-visible:ring-offset-2"
+      aria-label="Close enroll user form"
+      (click)="closeRequested.emit()"
+    >
+      ×
+    </button>
+
+    <h1 id="enroll-user-title" class="pr-12 text-lg font-semibold">Enroll User</h1>
+    <p id="enroll-user-description" class="mt-1 text-xs text-neutral-500">
+      Select users who can access the course
+    </p>
+
+    <form class="mt-5" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <div class="relative" (click)="stopOptionsClick($event)">
+        <span
+          id="enroll-users-label"
+          class="pointer-events-none absolute left-3 top-2 z-10 text-[10px]"
+        >
+          User<span class="text-[#e34d49]" aria-hidden="true">*</span>
+        </span>
+        <button
+          #userField
+          type="button"
+          role="combobox"
+          class="flex min-h-11 w-full items-center justify-between gap-3 rounded-lg bg-[#f5f5f5] px-3 pb-1 pt-4 text-left text-[11px] outline-none transition hover:bg-[#eeeeee] focus-visible:ring-2 focus-visible:ring-[#61b7c5]/60 disabled:cursor-not-allowed disabled:opacity-60"
+          aria-haspopup="listbox"
+          aria-controls="eligible-user-options"
+          aria-labelledby="enroll-users-label selected-user-summary"
+          aria-required="true"
+          [attr.aria-expanded]="optionsOpen()"
+          [attr.aria-invalid]="!!userError()"
+          [attr.aria-describedby]="userError() ? 'enroll-users-error' : null"
+          [disabled]="loading()"
+          (click)="toggleUserOptions($event)"
+        >
+          <span id="selected-user-summary" class="min-w-0 flex-1 truncate">
+            {{ loading() ? 'Loading eligible users…' : selectedSummary() }}
+          </span>
+          <svg
+            viewBox="0 0 20 20"
+            class="size-3.5 shrink-0 fill-none stroke-current"
+            stroke-width="1.8"
+            aria-hidden="true"
+          >
+            <path d="m5 7 5 5 5-5" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </button>
+
+        @if (optionsOpen()) {
+          <div
+            id="eligible-user-options"
+            class="absolute inset-x-0 top-[calc(100%+5px)] z-20 max-h-56 overflow-y-auto rounded-xl border border-neutral-100 bg-white py-1 shadow-xl"
+            role="listbox"
+            aria-multiselectable="true"
+            aria-labelledby="enroll-users-label"
+          >
+            @if (users().length) {
+              @for (user of users(); track user.id) {
+                <button
+                  type="button"
+                  class="flex min-h-11 w-full items-center gap-3 px-3 py-2 text-left outline-none transition hover:bg-[#f4fafb] focus-visible:bg-[#eaf7f9]"
+                  role="option"
+                  [attr.aria-selected]="isSelected(user.id)"
+                  (click)="toggleUser(user.id)"
+                >
+                  <span
+                    class="grid size-4 shrink-0 place-items-center rounded border border-neutral-300 bg-white text-[10px] text-white"
+                    [class.border-[#61b7c5]]="isSelected(user.id)"
+                    [class.bg-[#61b7c5]]="isSelected(user.id)"
+                    aria-hidden="true"
+                    >{{ isSelected(user.id) ? '✓' : '' }}</span
+                  >
+                  <span class="min-w-0">
+                    <span class="block truncate text-[11px] font-medium">{{ user.name }}</span>
+                    @if (user.email) {
+                      <span class="mt-0.5 block truncate text-[9px] text-neutral-500">{{
+                        user.email
+                      }}</span>
+                    }
+                  </span>
+                </button>
+              }
+            } @else {
+              <p class="px-4 py-5 text-center text-[11px] text-neutral-500">
+                No eligible users are available.
+              </p>
+            }
+          </div>
+        }
+      </div>
+
+      @if (userError()) {
+        <small
+          id="enroll-users-error"
+          class="block px-1 pt-1 text-[10px] text-red-700"
+          role="alert"
+        >
+          {{ userError() }}
+        </small>
+      }
+
+      @if (loadError()) {
+        <div class="mt-2 rounded-lg bg-red-50 px-3 py-2 text-[10px] text-red-700" role="alert">
+          {{ loadError() }}
+          <button
+            type="button"
+            class="ml-1 font-semibold underline"
+            (click)="retryRequested.emit()"
+          >
+            Retry
+          </button>
+        </div>
+      }
+
+      <div class="relative mt-3">
+        <label
+          for="enrollment-course"
+          class="pointer-events-none absolute left-3 top-2 text-[10px]"
+        >
+          Course<span class="text-[#e34d49]" aria-hidden="true">*</span>
+        </label>
+        <input
+          id="enrollment-course"
+          type="text"
+          class="h-11 w-full truncate rounded-lg bg-[#f5f5f5] px-3 pb-1 pt-4 text-[11px] text-neutral-600 outline-none"
+          [value]="course().name"
+          readonly
+          required
+          aria-required="true"
+          aria-readonly="true"
+        />
+      </div>
+
+      @if (formError()) {
+        <p
+          class="mt-3 rounded-lg bg-red-50 px-3 py-2 text-center text-[10px] text-red-700"
+          role="alert"
+        >
+          {{ formError() }}
+        </p>
+      }
+
+      <div class="mt-6 flex items-center justify-center gap-3">
+        <button
+          type="button"
+          class="h-10 min-w-28 rounded-lg bg-[#f5f5f5] px-4 text-[11px] outline-none transition hover:bg-neutral-200 focus-visible:ring-2 focus-visible:ring-neutral-400/50 disabled:opacity-50"
+          [disabled]="submitting()"
+          (click)="closeRequested.emit()"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          class="h-10 min-w-36 rounded-lg bg-[#f5f5f5] px-4 text-[11px] outline-none transition enabled:hover:bg-[#61b7c5] enabled:hover:text-white focus-visible:ring-2 focus-visible:ring-[#61b7c5]/60 disabled:cursor-not-allowed disabled:opacity-50"
+          [disabled]="submitting() || loading() || !!loadError()"
+        >
+          {{ submitting() ? 'Enrolling…' : 'Enroll Selected User(s)' }}
+        </button>
+      </div>
+    </form>
+  </section>
+</div>

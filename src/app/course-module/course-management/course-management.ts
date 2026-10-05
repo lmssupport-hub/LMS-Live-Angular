@@ -164,6 +164,8 @@ export class CourseManagement {
     }
   }
 
+  
+
   // ---------- organize (sections) ----------
   /** NEW: edit (pencil) icon on a course card opens the Organize screen. */
   openOrganize(course: Course): void {
@@ -476,8 +478,8 @@ export class CourseManagement {
   }
 
   openEnrollments(courseId: number): void {
-    this.router.navigate(['/courses', courseId, 'enrollments']);
-  }
+  this.router.navigate(['/admin-dashboard', 'courses', courseId, 'enrollments']);
+}
 
   openQuestionBanks(courseId: number, moduleId: unknown): void {
     this.router.navigate(['/courses', courseId, 'question-banks'], { queryParams: { moduleId } });

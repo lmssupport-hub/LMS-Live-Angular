@@ -1,0 +1,47 @@
+/* Sliding image columns - tuned for smooth, hang-free playback */
+.image-column,
+.image-column-reverse {
+  --slide-duration: 10s;
+  /* promote to its own GPU layer, isolate from the rest of the page */
+  will-change: transform;
+  contain: layout paint style;
+  backface-visibility: hidden;
+  transform: translate3d(0, 0, 0);
+  /* no sub-pixel text/image smoothing work while moving */
+  -webkit-font-smoothing: antialiased;
+}
+
+.image-column {
+  animation: leftTopDown var(--slide-duration) linear infinite;
+}
+
+.image-column-reverse {
+  animation: leftBottomTop var(--slide-duration) linear infinite;
+}
+
+/* TOP → DOWN */
+@keyframes leftTopDown {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(0, -50%, 0);
+  }
+}
+
+/* BOTTOM → TOP */
+@keyframes leftBottomTop {
+  from {
+    transform: translate3d(0, -50%, 0);
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .image-column,
+  .image-column-reverse {
+    animation: none;
+  }
+}

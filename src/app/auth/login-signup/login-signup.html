@@ -1,214 +1,214 @@
-<main class="h-screen snap-y snap-mandatory overflow-hidden scroll-smooth bg-[#f4f4f4]">
-  <!-- Sign Up -->
-  <section id="signup" class="grid h-screen w-full snap-start snap-always grid-rows-[38%_62%] overflow-hidden bg-[#f4f4f4] p-4 sm:p-6 md:grid-cols-[57%_43%] md:grid-rows-1" aria-labelledby="signup-title">
-    <div class="relative min-h-0 overflow-hidden rounded-xl">
-      <img ngSrc="/imgcomponent/signup.jpg" fill priority alt="Organized study desk with learning goals" class="object-cover" />
-      <div class="absolute inset-0 bg-black/25"></div>
-      <a routerLink="/" aria-label="Go to home" class="absolute left-1/2 top-6 grid h-9 w-12 -translate-x-1/2 place-items-center rounded-full bg-white text-[#333] shadow-sm transition hover:scale-105">
-        <svg viewBox="0 0 24 24" class="h-5 w-5 fill-current" aria-hidden="true"><path d="M12 3.2 3.5 10v10.2c0 .45.35.8.8.8h5.1v-6.2h5.2V21h5.1c.45 0 .8-.35.8-.8V10L12 3.2Z"/></svg>
-      </a>
-      <div class="absolute inset-x-0 bottom-0 flex items-end justify-between gap-5 p-7 text-white sm:p-8">
-        <p class="max-w-[330px] text-base leading-[1.35]"><span class="font-medium">Your Journey Continues Here.</span><br />Log in to access your account and unlock<br class="hidden sm:block" /> new opportunities.</p>
-        <button type="button" class="shrink-0 rounded-full bg-white px-5 py-2 text-xs font-medium text-[#333] transition hover:scale-105" (click)="scrollTo('login')">Login</button>
+<main class="h-screen overflow-hidden bg-[#f4f4f4]">
+  <div class="grid h-screen w-full grid-cols-1 md:grid-cols-[46%_54%]">
+    <!-- Left: animated image columns (desktop only) -->
+    <div class="relative hidden h-screen overflow-hidden bg-[#f4f4f4] md:block" aria-hidden="true">
+      <div class="absolute inset-0 flex gap-[12%] pl-[8%]">
+        <div class="image-column flex min-w-0 flex-1 flex-col gap-8 self-start pb-8">
+          <img src="imgcomponent/image1.jpg" class="aspect-[2/3] w-full shrink-0 rounded-lg object-cover" decoding="async" alt="" />
+          <img src="imgcomponent/image2.jpg" class="aspect-[2/3] w-full shrink-0 rounded-lg object-cover" decoding="async" alt="" />
+          <img src="imgcomponent/image3.jpg" class="aspect-[2/3] w-full shrink-0 rounded-lg object-cover" decoding="async" alt="" />
+          <img src="imgcomponent/image4.jpg" class="aspect-[2/3] w-full shrink-0 rounded-lg object-cover" decoding="async" alt="" />
+          <img src="imgcomponent/image1.jpg" class="aspect-[2/3] w-full shrink-0 rounded-lg object-cover" decoding="async" alt="" />
+          <img src="imgcomponent/image2.jpg" class="aspect-[2/3] w-full shrink-0 rounded-lg object-cover" decoding="async" alt="" />
+          <img src="imgcomponent/image3.jpg" class="aspect-[2/3] w-full shrink-0 rounded-lg object-cover" decoding="async" alt="" />
+          <img src="imgcomponent/image4.jpg" class="aspect-[2/3] w-full shrink-0 rounded-lg object-cover" decoding="async" alt="" />
+        </div>
+        <div class="image-column-reverse flex min-w-0 flex-1 flex-col gap-8 self-start pb-8">
+          <img src="imgcomponent/image4.jpg" class="aspect-[2/3] w-full shrink-0 rounded-lg object-cover" decoding="async" alt="" />
+          <img src="imgcomponent/image3.jpg" class="aspect-[2/3] w-full shrink-0 rounded-lg object-cover" decoding="async" alt="" />
+          <img src="imgcomponent/image2.jpg" class="aspect-[2/3] w-full shrink-0 rounded-lg object-cover" decoding="async" alt="" />
+          <img src="imgcomponent/image1.jpg" class="aspect-[2/3] w-full shrink-0 rounded-lg object-cover" decoding="async" alt="" />
+          <img src="imgcomponent/image4.jpg" class="aspect-[2/3] w-full shrink-0 rounded-lg object-cover" decoding="async" alt="" />
+          <img src="imgcomponent/image3.jpg" class="aspect-[2/3] w-full shrink-0 rounded-lg object-cover" decoding="async" alt="" />
+          <img src="imgcomponent/image2.jpg" class="aspect-[2/3] w-full shrink-0 rounded-lg object-cover" decoding="async" alt="" />
+          <img src="imgcomponent/image1.jpg" class="aspect-[2/3] w-full shrink-0 rounded-lg object-cover" decoding="async" alt="" />
+        </div>
       </div>
     </div>
 
-    <div class="flex min-h-0 items-center px-2 py-3 sm:px-8 sm:py-5 md:px-6 md:py-12 lg:px-12">
-      <form class="w-full" [formGroup]="signupForm" (ngSubmit)="submitSignup()" novalidate>
-        <h1 id="signup-title" class="text-center text-[64px] font-bold leading-none tracking-[-0.04em] text-[#e6e6e6] lg:text-[96px]">Sign Up</h1>
-        <div class="mt-14">
-          <h2 class="text-[28px] font-bold leading-tight text-[#383838]">Create your account</h2>
-          <p class="mt-4 text-[13px] text-[#343434]">Fill in the details below to get started</p>
+    <!-- Right: scrollable form column -->
+    <div class="relative h-screen overflow-hidden bg-[#f4f4f4]">
+      <div class="form-column h-auto w-full">
+        <!-- Sign Up -->
+        <section id="signup" class="flex h-screen min-h-screen w-full items-center px-2 py-3 sm:px-6 sm:py-5 md:px-4 md:py-12 lg:px-8" aria-labelledby="signup-title">
+          <form class="mx-auto w-full max-w-[460px]" [formGroup]="signupForm" (ngSubmit)="submitSignup()" novalidate>
+            <h1 id="signup-title" class="text-center text-[64px] font-bold leading-none tracking-[-0.04em] text-[#e6e6e6] lg:text-[96px]">Sign Up</h1>
+            <div class="mt-14">
+              <h2 class="text-[28px] font-bold leading-tight text-[#383838]">Create your account</h2>
+              <p class="mt-4 text-[13px] text-[#343434]">Fill in the details below to get started</p>
 
-          <!-- Invite status banner -->
-          @if (inviteLoading()) {
-            <p class="mt-3 text-xs text-[#666]" role="status">Checking your invite…</p>
-          } @else if (inviteToken()) {
-            <div class="mt-3 rounded-md bg-[#eaf7f9] px-3 py-2 text-xs text-[#2a6b73]" role="status">
-              You're joining as <b>{{ inviteRoleName() }}</b>. Your email is locked to the invite.
+              <!-- Invite status banner -->
+              @if (inviteLoading()) {
+                <p class="mt-3 text-xs text-[#666]" role="status">Checking your invite…</p>
+              } @else if (inviteToken()) {
+                <div class="mt-3 rounded-md bg-[#eaf7f9] px-3 py-2 text-xs text-[#2a6b73]" role="status">
+                  You're joining as <b>{{ inviteRoleName() }}</b>. Your email is locked to the invite.
+                </div>
+              } @else if (inviteError()) {
+                <p class="mt-3 text-xs text-red-600" role="alert">{{ inviteError() }}</p>
+              }
             </div>
-          } @else if (inviteError()) {
-            <p class="mt-3 text-xs text-red-600" role="alert">{{ inviteError() }}</p>
-          }
-        </div>
 
-        <div class="mt-8 grid grid-cols-1 gap-x-6 gap-y-6 sm:grid-cols-2 md:grid-cols-1 lg:grid-cols-2">
-          <!-- First name -->
-          <div class="relative">
-            <label class="sr-only" for="firstName">First Name</label>
-            <input id="firstName" formControlName="firstName" [maxlength]="limits.name" class="h-9 w-full rounded-md border-0 bg-white px-3 text-xs text-[#333] outline-none placeholder:text-[#333] focus:ring-2 focus:ring-neutral-300" type="text" autocomplete="given-name" placeholder="First Name*" [attr.aria-invalid]="fieldError('firstName') ? 'true' : null" />
-            @if (fieldError('firstName'); as message) {
-              <p class="absolute left-1 top-full mt-0.5 text-[9px] text-red-600" role="alert">{{ message }}</p>
-            } @else if (signupControls.firstName.value.length === limits.name) {
-              <p class="absolute left-1 top-full mt-0.5 text-[9px] text-red-600" role="status">Maximum {{ limits.name }} characters reached.</p>
-            }
-          </div>
-
-          <!-- Last name -->
-          <div class="relative">
-            <label class="sr-only" for="lastName">Last Name</label>
-            <input id="lastName" formControlName="lastName" [maxlength]="limits.name" class="h-9 w-full rounded-md border-0 bg-white px-3 text-xs text-[#333] outline-none placeholder:text-[#333] focus:ring-2 focus:ring-neutral-300" type="text" autocomplete="family-name" placeholder="Last Name*" [attr.aria-invalid]="fieldError('lastName') ? 'true' : null" />
-            @if (fieldError('lastName'); as message) {
-              <p class="absolute left-1 top-full mt-0.5 text-[9px] text-red-600" role="alert">{{ message }}</p>
-            } @else if (signupControls.lastName.value.length === limits.name) {
-              <p class="absolute left-1 top-full mt-0.5 text-[9px] text-red-600" role="status">Maximum {{ limits.name }} characters reached.</p>
-            }
-          </div>
-
-          <!-- Email -->
-          <div class="relative">
-            <label class="sr-only" for="signupEmail">Email</label>
-            <input id="signupEmail" formControlName="email" [maxlength]="limits.signupEmail" class="h-9 w-full rounded-md border-0 bg-white px-3 text-xs text-[#333] outline-none placeholder:text-[#333] focus:ring-2 focus:ring-neutral-300 disabled:bg-neutral-100 disabled:text-neutral-500" type="email" autocomplete="email" autocapitalize="none" spellcheck="false" placeholder="Email*" [attr.aria-invalid]="fieldError('email') ? 'true' : null" />
-            @if (signupControls.email.value.length === limits.signupEmail) {
-              <p class="absolute left-1 top-full mt-1 text-[10px] text-red-600" role="status">Maximum {{ limits.signupEmail }} characters reached.</p>
-            } @else if (fieldError('email'); as message) {
-              <p class="absolute left-1 top-full mt-0.5 text-[9px] text-red-600" role="alert">{{ message }}</p>
-            }
-          </div>
-
-          <!-- Phone -->
-          <div class="relative">
-            <div class="flex gap-2">
-              <label class="sr-only" for="countryCode">Country Code</label>
-              <select id="countryCode" formControlName="countryCode" class="h-9 w-[82px] shrink-0 rounded-md border-0 bg-white px-2 text-xs text-[#333] outline-none focus:ring-2 focus:ring-neutral-300">
-                <option value="" disabled>Code*</option>
-                @for (code of countryCodes; track code) {
-                  <option [value]="code">{{ code }}</option>
+            <div class="mt-8 grid grid-cols-1 gap-x-6 gap-y-6 sm:grid-cols-2 md:grid-cols-1 lg:grid-cols-2">
+              <!-- First name -->
+              <div class="relative">
+                <label class="sr-only" for="firstName">First Name</label>
+                <input id="firstName" formControlName="firstName" [maxlength]="limits.name" class="peer h-9 w-full rounded-md border-0 bg-white px-3 text-xs text-[#333] outline-none placeholder:text-[#333] focus:ring-2 focus:ring-neutral-300" type="text" autocomplete="given-name" placeholder=" " [attr.aria-invalid]="fieldError('firstName') ? 'true' : null" /><span class="pointer-events-none absolute left-3 top-1/2 hidden -translate-y-1/2 text-xs text-[#333] peer-placeholder-shown:block" aria-hidden="true">First Name<span class="text-red-500">*</span></span>
+                @if (fieldError('firstName'); as message) {
+                  <p class="absolute left-1 top-full mt-0.5 text-[9px] text-red-600" role="alert">{{ message }}</p>
+                } @else if (signupControls.firstName.value.length === limits.name) {
+                  <p class="absolute left-1 top-full mt-0.5 text-[9px] text-red-600" role="status">Maximum {{ limits.name }} characters reached.</p>
                 }
-              </select>
-              <label class="sr-only" for="phoneNumber">Phone Number</label>
-              <input id="phoneNumber" formControlName="phoneNumber" [maxlength]="limits.phoneInput" inputmode="numeric" class="h-9 min-w-0 flex-1 rounded-md border-0 bg-white px-3 text-xs text-[#333] outline-none placeholder:text-[#333] focus:ring-2 focus:ring-neutral-300" type="tel" autocomplete="tel-national" placeholder="Ph.No*" [attr.aria-invalid]="fieldError('phoneNumber') ? 'true' : null" />
+              </div>
+
+              <!-- Last name -->
+              <div class="relative">
+                <label class="sr-only" for="lastName">Last Name</label>
+                <input id="lastName" formControlName="lastName" [maxlength]="limits.name" class="peer h-9 w-full rounded-md border-0 bg-white px-3 text-xs text-[#333] outline-none placeholder:text-[#333] focus:ring-2 focus:ring-neutral-300" type="text" autocomplete="family-name" placeholder=" " [attr.aria-invalid]="fieldError('lastName') ? 'true' : null" /><span class="pointer-events-none absolute left-3 top-1/2 hidden -translate-y-1/2 text-xs text-[#333] peer-placeholder-shown:block" aria-hidden="true">Last Name<span class="text-red-500">*</span></span>
+                @if (fieldError('lastName'); as message) {
+                  <p class="absolute left-1 top-full mt-0.5 text-[9px] text-red-600" role="alert">{{ message }}</p>
+                } @else if (signupControls.lastName.value.length === limits.name) {
+                  <p class="absolute left-1 top-full mt-0.5 text-[9px] text-red-600" role="status">Maximum {{ limits.name }} characters reached.</p>
+                }
+              </div>
+
+              <!-- Email -->
+              <div class="relative">
+                <label class="sr-only" for="signupEmail">Email</label>
+                <input id="signupEmail" formControlName="email" [maxlength]="limits.signupEmail" class="peer h-9 w-full rounded-md border-0 bg-white px-3 text-xs text-[#333] outline-none placeholder:text-[#333] focus:ring-2 focus:ring-neutral-300 disabled:bg-neutral-100 disabled:text-neutral-500" type="email" autocomplete="email" autocapitalize="none" spellcheck="false" placeholder=" " [attr.aria-invalid]="fieldError('email') ? 'true' : null" /><span class="pointer-events-none absolute left-3 top-1/2 hidden -translate-y-1/2 text-xs text-[#333] peer-placeholder-shown:block" aria-hidden="true">Email<span class="text-red-500">*</span></span>
+                @if (signupControls.email.value.length === limits.signupEmail) {
+                  <p class="absolute left-1 top-full mt-1 text-[10px] text-red-600" role="status">Maximum {{ limits.signupEmail }} characters reached.</p>
+                } @else if (fieldError('email'); as message) {
+                  <p class="absolute left-1 top-full mt-0.5 text-[9px] text-red-600" role="alert">{{ message }}</p>
+                }
+              </div>
+
+              <!-- Phone -->
+              <div class="relative">
+                <div class="flex gap-2">
+                  <label class="sr-only" for="countryCode">Country Code</label>
+                  <select id="countryCode" formControlName="countryCode" aria-label="Country code" class="h-9 w-[82px] shrink-0 rounded-md border-0 bg-white px-2 text-xs text-[#333] outline-none focus:ring-2 focus:ring-neutral-300">
+                    <option value="" disabled>Code*</option>
+                    @for (code of countryCodes; track code) {
+                      <option [value]="code">{{ code }}</option>
+                    }
+                  </select>
+                  <label class="sr-only" for="phoneNumber">Phone Number</label>
+                  <div class="relative min-w-0 flex-1"><input id="phoneNumber" formControlName="phoneNumber" [maxlength]="limits.phoneInput" inputmode="numeric" class="peer h-9 w-full rounded-md border-0 bg-white px-3 text-xs text-[#333] outline-none placeholder:text-[#333] focus:ring-2 focus:ring-neutral-300" type="tel" autocomplete="tel-national" placeholder=" " [attr.aria-invalid]="fieldError('phoneNumber') ? 'true' : null" /><span class="pointer-events-none absolute left-3 top-1/2 hidden -translate-y-1/2 text-xs text-[#333] peer-placeholder-shown:block" aria-hidden="true">Ph.No<span class="text-red-500">*</span></span></div>
+                </div>
+                @if (fieldError('countryCode'); as message) {
+                  <p class="absolute left-1 top-full mt-0.5 text-[9px] text-red-600" role="alert">{{ message }}</p>
+                } @else if (fieldError('phoneNumber'); as message) {
+                  <p class="absolute left-1 top-full mt-0.5 text-[9px] text-red-600" role="alert">{{ message }}</p>
+                }
+              </div>
+
+              <!-- Password -->
+              <div class="relative">
+                <label class="sr-only" for="createPassword">Create Password</label>
+                <input id="createPassword" formControlName="password" [maxlength]="limits.passwordMax" class="peer h-9 w-full rounded-md border-0 bg-white px-3 pr-10 text-xs text-[#333] outline-none placeholder:text-[#333] focus:ring-2 focus:ring-neutral-300" [type]="showSignupPassword() ? 'text' : 'password'" autocomplete="new-password" placeholder=" " [attr.aria-invalid]="fieldError('password') ? 'true' : null" /><span class="pointer-events-none absolute left-3 top-1/2 hidden -translate-y-1/2 text-xs text-[#333] peer-placeholder-shown:block" aria-hidden="true">Create Password<span class="text-red-500">*</span></span>
+                <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 transition hover:text-neutral-800 focus-visible:outline-2 focus-visible:outline-neutral-400" (click)="toggleSignupPassword()" [attr.aria-label]="showSignupPassword() ? 'Hide password' : 'Show password'" [attr.aria-pressed]="showSignupPassword()">
+                  <ng-container [ngTemplateOutlet]="eyeIcon" [ngTemplateOutletContext]="{ $implicit: showSignupPassword() }" />
+                </button>
+                @if (fieldError('password'); as message) {
+                  <p class="absolute left-1 top-full mt-0.5 text-[9px] text-red-600" role="alert">{{ message }}</p>
+                } @else if (signupForm.hasError('passwordMatchesEmail') && signupControls.password.touched) {
+                  <p class="absolute left-1 top-full mt-0.5 text-[9px] text-red-600" role="alert">Password must not match Email ID.</p>
+                }
+              </div>
+
+              <!-- Confirm password -->
+              <div class="relative">
+                <label class="sr-only" for="confirmPassword">Confirm Password</label>
+                <input id="confirmPassword" formControlName="confirmPassword" [maxlength]="limits.passwordMax" class="peer h-9 w-full rounded-md border-0 bg-white px-3 pr-10 text-xs text-[#333] outline-none placeholder:text-[#333] focus:ring-2 focus:ring-neutral-300" [type]="showSignupConfirmPassword() ? 'text' : 'password'" autocomplete="new-password" placeholder=" " [attr.aria-invalid]="fieldError('confirmPassword') ? 'true' : null" /><span class="pointer-events-none absolute left-3 top-1/2 hidden -translate-y-1/2 text-xs text-[#333] peer-placeholder-shown:block" aria-hidden="true">Confirm Password<span class="text-red-500">*</span></span>
+                <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 transition hover:text-neutral-800 focus-visible:outline-2 focus-visible:outline-neutral-400" (click)="toggleSignupConfirmPassword()" [attr.aria-label]="showSignupConfirmPassword() ? 'Hide confirm password' : 'Show confirm password'" [attr.aria-pressed]="showSignupConfirmPassword()">
+                  <ng-container [ngTemplateOutlet]="eyeIcon" [ngTemplateOutletContext]="{ $implicit: showSignupConfirmPassword() }" />
+                </button>
+                @if (fieldError('confirmPassword'); as message) {
+                  <p class="absolute left-1 top-full mt-0.5 text-[9px] text-red-600" role="alert">{{ message }}</p>
+                } @else if (signupForm.hasError('passwordsMismatch') && signupControls.confirmPassword.touched) {
+                  <p class="absolute left-1 top-full mt-0.5 text-[9px] text-red-600" role="alert">Confirm Password does not match the Password field.</p>
+                }
+              </div>
             </div>
-            @if (fieldError('countryCode'); as message) {
-              <p class="absolute left-1 top-full mt-0.5 text-[9px] text-red-600" role="alert">{{ message }}</p>
-            } @else if (fieldError('phoneNumber'); as message) {
-              <p class="absolute left-1 top-full mt-0.5 text-[9px] text-red-600" role="alert">{{ message }}</p>
-            }
-          </div>
 
-          <!-- Password -->
-          <div class="relative">
-            <label class="sr-only" for="createPassword">Create Password</label>
-            <input id="createPassword" formControlName="password" [maxlength]="limits.passwordMax" class="h-9 w-full rounded-md border-0 bg-white px-3 pr-10 text-xs text-[#333] outline-none placeholder:text-[#333] focus:ring-2 focus:ring-neutral-300" [type]="showSignupPassword() ? 'text' : 'password'" autocomplete="new-password" placeholder="Create Password*" [attr.aria-invalid]="fieldError('password') ? 'true' : null" />
-            <!-- CHANGED: aria-label is now singular (this button only controls the Create Password field) -->
-            <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 transition hover:text-neutral-800 focus-visible:outline-2 focus-visible:outline-neutral-400" (click)="toggleSignupPassword()" [attr.aria-label]="showSignupPassword() ? 'Hide password' : 'Show password'" [attr.aria-pressed]="showSignupPassword()">
-              <ng-container [ngTemplateOutlet]="eyeIcon" [ngTemplateOutletContext]="{ $implicit: showSignupPassword() }" />
-            </button>
-            @if (fieldError('password'); as message) {
-              <p class="absolute left-1 top-full mt-0.5 text-[9px] text-red-600" role="alert">{{ message }}</p>
-            } @else if (signupForm.hasError('passwordMatchesEmail') && signupControls.password.touched) {
-              <p class="absolute left-1 top-full mt-0.5 text-[9px] text-red-600" role="alert">Password must not match Email ID.</p>
-            }
-          </div>
+            <!-- Terms -->
+            <div class="relative mt-6">
+              <label class="flex cursor-pointer items-center gap-2 text-[10px] text-[#333]">
+                <input type="checkbox" formControlName="acceptTerms" class="h-3.5 w-3.5 appearance-none rounded-sm bg-white checked:bg-neutral-700 focus:ring-2 focus:ring-neutral-300" />I accept the <span class="text-sky-500">terms &amp; conditions</span>
+              </label>
+              @if (fieldError('acceptTerms'); as message) {
+                <p class="absolute left-1 top-full mt-0.5 text-[9px] text-red-600" role="alert">{{ message }}</p>
+              }
+            </div>
 
-          <!-- Confirm password -->
-          <div class="relative">
-            <label class="sr-only" for="confirmPassword">Confirm Password</label>
-            <!-- CHANGED: [type] now uses its own showSignupConfirmPassword() signal -->
-            <input id="confirmPassword" formControlName="confirmPassword" [maxlength]="limits.passwordMax" class="h-9 w-full rounded-md border-0 bg-white px-3 pr-10 text-xs text-[#333] outline-none placeholder:text-[#333] focus:ring-2 focus:ring-neutral-300" [type]="showSignupConfirmPassword() ? 'text' : 'password'" autocomplete="new-password" placeholder="Confirm Password*" [attr.aria-invalid]="fieldError('confirmPassword') ? 'true' : null" />
-            <!-- CHANGED: separate toggle (toggleSignupConfirmPassword) so it no longer flips the Create Password field -->
-            <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 transition hover:text-neutral-800 focus-visible:outline-2 focus-visible:outline-neutral-400" (click)="toggleSignupConfirmPassword()" [attr.aria-label]="showSignupConfirmPassword() ? 'Hide confirm password' : 'Show confirm password'" [attr.aria-pressed]="showSignupConfirmPassword()">
-              <ng-container [ngTemplateOutlet]="eyeIcon" [ngTemplateOutletContext]="{ $implicit: showSignupConfirmPassword() }" />
-            </button>
-            @if (fieldError('confirmPassword'); as message) {
-              <p class="absolute left-1 top-full mt-0.5 text-[9px] text-red-600" role="alert">{{ message }}</p>
-            } @else if (signupForm.hasError('passwordsMismatch') && signupControls.confirmPassword.touched) {
-              <p class="absolute left-1 top-full mt-0.5 text-[9px] text-red-600" role="alert">Confirm Password does not match the Password field.</p>
-            }
-          </div>
-        </div>
+            <div class="mt-7 text-center">
+              <button type="submit" [disabled]="submitting()" [attr.aria-busy]="submitting()" class="h-9 min-w-[158px] rounded-md bg-white px-8 text-xs text-[#333] transition enabled:hover:-translate-y-0.5 enabled:hover:bg-neutral-900 enabled:hover:text-white disabled:cursor-not-allowed disabled:opacity-50">{{ submitting() ? 'Signing up…' : 'Sign up' }}</button>
+              @if (signupCompleted()) { <p class="mt-3 text-xs text-emerald-700" role="status">Account created successfully. You can now log in.</p> }
+              @if (signupError()) { <p class="mt-3 text-xs text-red-600" role="alert">{{ signupError() }}</p> }
+              <p class="mt-7 text-xs text-[#333]">Already have an account? <button type="button" class="text-sky-500 hover:underline" (click)="scrollTo('login')">Log in</button></p>
+            </div>
+          </form>
+        </section>
 
-        <!-- Terms -->
-        <div class="relative mt-6">
-          <label class="flex cursor-pointer items-center gap-2 text-[10px] text-[#333]">
-            <input type="checkbox" formControlName="acceptTerms" class="h-3.5 w-3.5 appearance-none rounded-sm bg-white checked:bg-neutral-700 focus:ring-2 focus:ring-neutral-300" />I accept the terms &amp; conditions
-          </label>
-          @if (fieldError('acceptTerms'); as message) {
-            <p class="absolute left-1 top-full mt-0.5 text-[9px] text-red-600" role="alert">{{ message }}</p>
-          }
-        </div>
+        <!-- Login -->
+        <section id="login" class="flex h-screen min-h-screen w-full items-center px-2 py-3 sm:px-6 sm:py-5 md:px-4 md:py-12 lg:px-8" aria-labelledby="login-title">
+          <form class="mx-auto w-full max-w-[460px]" [formGroup]="loginForm" (ngSubmit)="submitLogin()" novalidate>
+            <h1 id="login-title" class="text-center text-[64px] font-bold leading-none tracking-[-0.04em] text-[#e6e6e6] lg:text-[96px]">Log In</h1>
+            <div class="mt-16">
+              <h2 class="text-[28px] font-bold leading-tight text-[#383838]">Welcome Back</h2>
+              <p class="mt-4 text-[13px] text-[#343434]">Login to your account and continue</p>
+            </div>
 
-        <div class="mt-7 text-center">
-          <!-- NOTE: only disabled while submitting, so clicking with an invalid form still shows validation errors -->
-          <button type="submit" [disabled]="submitting()" [attr.aria-busy]="submitting()" class="h-9 min-w-[158px] rounded-md bg-white px-8 text-xs text-[#333] transition enabled:hover:-translate-y-0.5 enabled:hover:bg-neutral-900 enabled:hover:text-white disabled:cursor-not-allowed disabled:opacity-50">{{ submitting() ? 'Signing up…' : 'Sign up' }}</button>
-          @if (signupCompleted()) { <p class="mt-3 text-xs text-emerald-700" role="status">Account created successfully. You can now log in.</p> }
-          @if (signupError()) { <p class="mt-3 text-xs text-red-600" role="alert">{{ signupError() }}</p> }
-          <p class="mt-7 text-xs text-[#333]">Already have an account? <button type="button" class="hover:underline" (click)="scrollTo('login')">Log in</button></p>
-        </div>
-      </form>
-    </div>
-  </section>
+            <div class="mt-8 space-y-6">
+              <!-- Login email -->
+              <div class="relative">
+                <label class="sr-only" for="loginEmail">Email ID</label>
+                <input id="loginEmail" formControlName="email" class="peer h-9 w-full rounded-md border-0 bg-white px-3 text-xs text-[#333] outline-none placeholder:text-[#333] focus:ring-2 focus:ring-neutral-300" type="email" autocomplete="email" autocapitalize="none" spellcheck="false" [maxlength]="limits.loginEmail" placeholder=" " /><span class="pointer-events-none absolute left-3 top-1/2 hidden -translate-y-1/2 text-xs text-[#333] peer-placeholder-shown:block" aria-hidden="true">Email ID<span class="text-red-500">*</span></span>
+                @if (loginForm.controls.email.touched && loginForm.controls.email.hasError('required')) {
+                  <p class="absolute left-1 top-full mt-1 text-[10px] text-red-600" role="alert">Email ID is required.</p>
+                } @else if (loginForm.controls.email.value.length === limits.loginEmail) {
+                  <p class="absolute left-1 top-full mt-1 text-[10px] text-red-600" role="status">Maximum {{ limits.loginEmail }} characters reached.</p>
+                } @else if (loginForm.controls.email.touched && (loginForm.controls.email.hasError('email') || loginForm.controls.email.hasError('maxlength'))) {
+                  <p class="absolute left-1 top-full mt-1 text-[10px] text-red-600" role="alert">Enter a valid email address.</p>
+                }
+              </div>
 
-  <!-- Login -->
-  <section id="login" class="grid h-screen w-full snap-start snap-always grid-rows-[38%_62%] overflow-hidden bg-[#f4f4f4] p-4 sm:p-6 md:grid-cols-[57%_43%] md:grid-rows-1" aria-labelledby="login-title">
-    <div class="relative min-h-0 overflow-hidden rounded-xl">
-      <img ngSrc="/imgcomponent/login.jpg" fill alt="Focused study desk with a laptop" class="object-cover" />
-      <div class="absolute inset-0 bg-black/25"></div>
-      <a routerLink="/" aria-label="Go to home" class="absolute left-1/2 top-6 grid h-9 w-12 -translate-x-1/2 place-items-center rounded-full bg-white text-[#333] shadow-sm transition hover:scale-105">
-        <svg viewBox="0 0 24 24" class="h-5 w-5 fill-current" aria-hidden="true"><path d="M12 3.2 3.5 10v10.2c0 .45.35.8.8.8h5.1v-6.2h5.2V21h5.1c.45 0 .8-.35.8-.8V10L12 3.2Z"/></svg>
-      </a>
-      <div class="absolute inset-x-0 bottom-0 flex items-end justify-between gap-5 p-7 text-white sm:p-8">
-        <p class="max-w-[340px] text-base leading-[1.35]"><span class="font-medium">Begin &gt; Explore &gt; Excel.</span><br />Your journey to growth starts with a<br class="hidden sm:block" /> single step.</p>
-        <button type="button" class="shrink-0 rounded-full bg-white px-5 py-2 text-xs font-medium text-[#333] transition hover:scale-105" (click)="scrollTo('signup')">Sign Up</button>
+              <!-- Login password -->
+              <div class="relative">
+                <label class="sr-only" for="loginPassword">Password</label>
+                <input id="loginPassword" formControlName="password" class="peer h-9 w-full rounded-md border-0 bg-white px-3 pr-10 text-xs text-[#333] outline-none placeholder:text-[#333] focus:ring-2 focus:ring-neutral-300" [type]="showLoginPassword() ? 'text' : 'password'" autocomplete="current-password" [maxlength]="limits.passwordMax" placeholder=" " /><span class="pointer-events-none absolute left-3 top-1/2 hidden -translate-y-1/2 text-xs text-[#333] peer-placeholder-shown:block" aria-hidden="true">Password<span class="text-red-500">*</span></span>
+                <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 transition hover:text-neutral-800 focus-visible:outline-2 focus-visible:outline-neutral-400" (click)="toggleLoginPassword()" [attr.aria-label]="showLoginPassword() ? 'Hide password' : 'Show password'" [attr.aria-pressed]="showLoginPassword()">
+                  <ng-container [ngTemplateOutlet]="eyeIcon" [ngTemplateOutletContext]="{ $implicit: showLoginPassword() }" />
+                </button>
+                @if (loginForm.controls.password.touched && loginForm.controls.password.hasError('required')) {
+                  <p class="absolute left-1 top-full mt-1 text-[10px] text-red-600" role="alert">Password is required.</p>
+                } @else if (loginForm.controls.password.touched && (loginForm.controls.password.hasError('minlength') || loginForm.controls.password.hasError('maxlength'))) {
+                  <p class="absolute left-1 top-full mt-1 text-[10px] text-red-600" role="alert">Password must be between {{ limits.passwordMin }} and {{ limits.passwordMax }} characters.</p>
+                }
+              </div>
+            </div>
+
+            <div class="mt-6 flex items-center justify-between text-[9px] text-[#333]">
+              <label class="flex cursor-pointer items-center gap-2">
+                <input type="checkbox" formControlName="rememberMe" class="h-3.5 w-3.5 appearance-none rounded-sm bg-white checked:bg-neutral-700 focus:ring-2 focus:ring-neutral-300" />Remember Me
+              </label>
+              <a routerLink="/forgot-password" class="hover:underline">Forgot Password?</a>
+            </div>
+
+            <div class="mt-10 text-center">
+              <button type="submit" [disabled]="loggingIn()" [attr.aria-busy]="loggingIn()" class="h-9 min-w-[158px] rounded-md bg-white px-8 text-xs text-[#333] transition enabled:hover:-translate-y-0.5 enabled:hover:bg-neutral-900 enabled:hover:text-white disabled:cursor-not-allowed disabled:opacity-50">{{ loggingIn() ? 'Logging in…' : 'Login' }}</button>
+              @if (loginError()) { <p class="mt-3 text-xs text-red-600" role="alert">{{ loginError() }}</p> }
+              <p class="mt-7 text-xs text-[#333]">Don't have an account? <button type="button" class="text-sky-500 hover:underline" (click)="scrollTo('signup')">Sign up</button></p>
+            </div>
+          </form>
+        </section>
       </div>
     </div>
-
-    <div class="flex min-h-0 items-center px-2 py-3 sm:px-8 sm:py-5 md:px-6 md:py-12 lg:px-12">
-      <form class="w-full" [formGroup]="loginForm" (ngSubmit)="submitLogin()" novalidate>
-        <h1 id="login-title" class="text-center text-[64px] font-bold leading-none tracking-[-0.04em] text-[#e6e6e6] lg:text-[96px]">Log In</h1>
-        <div class="mt-16">
-          <h2 class="text-[28px] font-bold leading-tight text-[#383838]">Welcome Back</h2>
-          <p class="mt-4 text-[13px] text-[#343434]">Login to your account and continue</p>
-        </div>
-
-        <div class="mt-8 space-y-6">
-          <!-- Login email -->
-          <div class="relative">
-            <label class="sr-only" for="loginEmail">Email ID</label>
-            <input id="loginEmail" formControlName="email" class="h-9 w-full rounded-md border-0 bg-white px-3 text-xs text-[#333] outline-none placeholder:text-[#333] focus:ring-2 focus:ring-neutral-300" type="email" autocomplete="email" autocapitalize="none" spellcheck="false" [maxlength]="limits.loginEmail" placeholder="Email ID*" />
-            @if (loginForm.controls.email.touched && loginForm.controls.email.hasError('required')) {
-              <p class="absolute left-1 top-full mt-1 text-[10px] text-red-600" role="alert">Email ID is required.</p>
-            } @else if (loginForm.controls.email.value.length === limits.loginEmail) {
-              <p class="absolute left-1 top-full mt-1 text-[10px] text-red-600" role="status">Maximum {{ limits.loginEmail }} characters reached.</p>
-            } @else if (loginForm.controls.email.touched && (loginForm.controls.email.hasError('email') || loginForm.controls.email.hasError('maxlength'))) {
-              <p class="absolute left-1 top-full mt-1 text-[10px] text-red-600" role="alert">Enter a valid email address.</p>
-            }
-          </div>
-
-          <!-- Login password -->
-          <div class="relative">
-            <label class="sr-only" for="loginPassword">Password</label>
-            <input id="loginPassword" formControlName="password" class="h-9 w-full rounded-md border-0 bg-white px-3 pr-10 text-xs text-[#333] outline-none placeholder:text-[#333] focus:ring-2 focus:ring-neutral-300" [type]="showLoginPassword() ? 'text' : 'password'" autocomplete="current-password" [maxlength]="limits.passwordMax" placeholder="Password*" />
-            <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 transition hover:text-neutral-800 focus-visible:outline-2 focus-visible:outline-neutral-400" (click)="toggleLoginPassword()" [attr.aria-label]="showLoginPassword() ? 'Hide password' : 'Show password'" [attr.aria-pressed]="showLoginPassword()">
-              <ng-container [ngTemplateOutlet]="eyeIcon" [ngTemplateOutletContext]="{ $implicit: showLoginPassword() }" />
-            </button>
-            @if (loginForm.controls.password.touched && loginForm.controls.password.hasError('required')) {
-              <p class="absolute left-1 top-full mt-1 text-[10px] text-red-600" role="alert">Password is required.</p>
-            } @else if (loginForm.controls.password.touched && (loginForm.controls.password.hasError('minlength') || loginForm.controls.password.hasError('maxlength'))) {
-              <p class="absolute left-1 top-full mt-1 text-[10px] text-red-600" role="alert">Password must be between {{ limits.passwordMin }} and {{ limits.passwordMax }} characters.</p>
-            }
-          </div>
-        </div>
-
-        <div class="mt-6 flex items-center justify-between text-[9px] text-[#333]">
-          <label class="flex cursor-pointer items-center gap-2">
-            <input type="checkbox" formControlName="rememberMe" class="h-3.5 w-3.5 appearance-none rounded-sm bg-white checked:bg-neutral-700 focus:ring-2 focus:ring-neutral-300" />Remember Me
-          </label>
-          <a routerLink="/forgot-password" class="hover:underline">Forgot Password?</a>
-        </div>
-
-        <div class="mt-10 text-center">
-          <!-- NOTE: only disabled while the request is in flight -->
-          <button type="submit" [disabled]="loggingIn()" [attr.aria-busy]="loggingIn()" class="h-9 min-w-[158px] rounded-md bg-white px-8 text-xs text-[#333] transition enabled:hover:-translate-y-0.5 enabled:hover:bg-neutral-900 enabled:hover:text-white disabled:cursor-not-allowed disabled:opacity-50">{{ loggingIn() ? 'Logging in…' : 'Login' }}</button>
-          @if (loginError()) { <p class="mt-3 text-xs text-red-600" role="alert">{{ loginError() }}</p> }
-          <p class="mt-7 text-xs text-[#333]">Don't have an account? <button type="button" class="hover:underline" (click)="scrollTo('signup')">Sign up</button></p>
-        </div>
-      </form>
-    </div>
-  </section>
+  </div>
 </main>
 
-<!-- Shared show/hide password icon (declared once instead of 6 duplicated SVG blocks) -->
+<!-- Shared show/hide password icon -->
 <ng-template #eyeIcon let-visible>
   @if (visible) {
     <svg viewBox="0 0 640 512" class="h-3.5 w-3.5 fill-current" aria-hidden="true"><path d="M39.9 16.9C30.6 9.8 17.2 11.5 10.1 20.8S4.7 43.5 14 50.6l592 448c9.3 7.1 22.7 5.3 29.8-4s5.3-22.7-4-29.8l-98.5-74.5c41.8-33.7 75.4-78.2 97.5-130.7 2.5-6 2.5-12.8 0-18.8C583.6 128.8 474.8 64 320 64c-42.3 0-80.8 4.8-115.8 13.9L39.9 16.9zM288.3 141.1c10.2-3.3 20.8-5.1 31.7-5.1 61.9 0 112 50.1 112 112 0 18.4-4.4 35.8-12.3 51.1l-46.1-34.9c1.6-5.2 2.4-10.6 2.4-16.2 0-30.9-25.1-56-56-56-2.2 0-4.3.1-6.4.4l-25.3-19.1zM149.4 121.8C79.6 154.2 31.7 208.7 9.2 240.8c-3 4.3-3 10.1 0 14.4C64.8 334.4 165.7 432 320 432c52.1 0 98.4-8.9 138.8-24.2l-57.4-43.4C376.1 376.9 348.4 384 320 384c-75.1 0-136-60.9-136-136 0-19.1 3.9-37.3 11-53.8l-45.6-34.5z"/></svg>

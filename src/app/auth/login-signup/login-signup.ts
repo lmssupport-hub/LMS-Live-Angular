@@ -1,4 +1,3 @@
-import { DOCUMENT, NgOptimizedImage, NgTemplateOutlet } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
@@ -22,6 +21,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 import { AuthService } from '../../services/auth';
 import { InviteService, getInviteErrorMessage } from '../../services/invite.service';
+import { DOCUMENT, NgTemplateOutlet } from '@angular/common';
 
 /* -------------------------------------------------------------------------- */
 /*  Constants (single source of truth - used by both TS and template)         */
@@ -139,7 +139,7 @@ const safeServerMessage = (error: HttpErrorResponse, fallback: string): string =
 
 @Component({
   selector: 'app-login-signup',
-  imports: [ReactiveFormsModule, RouterLink, NgOptimizedImage, NgTemplateOutlet],
+  imports: [ReactiveFormsModule, RouterLink,NgTemplateOutlet],
   templateUrl: './login-signup.html',
   styleUrl: './login-signup.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

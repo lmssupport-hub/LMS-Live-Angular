@@ -315,7 +315,7 @@ export class LoginSignup {
           return `Password must be between ${LIMITS.passwordMin} and ${LIMITS.passwordMax} characters.`;
         }
         if (errors['pattern']) {
-          return 'Passwords must include at least one uppercase letter, one lowercase letter, one number, and one special character.';
+          return 'Passwords Must include uppercase, lowercase, number, and special character.';
         }
         return '';
       default:

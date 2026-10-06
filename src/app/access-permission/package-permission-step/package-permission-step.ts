@@ -9,6 +9,12 @@ import {
   isSingleToggleFeature,
 } from '../../services/package.service';
 
+/** Absolute path, matching app.routes.ts (child of 'super-admin-dashboard'). */
+const PACKAGE_LIST_PATH = '/super-admin-dashboard/package';
+
+const serverActionErrorMessage =
+  'Unable to complete the requested action due to a server error. Please try again later.';
+
 @Component({
   selector: 'app-package-permission-step',
   standalone: true,
@@ -46,8 +52,11 @@ export class PackagePermissionStep implements OnInit {
     ));
 
   ngOnInit(): void {
+    // Draft lives in memory only, so a hard refresh drops it — send the user
+    // back to the package list (NOT '/package', which doesn't exist at root
+    // and would fall through to the '**' wildcard → login page).
     if (!this.draft.hasDraft()) {
-      this.router.navigate(['/package']);
+      this.router.navigate([PACKAGE_LIST_PATH]);
       return;
     }
     this.loadFeatures();
@@ -78,7 +87,7 @@ export class PackagePermissionStep implements OnInit {
         error: (error) =>
           this.featuresError.set(
             (error?.status === 0 || error?.status >= 500)
-              ? 'Unable to complete the requested action due to a server error. Please try again later.'
+              ? serverActionErrorMessage
               : 'System features could not be loaded. Please try again.',
           ),
       });
@@ -91,7 +100,7 @@ export class PackagePermissionStep implements OnInit {
 
   protected cancelPermissionStep(): void {
     this.draft.clearDraft();
-    this.router.navigate(['/package']);
+    this.router.navigate([PACKAGE_LIST_PATH]);
   }
 
   protected savePackageWithPermissions(): void {
@@ -113,13 +122,14 @@ export class PackagePermissionStep implements OnInit {
       .subscribe({
         next: () => {
           this.draft.clearDraft();
-          this.router.navigate(['/package'], { state: { packageCreated: true } });
+          this.router.navigate([PACKAGE_LIST_PATH], { state: { packageCreated: true } });
         },
         error: (error) => {
+          console.error('Package creation failed:', error);
           const backendMessage =
             typeof error?.error === 'string' ? error.error : error?.error?.detail ?? error?.error?.message ?? '';
           if (error?.status === 0 || error?.status >= 500) {
-  this.formError.set('Unable to complete the requested action due to a server error. Please try again later.');
+            this.formError.set(serverActionErrorMessage);
           } else if (error?.status === 409 || /duplicate|exists/i.test(backendMessage)) {
             this.formError.set('A package with the same name already exists');
           } else {

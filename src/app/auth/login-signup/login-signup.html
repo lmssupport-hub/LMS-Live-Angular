@@ -32,7 +32,7 @@
         <!-- Sign Up -->
         <section id="signup" class="flex h-screen min-h-screen w-full items-center px-2 py-3 sm:px-6 sm:py-5 md:px-4 md:py-12 lg:px-8" aria-labelledby="signup-title">
           <form class="mx-auto w-full max-w-[460px]" [formGroup]="signupForm" (ngSubmit)="submitSignup()" novalidate>
-            <h1 id="signup-title" class="text-center text-[64px] font-bold leading-none tracking-[-0.04em] text-[#e6e6e6] lg:text-[96px]">Sign Up</h1>
+            <h1 id="signup-title" class="text-[64px] font-bold leading-none tracking-[-0.04em] text-[#e6e6e6] lg:text-[96px]">Sign Up</h1>
             <div class="mt-14">
               <h2 class="text-[28px] font-bold leading-tight text-[#383838]">Create your account</h2>
               <p class="mt-4 text-[13px] text-[#343434]">Fill in the details below to get started</p>
@@ -73,9 +73,9 @@
               </div>
 
               <!-- Email -->
-              <div class="relative">
+              <div class="relative" >
                 <label class="sr-only" for="signupEmail">Email</label>
-                <input id="signupEmail" formControlName="email" [maxlength]="limits.signupEmail" class="peer h-9 w-full rounded-md border-0 bg-white px-3 text-xs text-[#333] outline-none placeholder:text-[#333] focus:ring-2 focus:ring-neutral-300 disabled:bg-neutral-100 disabled:text-neutral-500" type="email" autocomplete="email" autocapitalize="none" spellcheck="false" placeholder=" " [attr.aria-invalid]="fieldError('email') ? 'true' : null" /><span class="pointer-events-none absolute left-3 top-1/2 hidden -translate-y-1/2 text-xs text-[#333] peer-placeholder-shown:block" aria-hidden="true">Email<span class="text-red-500">*</span></span>
+                <input id="signupEmail" formControlName="email" [maxlength]="limits.signupEmail" class="peer h-9 w-full mt-1.5 rounded-md border-0 bg-white px-3 text-xs text-[#333] outline-none placeholder:text-[#333] focus:ring-2 focus:ring-neutral-300 disabled:bg-neutral-100 disabled:text-neutral-500" type="email" autocomplete="email" autocapitalize="none" spellcheck="false" placeholder=" " [attr.aria-invalid]="fieldError('email') ? 'true' : null" /><span class="pointer-events-none absolute left-3 top-1/2 hidden -translate-y-1/2 text-xs text-[#333] peer-placeholder-shown:block" aria-hidden="true">Email<span class="text-red-500">*</span></span>
                 @if (signupControls.email.value.length === limits.signupEmail) {
                   <p class="absolute left-1 top-full mt-1 text-[10px] text-red-600" role="status">Maximum {{ limits.signupEmail }} characters reached.</p>
                 } @else if (fieldError('email'); as message) {
@@ -84,8 +84,8 @@
               </div>
 
               <!-- Phone -->
-              <div class="relative">
-                <div class="flex gap-2">
+              <div class="relative" >
+                <div class="flex gap-2 mt-1.5">
                   <label class="sr-only" for="countryCode">Country Code</label>
                   <select id="countryCode" formControlName="countryCode" aria-label="Country code" class="h-9 w-[82px] shrink-0 rounded-md border-0 bg-white px-2 text-xs text-[#333] outline-none focus:ring-2 focus:ring-neutral-300">
                     <option value="" disabled>Code*</option>
@@ -106,7 +106,7 @@
               <!-- Password -->
               <div class="relative">
                 <label class="sr-only" for="createPassword">Create Password</label>
-                <input id="createPassword" formControlName="password" [maxlength]="limits.passwordMax" class="peer h-9 w-full rounded-md border-0 bg-white px-3 pr-10 text-xs text-[#333] outline-none placeholder:text-[#333] focus:ring-2 focus:ring-neutral-300" [type]="showSignupPassword() ? 'text' : 'password'" autocomplete="new-password" placeholder=" " [attr.aria-invalid]="fieldError('password') ? 'true' : null" /><span class="pointer-events-none absolute left-3 top-1/2 hidden -translate-y-1/2 text-xs text-[#333] peer-placeholder-shown:block" aria-hidden="true">Create Password<span class="text-red-500">*</span></span>
+                <input id="createPassword" formControlName="password" [maxlength]="limits.passwordMax" class="peer h-9 w-full mt-1.5 rounded-md border-0 bg-white px-3 pr-10 text-xs text-[#333] outline-none placeholder:text-[#333] focus:ring-2 focus:ring-neutral-300" [type]="showSignupPassword() ? 'text' : 'password'" autocomplete="new-password" placeholder=" " [attr.aria-invalid]="fieldError('password') ? 'true' : null" /><span class="pointer-events-none absolute left-3 top-1/2 hidden -translate-y-1/2 text-xs text-[#333] peer-placeholder-shown:block" aria-hidden="true">Create Password<span class="text-red-500">*</span></span>
                 <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 transition hover:text-neutral-800 focus-visible:outline-2 focus-visible:outline-neutral-400" (click)="toggleSignupPassword()" [attr.aria-label]="showSignupPassword() ? 'Hide password' : 'Show password'" [attr.aria-pressed]="showSignupPassword()">
                   <ng-container [ngTemplateOutlet]="eyeIcon" [ngTemplateOutletContext]="{ $implicit: showSignupPassword() }" />
                 </button>
@@ -120,7 +120,7 @@
               <!-- Confirm password -->
               <div class="relative">
                 <label class="sr-only" for="confirmPassword">Confirm Password</label>
-                <input id="confirmPassword" formControlName="confirmPassword" [maxlength]="limits.passwordMax" class="peer h-9 w-full rounded-md border-0 bg-white px-3 pr-10 text-xs text-[#333] outline-none placeholder:text-[#333] focus:ring-2 focus:ring-neutral-300" [type]="showSignupConfirmPassword() ? 'text' : 'password'" autocomplete="new-password" placeholder=" " [attr.aria-invalid]="fieldError('confirmPassword') ? 'true' : null" /><span class="pointer-events-none absolute left-3 top-1/2 hidden -translate-y-1/2 text-xs text-[#333] peer-placeholder-shown:block" aria-hidden="true">Confirm Password<span class="text-red-500">*</span></span>
+                <input id="confirmPassword" formControlName="confirmPassword" [maxlength]="limits.passwordMax" class="peer h-9 w-full mt-1.5 rounded-md border-0 bg-white px-3 pr-10 text-xs text-[#333] outline-none placeholder:text-[#333] focus:ring-2 focus:ring-neutral-300" [type]="showSignupConfirmPassword() ? 'text' : 'password'" autocomplete="new-password" placeholder=" " [attr.aria-invalid]="fieldError('confirmPassword') ? 'true' : null" /><span class="pointer-events-none absolute left-3 top-1/2 hidden -translate-y-1/2 text-xs text-[#333] peer-placeholder-shown:block" aria-hidden="true">Confirm Password<span class="text-red-500">*</span></span>
                 <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 transition hover:text-neutral-800 focus-visible:outline-2 focus-visible:outline-neutral-400" (click)="toggleSignupConfirmPassword()" [attr.aria-label]="showSignupConfirmPassword() ? 'Hide confirm password' : 'Show confirm password'" [attr.aria-pressed]="showSignupConfirmPassword()">
                   <ng-container [ngTemplateOutlet]="eyeIcon" [ngTemplateOutletContext]="{ $implicit: showSignupConfirmPassword() }" />
                 </button>
@@ -133,7 +133,7 @@
             </div>
 
             <!-- Terms -->
-            <div class="relative mt-6">
+            <div class="relative mt-8">
               <label class="flex cursor-pointer items-center gap-2 text-[10px] text-[#333]">
                 <input type="checkbox" formControlName="acceptTerms" class="h-3.5 w-3.5 appearance-none rounded-sm bg-white checked:bg-neutral-700 focus:ring-2 focus:ring-neutral-300" />I accept the <span class="text-sky-500">terms &amp; conditions</span>
               </label>
@@ -154,7 +154,7 @@
         <!-- Login -->
         <section id="login" class="flex h-screen min-h-screen w-full items-center px-2 py-3 sm:px-6 sm:py-5 md:px-4 md:py-12 lg:px-8" aria-labelledby="login-title">
           <form class="mx-auto w-full max-w-[460px]" [formGroup]="loginForm" (ngSubmit)="submitLogin()" novalidate>
-            <h1 id="login-title" class="text-center text-[64px] font-bold leading-none tracking-[-0.04em] text-[#e6e6e6] lg:text-[96px]">Log In</h1>
+            <h1 id="login-title" class="text-[64px] font-bold leading-none tracking-[-0.04em] text-[#e6e6e6] lg:text-[96px]">Log In</h1>
             <div class="mt-16">
               <h2 class="text-[28px] font-bold leading-tight text-[#383838]">Welcome Back</h2>
               <p class="mt-4 text-[13px] text-[#343434]">Login to your account and continue</p>

@@ -12,6 +12,10 @@ export interface AdminPackageRow {
   package: PackageRecord | null;
 }
 
+/** Absolute paths, matching app.routes.ts (children of 'super-admin-dashboard'). */
+const PACKAGE_LIST_PATH = '/super-admin-dashboard/package';
+const PACKAGE_PERMISSIONS_PATH = '/super-admin-dashboard/package/create/permissions';
+
 const serverActionErrorMessage =
   'Unable to complete the requested action due to a server error. Please try again later.';
 const isServerError = (status?: number): boolean => status === 0 || (status ?? 0) >= 500;
@@ -268,7 +272,8 @@ export class PackageManagement implements OnInit {
   protected onCreateDetailsSubmitted(payload: PackagePayload): void {
     this.draft.startDraft(payload);
     this.createDialogOpen.set(false);
-    this.router.navigate(['/package/create/permissions']);
+    // Absolute path — the route lives under 'super-admin-dashboard' in app.routes.ts.
+    this.router.navigate([PACKAGE_PERMISSIONS_PATH]);
   }
 
   // ---- Assign ("Update package") -----------------------------------------------------------
@@ -345,11 +350,19 @@ export class PackageManagement implements OnInit {
     this.formError.set(backendMessage || fallback);
   }
 
+  /**
+   * PackagePermissionStep should navigate back with:
+   *   this.router.navigate(['/super-admin-dashboard/package'], { state: { packageCreated: true } });
+   * After flashing, we clear the flag from history.state so a browser
+   * refresh doesn't show the success message again.
+   */
   private flashSuccessIfReturningFromPermissionStep(): void {
     const state = this.router.getCurrentNavigation()?.extras.state
       ?? (history.state as { packageCreated?: boolean } | undefined);
     if (state?.packageCreated) {
       this.flashSuccess('Package created successfully.');
+      // Keep Angular's own keys (e.g. navigationId), drop only our flag.
+      history.replaceState({ ...history.state, packageCreated: undefined }, '');
     }
   }
 

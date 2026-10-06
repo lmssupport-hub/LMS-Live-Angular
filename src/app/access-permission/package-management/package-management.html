@@ -1,5 +1,4 @@
 <div class="relative w-full font-sans text-[#505050]">
- 
 
   <main class="relative z-10 px-5 pb-6 pt-2 md:px-10">
     <div class="flex items-center gap-4">
@@ -47,8 +46,8 @@
                 <th class="px-7 py-7 font-semibold">Billing Cycle</th>
                 <th class="px-7 py-7 font-semibold">Status</th>
                 <!-- Popover holds View/Edit (currently placeholder-only, no
-                     modal wired to them yet — see note below) + Delete +
-                     Assign, so back to the wider action column. -->
+                     modal wired to them yet) + Delete + Assign, so back to
+                     the wider action column. -->
                 <th class="w-[220px] px-7 py-7 text-right font-semibold">Action</th>
               </tr>
             </thead>
@@ -67,7 +66,7 @@
                     <div class="relative flex justify-end">
                       @if (openActionMenuId() === row.admin.id) {
                         <div
-                          class="absolute right-8 top-1/2 z-20 flex -translate-y-1/2 items-center gap-1.5 rounded-full bg-white p-1.5 shadow-[0_8px_24px_rgba(0,0,0,.15)]cursor-pointer"
+                          class="absolute right-8 top-1/2 z-20 flex -translate-y-1/2 items-center gap-1.5 rounded-full bg-white p-1.5 shadow-[0_8px_24px_rgba(0,0,0,.15)] cursor-pointer"
                           (click)="$event.stopPropagation()"
                         >
                           <button

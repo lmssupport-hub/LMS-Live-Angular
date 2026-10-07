@@ -53,7 +53,7 @@
               <!-- First name -->
               <div class="relative">
                 <label class="sr-only" for="firstName">First Name</label>
-                <input id="firstName" formControlName="firstName" [maxlength]="limits.name" class="peer h-9 w-full rounded-md border-0 bg-white px-3 text-xs text-[#333] outline-none placeholder:text-[#333] focus:ring-2 focus:ring-neutral-300" type="text" autocomplete="given-name" placeholder=" " [attr.aria-invalid]="fieldError('firstName') ? 'true' : null" /><span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[#333] transition-all duration-200 peer-focus:left-2 peer-focus:top-[-5px] peer-focus:translate-y-0 peer-focus:rounded-b-lg peer-focus:bg-[#f4f4f4] peer-focus:px-3 peer-focus:pb-1 peer-focus:text-[11px] peer-focus:leading-none peer-[:not(:placeholder-shown)]:left-2 peer-[:not(:placeholder-shown)]:top-[-5px] peer-[:not(:placeholder-shown)]:translate-y-0 peer-[:not(:placeholder-shown)]:rounded-b-lg peer-[:not(:placeholder-shown)]:bg-[#f4f4f4] peer-[:not(:placeholder-shown)]:px-3 peer-[:not(:placeholder-shown)]:pb-1 peer-[:not(:placeholder-shown)]:text-[11px] peer-[:not(:placeholder-shown)]:leading-none" aria-hidden="true">First Name<span class="text-red-500">*</span></span>
+                <input id="firstName" formControlName="firstName" [maxlength]="limits.name" class="peer h-10 w-full rounded-md border-0 bg-white px-3 text-xs text-[#333] outline-none placeholder:text-[#333]" type="text" autocomplete="given-name" placeholder=" " [attr.aria-invalid]="fieldError('firstName') ? 'true' : null" /><span class="float-label" aria-hidden="true">First Name<span class="text-red-500">*</span></span>
                 @if (fieldError('firstName'); as message) {
                   <p class="absolute left-1 top-full mt-0.5 text-[9px] text-red-600" role="alert">{{ message }}</p>
                 } @else if (signupControls.firstName.value.length === limits.name) {
@@ -64,7 +64,7 @@
               <!-- Last name -->
               <div class="relative">
                 <label class="sr-only" for="lastName">Last Name</label>
-                <input id="lastName" formControlName="lastName" [maxlength]="limits.name" class="peer h-9 w-full rounded-md border-0 bg-white px-3 text-xs text-[#333] outline-none placeholder:text-[#333] focus:ring-2 focus:ring-neutral-300" type="text" autocomplete="family-name" placeholder=" " [attr.aria-invalid]="fieldError('lastName') ? 'true' : null" /><span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[#333] transition-all duration-200 peer-focus:left-2 peer-focus:top-[-5px] peer-focus:translate-y-0 peer-focus:rounded-b-lg peer-focus:bg-[#f4f4f4] peer-focus:px-3 peer-focus:pb-1 peer-focus:text-[11px] peer-focus:leading-none peer-[:not(:placeholder-shown)]:left-2 peer-[:not(:placeholder-shown)]:top-[-5px] peer-[:not(:placeholder-shown)]:translate-y-0 peer-[:not(:placeholder-shown)]:rounded-b-lg peer-[:not(:placeholder-shown)]:bg-[#f4f4f4] peer-[:not(:placeholder-shown)]:px-3 peer-[:not(:placeholder-shown)]:pb-1 peer-[:not(:placeholder-shown)]:text-[11px] peer-[:not(:placeholder-shown)]:leading-none" aria-hidden="true">Last Name<span class="text-red-500">*</span></span>
+                <input id="lastName" formControlName="lastName" [maxlength]="limits.name" class="peer h-10 w-full rounded-md border-0 bg-white px-3 text-xs text-[#333] outline-none placeholder:text-[#333]" type="text" autocomplete="family-name" placeholder=" " [attr.aria-invalid]="fieldError('lastName') ? 'true' : null" /><span class="float-label" aria-hidden="true">Last Name<span class="text-red-500">*</span></span>
                 @if (fieldError('lastName'); as message) {
                   <p class="absolute left-1 top-full mt-0.5 text-[9px] text-red-600" role="alert">{{ message }}</p>
                 } @else if (signupControls.lastName.value.length === limits.name) {
@@ -75,7 +75,7 @@
               <!-- Email -->
               <div class="relative">
                 <label class="sr-only" for="signupEmail">Email</label>
-                <input id="signupEmail" formControlName="email" [maxlength]="limits.signupEmail" class="peer h-9 w-full rounded-md border-0 bg-white px-3 text-xs text-[#333] outline-none placeholder:text-[#333] focus:ring-2 focus:ring-neutral-300 disabled:bg-neutral-100 disabled:text-neutral-500" type="email" autocomplete="email" autocapitalize="none" spellcheck="false" placeholder=" " [attr.aria-invalid]="fieldError('email') ? 'true' : null" /><span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[#333] transition-all duration-200 peer-focus:left-2 peer-focus:top-[-5px] peer-focus:translate-y-0 peer-focus:rounded-b-lg peer-focus:bg-[#f4f4f4] peer-focus:px-3 peer-focus:pb-1 peer-focus:text-[11px] peer-focus:leading-none peer-[:not(:placeholder-shown)]:left-2 peer-[:not(:placeholder-shown)]:top-[-5px] peer-[:not(:placeholder-shown)]:translate-y-0 peer-[:not(:placeholder-shown)]:rounded-b-lg peer-[:not(:placeholder-shown)]:bg-[#f4f4f4] peer-[:not(:placeholder-shown)]:px-3 peer-[:not(:placeholder-shown)]:pb-1 peer-[:not(:placeholder-shown)]:text-[11px] peer-[:not(:placeholder-shown)]:leading-none" aria-hidden="true">Email<span class="text-red-500">*</span></span>
+                <input id="signupEmail" formControlName="email" [maxlength]="limits.signupEmail" class="peer h-10 w-full rounded-md border-0 bg-white px-3 text-xs text-[#333] outline-none placeholder:text-[#333] disabled:bg-neutral-100 disabled:text-neutral-500" type="email" autocomplete="email" autocapitalize="none" spellcheck="false" placeholder=" " [attr.aria-invalid]="fieldError('email') ? 'true' : null" /><span class="float-label" aria-hidden="true">Email<span class="text-red-500">*</span></span>
                 @if (signupControls.email.value.length === limits.signupEmail) {
                   <p class="absolute left-1 top-full mt-1 text-[10px] text-red-600" role="status">Maximum {{ limits.signupEmail }} characters reached.</p>
                 } @else if (fieldError('email'); as message) {
@@ -88,7 +88,7 @@
                 <div class="flex gap-2">
                   <div class="relative w-[82px] shrink-0">
                     <label class="sr-only" for="countryCode">Country Code</label>
-                    <select id="countryCode" formControlName="countryCode" aria-label="Country code" class="h-9 w-full cursor-pointer appearance-none rounded-md border-0 bg-white pl-2 pr-6 text-xs text-[#333] outline-none focus:ring-2 focus:ring-neutral-300">
+                    <select id="countryCode" formControlName="countryCode" aria-label="Country code" class="h-10 w-full cursor-pointer appearance-none rounded-md border-0 bg-white pl-2 pr-6 text-xs text-[#333] outline-none focus:ring-2 focus:ring-neutral-300">
                       <option value="" disabled></option>
                       @for (code of countryCodes; track code) {
                         <option [value]="code">{{ code }}</option>
@@ -100,7 +100,7 @@
                     }
                   </div>
                   <label class="sr-only" for="phoneNumber">Phone Number</label>
-                  <div class="relative min-w-0 flex-1"><input id="phoneNumber" formControlName="phoneNumber" [maxlength]="limits.phoneInput" inputmode="numeric" class="peer h-9 w-full rounded-md border-0 bg-white px-3 text-xs text-[#333] outline-none placeholder:text-[#333] focus:ring-2 focus:ring-neutral-300" type="tel" autocomplete="tel-national" placeholder=" " [attr.aria-invalid]="fieldError('phoneNumber') ? 'true' : null" /><span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[#333] transition-all duration-200 peer-focus:left-2 peer-focus:top-[-5px] peer-focus:translate-y-0 peer-focus:rounded-b-lg peer-focus:bg-[#f4f4f4] peer-focus:px-3 peer-focus:pb-1 peer-focus:text-[11px] peer-focus:leading-none peer-[:not(:placeholder-shown)]:left-2 peer-[:not(:placeholder-shown)]:top-[-5px] peer-[:not(:placeholder-shown)]:translate-y-0 peer-[:not(:placeholder-shown)]:rounded-b-lg peer-[:not(:placeholder-shown)]:bg-[#f4f4f4] peer-[:not(:placeholder-shown)]:px-3 peer-[:not(:placeholder-shown)]:pb-1 peer-[:not(:placeholder-shown)]:text-[11px] peer-[:not(:placeholder-shown)]:leading-none" aria-hidden="true">Ph.No<span class="text-red-500">*</span></span></div>
+                  <div class="relative min-w-0 flex-1"><input id="phoneNumber" formControlName="phoneNumber" [maxlength]="limits.phoneInput" inputmode="numeric" class="peer h-10 w-full rounded-md border-0 bg-white px-3 text-xs text-[#333] outline-none placeholder:text-[#333]" type="tel" autocomplete="tel-national" placeholder=" " [attr.aria-invalid]="fieldError('phoneNumber') ? 'true' : null" /><span class="float-label" aria-hidden="true">Ph.No<span class="text-red-500">*</span></span></div>
                 </div>
                 @if (fieldError('countryCode'); as message) {
                   <p class="absolute left-1 top-full mt-0.5 text-[9px] text-red-600" role="alert">{{ message }}</p>
@@ -112,7 +112,7 @@
               <!-- Password -->
               <div class="relative">
                 <label class="sr-only" for="createPassword">Create Password</label>
-                <input id="createPassword" formControlName="password" [maxlength]="limits.passwordMax" class="peer h-9 w-full rounded-md border-0 bg-white px-3 pr-10 text-xs text-[#333] outline-none placeholder:text-[#333] focus:ring-2 focus:ring-neutral-300" [type]="showSignupPassword() ? 'text' : 'password'" autocomplete="new-password" placeholder=" " [attr.aria-invalid]="fieldError('password') ? 'true' : null" /><span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[#333] transition-all duration-200 peer-focus:left-2 peer-focus:top-[-5px] peer-focus:translate-y-0 peer-focus:rounded-b-lg peer-focus:bg-[#f4f4f4] peer-focus:px-3 peer-focus:pb-1 peer-focus:text-[11px] peer-focus:leading-none peer-[:not(:placeholder-shown)]:left-2 peer-[:not(:placeholder-shown)]:top-[-5px] peer-[:not(:placeholder-shown)]:translate-y-0 peer-[:not(:placeholder-shown)]:rounded-b-lg peer-[:not(:placeholder-shown)]:bg-[#f4f4f4] peer-[:not(:placeholder-shown)]:px-3 peer-[:not(:placeholder-shown)]:pb-1 peer-[:not(:placeholder-shown)]:text-[11px] peer-[:not(:placeholder-shown)]:leading-none" aria-hidden="true">Create Password<span class="text-red-500">*</span></span>
+                <input id="createPassword" formControlName="password" [maxlength]="limits.passwordMax" class="peer h-10 w-full rounded-md border-0 bg-white px-3 pr-10 text-xs text-[#333] outline-none placeholder:text-[#333]" [type]="showSignupPassword() ? 'text' : 'password'" autocomplete="new-password" placeholder=" " [attr.aria-invalid]="fieldError('password') ? 'true' : null" /><span class="float-label" aria-hidden="true">Create Password<span class="text-red-500">*</span></span>
                 <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-neutral-500 transition hover:text-neutral-800 focus-visible:outline-2 focus-visible:outline-neutral-400" (click)="toggleSignupPassword()" [attr.aria-label]="showSignupPassword() ? 'Hide password' : 'Show password'" [attr.aria-pressed]="showSignupPassword()">
                   <ng-container [ngTemplateOutlet]="eyeIcon" [ngTemplateOutletContext]="{ $implicit: showSignupPassword() }" />
                 </button>
@@ -126,7 +126,7 @@
               <!-- Confirm password -->
               <div class="relative">
                 <label class="sr-only" for="confirmPassword">Confirm Password</label>
-                <input id="confirmPassword" formControlName="confirmPassword" [maxlength]="limits.passwordMax" class="peer h-9 w-full rounded-md border-0 bg-white px-3 pr-10 text-xs text-[#333] outline-none placeholder:text-[#333] focus:ring-2 focus:ring-neutral-300" [type]="showSignupConfirmPassword() ? 'text' : 'password'" autocomplete="new-password" placeholder=" " [attr.aria-invalid]="fieldError('confirmPassword') ? 'true' : null" /><span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[#333] transition-all duration-200 peer-focus:left-2 peer-focus:top-[-5px] peer-focus:translate-y-0 peer-focus:rounded-b-lg peer-focus:bg-[#f4f4f4] peer-focus:px-3 peer-focus:pb-1 peer-focus:text-[11px] peer-focus:leading-none peer-[:not(:placeholder-shown)]:left-2 peer-[:not(:placeholder-shown)]:top-[-5px] peer-[:not(:placeholder-shown)]:translate-y-0 peer-[:not(:placeholder-shown)]:rounded-b-lg peer-[:not(:placeholder-shown)]:bg-[#f4f4f4] peer-[:not(:placeholder-shown)]:px-3 peer-[:not(:placeholder-shown)]:pb-1 peer-[:not(:placeholder-shown)]:text-[11px] peer-[:not(:placeholder-shown)]:leading-none" aria-hidden="true">Confirm Password<span class="text-red-500">*</span></span>
+                <input id="confirmPassword" formControlName="confirmPassword" [maxlength]="limits.passwordMax" class="peer h-10 w-full rounded-md border-0 bg-white px-3 pr-10 text-xs text-[#333] outline-none placeholder:text-[#333]" [type]="showSignupConfirmPassword() ? 'text' : 'password'" autocomplete="new-password" placeholder=" " [attr.aria-invalid]="fieldError('confirmPassword') ? 'true' : null" /><span class="float-label" aria-hidden="true">Confirm Password<span class="text-red-500">*</span></span>
                 <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-neutral-500 transition hover:text-neutral-800 focus-visible:outline-2 focus-visible:outline-neutral-400" (click)="toggleSignupConfirmPassword()" [attr.aria-label]="showSignupConfirmPassword() ? 'Hide confirm password' : 'Show confirm password'" [attr.aria-pressed]="showSignupConfirmPassword()">
                   <ng-container [ngTemplateOutlet]="eyeIcon" [ngTemplateOutletContext]="{ $implicit: showSignupConfirmPassword() }" />
                 </button>
@@ -149,7 +149,7 @@
             </div>
 
             <div class="mt-7 text-center">
-              <button type="submit" [disabled]="submitting()" [attr.aria-busy]="submitting()" class="h-9 min-w-[158px] cursor-pointer rounded-md bg-white px-8 text-xs text-[#333] transition enabled:hover:-translate-y-0.5 enabled:hover:bg-neutral-900 enabled:hover:text-white disabled:cursor-not-allowed disabled:opacity-50">{{ submitting() ? 'Signing up…' : 'Sign up' }}</button>
+              <button type="submit" [disabled]="submitting()" [attr.aria-busy]="submitting()" class="h-11 min-w-[190px] cursor-pointer rounded-full border border-transparent bg-white px-8 text-sm text-[#333] transition-all duration-300 ease-out enabled:hover:border-[#7fb9c7] enabled:hover:bg-[#4694A4] enabled:hover:text-[#f4fbfc] enabled:hover:shadow-[0_8px_18px_-2px_rgba(70,160,180,0.65),0_3px_8px_rgba(120,200,215,0.3)] enabled:focus-visible:border-[#7fb9c7] enabled:focus-visible:bg-[#4694A4] enabled:focus-visible:text-[#f4fbfc] enabled:focus-visible:shadow-[0_8px_18px_-2px_rgba(70,160,180,0.65),0_3px_8px_rgba(120,200,215,0.3)] focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50">{{ submitting() ? 'Signing up…' : 'Sign up' }}</button>
               @if (signupCompleted()) { <p class="mt-3 text-xs text-emerald-700" role="status">Account created successfully. You can now log in.</p> }
               @if (signupError()) { <p class="mt-3 text-xs text-red-600" role="alert">{{ signupError() }}</p> }
               <p class="mt-7 text-xs text-[#333]">Already have an account? <button type="button" class="cursor-pointer text-[#41ACC0CC] hover:underline" (click)="scrollTo('login')">Log in</button></p>
@@ -170,7 +170,7 @@
               <!-- Login email -->
               <div class="relative">
                 <label class="sr-only" for="loginEmail">Email ID</label>
-                <input id="loginEmail" formControlName="email" class="peer h-9 w-full rounded-md border-0 bg-white px-3 text-xs text-[#333] outline-none placeholder:text-[#333] focus:ring-2 focus:ring-neutral-300" type="email" autocomplete="email" autocapitalize="none" spellcheck="false" [maxlength]="limits.loginEmail" placeholder=" " /><span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[#333] transition-all duration-200 peer-focus:left-2 peer-focus:top-[-5px] peer-focus:translate-y-0 peer-focus:rounded-b-lg peer-focus:bg-[#f4f4f4] peer-focus:px-3 peer-focus:pb-1 peer-focus:text-[11px] peer-focus:leading-none peer-[:not(:placeholder-shown)]:left-2 peer-[:not(:placeholder-shown)]:top-[-5px] peer-[:not(:placeholder-shown)]:translate-y-0 peer-[:not(:placeholder-shown)]:rounded-b-lg peer-[:not(:placeholder-shown)]:bg-[#f4f4f4] peer-[:not(:placeholder-shown)]:px-3 peer-[:not(:placeholder-shown)]:pb-1 peer-[:not(:placeholder-shown)]:text-[11px] peer-[:not(:placeholder-shown)]:leading-none" aria-hidden="true">Email ID<span class="text-red-500">*</span></span>
+                <input id="loginEmail" formControlName="email" class="peer h-10 w-full rounded-md border-0 bg-white px-3 text-xs text-[#333] outline-none placeholder:text-[#333]" type="email" autocomplete="email" autocapitalize="none" spellcheck="false" [maxlength]="limits.loginEmail" placeholder=" " /><span class="float-label" aria-hidden="true">Email ID<span class="text-red-500">*</span></span>
                 @if (loginForm.controls.email.touched && loginForm.controls.email.hasError('required')) {
                   <p class="absolute left-1 top-full mt-1 text-[10px] text-red-600" role="alert">Email ID is required.</p>
                 } @else if (loginForm.controls.email.value.length === limits.loginEmail) {
@@ -183,7 +183,7 @@
               <!-- Login password -->
               <div class="relative">
                 <label class="sr-only" for="loginPassword">Password</label>
-                <input id="loginPassword" formControlName="password" class="peer h-9 w-full rounded-md border-0 bg-white px-3 pr-10 text-xs text-[#333] outline-none placeholder:text-[#333] focus:ring-2 focus:ring-neutral-300" [type]="showLoginPassword() ? 'text' : 'password'" autocomplete="current-password" [maxlength]="limits.passwordMax" placeholder=" " /><span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[#333] transition-all duration-200 peer-focus:left-2 peer-focus:top-[-5px] peer-focus:translate-y-0 peer-focus:rounded-b-lg peer-focus:bg-[#f4f4f4] peer-focus:px-3 peer-focus:pb-1 peer-focus:text-[11px] peer-focus:leading-none peer-[:not(:placeholder-shown)]:left-2 peer-[:not(:placeholder-shown)]:top-[-5px] peer-[:not(:placeholder-shown)]:translate-y-0 peer-[:not(:placeholder-shown)]:rounded-b-lg peer-[:not(:placeholder-shown)]:bg-[#f4f4f4] peer-[:not(:placeholder-shown)]:px-3 peer-[:not(:placeholder-shown)]:pb-1 peer-[:not(:placeholder-shown)]:text-[11px] peer-[:not(:placeholder-shown)]:leading-none" aria-hidden="true">Password<span class="text-red-500">*</span></span>
+                <input id="loginPassword" formControlName="password" class="peer h-10 w-full rounded-md border-0 bg-white px-3 pr-10 text-xs text-[#333] outline-none placeholder:text-[#333]" [type]="showLoginPassword() ? 'text' : 'password'" autocomplete="current-password" [maxlength]="limits.passwordMax" placeholder=" " /><span class="float-label" aria-hidden="true">Password<span class="text-red-500">*</span></span>
                 <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-neutral-500 transition hover:text-neutral-800 focus-visible:outline-2 focus-visible:outline-neutral-400" (click)="toggleLoginPassword()" [attr.aria-label]="showLoginPassword() ? 'Hide password' : 'Show password'" [attr.aria-pressed]="showLoginPassword()">
                   <ng-container [ngTemplateOutlet]="eyeIcon" [ngTemplateOutletContext]="{ $implicit: showLoginPassword() }" />
                 </button>
@@ -199,13 +199,53 @@
               <label class="flex cursor-pointer items-center gap-2">
                 <input type="checkbox" formControlName="rememberMe" class="h-3.5 w-3.5 cursor-pointer appearance-none rounded-sm bg-white checked:bg-neutral-700 focus:ring-2 focus:ring-neutral-300" />Remember Me
               </label>
-              <a routerLink="/forgot-password" class="cursor-pointer hover:underline">Forgot Password?</a>
+              <button type="button" class="cursor-pointer hover:underline" (click)="scrollTo('forgot')">Forgot Password?</button>
             </div>
 
             <div class="mt-10 text-center">
-              <button type="submit" [disabled]="loggingIn()" [attr.aria-busy]="loggingIn()" class="h-9 min-w-[158px] cursor-pointer rounded-md bg-white px-8 text-xs text-[#333] transition enabled:hover:-translate-y-0.5 enabled:hover:bg-neutral-900 enabled:hover:text-white disabled:cursor-not-allowed disabled:opacity-50">{{ loggingIn() ? 'Logging in…' : 'Login' }}</button>
+              <button type="submit" [disabled]="loggingIn()" [attr.aria-busy]="loggingIn()" class="h-11 min-w-[190px] cursor-pointer rounded-full border border-transparent bg-white px-8 text-sm text-[#333] transition-all duration-300 ease-out enabled:hover:border-[#7fb9c7] enabled:hover:bg-[#4694A4] enabled:hover:text-[#f4fbfc] enabled:hover:shadow-[0_8px_18px_-2px_rgba(70,160,180,0.65),0_3px_8px_rgba(120,200,215,0.3)] enabled:focus-visible:border-[#7fb9c7] enabled:focus-visible:bg-[#4694A4] enabled:focus-visible:text-[#f4fbfc] enabled:focus-visible:shadow-[0_8px_18px_-2px_rgba(70,160,180,0.65),0_3px_8px_rgba(120,200,215,0.3)] focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50">{{ loggingIn() ? 'Logging in…' : 'Login' }}</button>
               @if (loginError()) { <p class="mt-3 text-xs text-red-600" role="alert">{{ loginError() }}</p> }
               <p class="mt-7 text-xs text-[#333]">Don't have an account? <button type="button" class="cursor-pointer text-sky-500 hover:underline" (click)="scrollTo('signup')">Sign up</button></p>
+            </div>
+          </form>
+        </section>
+
+        <!-- Forgot Password -->
+        <section id="forgot" class="flex h-screen min-h-screen w-full items-center px-2 py-3 sm:px-6 sm:py-5 md:px-4 md:py-12 lg:px-8" aria-labelledby="forgot-title">
+          <form class="mx-auto w-full max-w-[520px]" [formGroup]="forgotForm" (ngSubmit)="submitForgot()" [attr.aria-busy]="forgotSubmitting()" novalidate>
+            <h1 id="forgot-title" class="-ml-[0.05em] text-[64px] font-bold leading-[.95] tracking-[-.04em] text-[#e6e6e6] lg:text-[96px]">Forgot<br />Password</h1>
+            <div class="mt-8 sm:mt-12">
+              <h2 class="text-[28px] font-bold leading-tight text-[#383838]">Let’s get you back in</h2>
+              <p class="mt-4 text-[13px] text-[#343434]">No worries, we are here to help you out</p>
+            </div>
+
+            <div class="relative mt-8">
+              <label class="sr-only" for="forgotEmail">Email ID</label>
+              <input id="forgotEmail" formControlName="email" type="email" autocomplete="email" autocapitalize="none" spellcheck="false" placeholder=" " class="peer h-10 w-full rounded-md border-0 bg-white px-3 text-xs text-[#333] outline-none placeholder:text-neutral-500" /><span class="float-label" aria-hidden="true">Email ID<span class="text-red-500">*</span></span>
+              @if ((forgotForm.controls.email.touched || forgotForm.controls.email.dirty || forgotSubmitted()) && forgotForm.controls.email.hasError('required')) {
+                <p class="absolute left-1 top-full mt-1 text-[10px] text-red-600" role="alert">Registered Email ID is required.</p>
+              } @else if ((forgotForm.controls.email.touched || forgotForm.controls.email.dirty || forgotSubmitted()) && forgotForm.controls.email.hasError('email')) {
+                <p class="absolute left-1 top-full mt-1 text-[10px] text-red-600" role="alert">Enter a valid Email ID.</p>
+              } @else if ((forgotForm.controls.email.touched || forgotForm.controls.email.dirty || forgotSubmitted()) && forgotForm.controls.email.hasError('emailNotRegistered')) {
+                <p class="absolute left-1 top-full mt-1 text-[10px] text-red-600" role="alert">Email ID is not registered.</p>
+              }
+            </div>
+
+            @if (forgotCompleted()) {
+              <p class="mt-6 text-center text-xs text-emerald-700" role="status" aria-live="polite">A password reset link has been sent to your registered Email ID.</p>
+            }
+            @if (forgotError()) {
+              <p class="mt-6 text-center text-xs text-red-600" role="alert">{{ forgotError() }}</p>
+            }
+
+            <div class="mt-10 flex justify-center gap-4">
+              <button type="button" (click)="scrollTo('login')" class="min-w-[150px] h-11 cursor-pointer rounded-full border border-transparent bg-white px-8 text-sm text-[#333] transition-all duration-300 ease-out enabled:hover:border-[#7fb9c7] enabled:hover:bg-[#4694A4] enabled:hover:text-[#f4fbfc] enabled:hover:shadow-[0_8px_18px_-2px_rgba(70,160,180,0.65),0_3px_8px_rgba(120,200,215,0.3)] enabled:focus-visible:border-[#7fb9c7] enabled:focus-visible:bg-[#4694A4] enabled:focus-visible:text-[#f4fbfc] enabled:focus-visible:shadow-[0_8px_18px_-2px_rgba(70,160,180,0.65),0_3px_8px_rgba(120,200,215,0.3)] focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50">Cancel</button>
+
+              @if (!forgotCompleted()) {
+                <button type="submit" [disabled]="forgotForm.invalid || forgotSubmitting()" class="min-w-[170px] h-11 cursor-pointer rounded-full border border-transparent bg-white px-8 text-sm text-[#333] transition-all duration-300 ease-out enabled:hover:border-[#7fb9c7] enabled:hover:bg-[#4694A4] enabled:hover:text-[#f4fbfc] enabled:hover:shadow-[0_8px_18px_-2px_rgba(70,160,180,0.65),0_3px_8px_rgba(120,200,215,0.3)] enabled:focus-visible:border-[#7fb9c7] enabled:focus-visible:bg-[#4694A4] enabled:focus-visible:text-[#f4fbfc] enabled:focus-visible:shadow-[0_8px_18px_-2px_rgba(70,160,180,0.65),0_3px_8px_rgba(120,200,215,0.3)] focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50">{{ forgotSubmitting() ? 'Sending…' : 'Send reset link' }}</button>
+              } @else {
+                <button type="button" (click)="resendForgot()" [disabled]="resendCooldown() > 0 || forgotSubmitting()" class="min-w-[170px] h-11 cursor-pointer rounded-full border border-transparent bg-white px-8 text-sm text-[#333] transition-all duration-300 ease-out enabled:hover:border-[#7fb9c7] enabled:hover:bg-[#4694A4] enabled:hover:text-[#f4fbfc] enabled:hover:shadow-[0_8px_18px_-2px_rgba(70,160,180,0.65),0_3px_8px_rgba(120,200,215,0.3)] enabled:focus-visible:border-[#7fb9c7] enabled:focus-visible:bg-[#4694A4] enabled:focus-visible:text-[#f4fbfc] enabled:focus-visible:shadow-[0_8px_18px_-2px_rgba(70,160,180,0.65),0_3px_8px_rgba(120,200,215,0.3)] focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50">{{ forgotSubmitting() ? 'Sending…' : resendCooldown() > 0 ? 'Resend in ' + resendCooldown() + 's' : 'Resend link' }}</button>
+              }
             </div>
           </form>
         </section>

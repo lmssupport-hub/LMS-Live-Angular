@@ -12,6 +12,14 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { combineLatest, finalize } from 'rxjs';
 import { AuthService } from '../../services/auth';
 
+/* Same password rules as the Sign Up form */
+const LIMITS = {
+  passwordMin: 8,
+  passwordMax: 16,
+} as const;
+
+const STRONG_PASSWORD_PATTERN = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).+$/;
+
 @Component({
   selector: 'app-reset-password',
   imports: [ReactiveFormsModule, RouterLink],
@@ -23,6 +31,9 @@ export class ResetPassword {
   private readonly authService = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+
+  // Template-facing constants
+  protected readonly limits = LIMITS;
 
   // All UI state is signals so OnPush views re-render after async callbacks.
   protected readonly token = signal('');
@@ -38,7 +49,12 @@ export class ResetPassword {
     {
       newPassword: new FormControl('', {
         nonNullable: true,
-        validators: [Validators.required, Validators.minLength(8), Validators.maxLength(20)],
+        validators: [
+          Validators.required,
+          Validators.minLength(LIMITS.passwordMin),
+          Validators.maxLength(LIMITS.passwordMax),
+          Validators.pattern(STRONG_PASSWORD_PATTERN),
+        ],
       }),
       confirmPassword: new FormControl('', {
         nonNullable: true,

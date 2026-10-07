@@ -17,8 +17,8 @@ import {
   ValidatorFn,
   Validators,
 } from '@angular/forms';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { finalize } from 'rxjs';
+import { ActivatedRoute, Router } from '@angular/router';
+import { TimeoutError, finalize, timeout } from 'rxjs';
 import { AuthService } from '../../services/auth';
 import { InviteService, getInviteErrorMessage } from '../../services/invite.service';
 import { DOCUMENT, NgTemplateOutlet } from '@angular/common';
@@ -62,6 +62,10 @@ const HOME_ROUTE_BY_ROLE: Readonly<Record<string, string>> = {
 };
 const DEFAULT_HOME_ROUTE = '/courses';
 
+// Forgot-password settings (moved here from the old standalone page)
+const RESEND_COOLDOWN_SECONDS = 30;
+const REQUEST_TIMEOUT_MS = 15000;
+
 type SignupField =
   | 'firstName'
   | 'lastName'
@@ -72,7 +76,8 @@ type SignupField =
   | 'confirmPassword'
   | 'acceptTerms';
 
-type SectionId = 'signup' | 'login';
+// CHANGED: added 'forgot'
+type SectionId = 'signup' | 'login' | 'forgot';
 
 const REQUIRED_MESSAGES: Readonly<Record<SignupField, string>> = {
   firstName: 'First Name is required.',
@@ -139,7 +144,8 @@ const safeServerMessage = (error: HttpErrorResponse, fallback: string): string =
 
 @Component({
   selector: 'app-login-signup',
-  imports: [ReactiveFormsModule, RouterLink,NgTemplateOutlet],
+  // CHANGED: RouterLink removed - the Forgot Password link is now a scroll button
+  imports: [ReactiveFormsModule, NgTemplateOutlet],
   templateUrl: './login-signup.html',
   styleUrl: './login-signup.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -151,6 +157,7 @@ export class LoginSignup {
   private readonly inviteService = inject(InviteService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly document = inject(DOCUMENT);
+  private cooldownTimer: ReturnType<typeof setInterval> | undefined;
 
   /* ---- Template-facing constants ---- */
   protected readonly limits = LIMITS;
@@ -158,7 +165,6 @@ export class LoginSignup {
 
   /* ---- UI state (signals => OnPush-safe, async updates re-render automatically) ---- */
   protected readonly showSignupPassword = signal(false);
-  // CHANGED: separate visibility state for the Confirm Password field (was sharing showSignupPassword)
   protected readonly showSignupConfirmPassword = signal(false);
   protected readonly showLoginPassword = signal(false);
 
@@ -169,6 +175,13 @@ export class LoginSignup {
 
   protected readonly loggingIn = signal(false);
   protected readonly loginError = signal('');
+
+  /* ---- Forgot-password state ---- */
+  protected readonly forgotSubmitting = signal(false);
+  protected readonly forgotCompleted = signal(false);
+  protected readonly forgotError = signal('');
+  protected readonly forgotSubmitted = signal(false);
+  protected readonly resendCooldown = signal(0);
 
   /* ---- Invite-signup state ---- */
   protected readonly inviteToken = signal<string | null>(null);
@@ -190,6 +203,13 @@ export class LoginSignup {
       ],
     }),
     rememberMe: new FormControl(false, { nonNullable: true }),
+  });
+
+  protected readonly forgotForm = new FormGroup({
+    email: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required, Validators.email, Validators.maxLength(254)],
+    }),
   });
 
   protected readonly signupForm = new FormGroup(
@@ -259,6 +279,19 @@ export class LoginSignup {
       .pipe(takeUntilDestroyed())
       .subscribe(() => this.emailTaken.set(false));
 
+    // Editing the forgot-password email clears stale server state.
+    this.forgotForm.controls.email.valueChanges.pipe(takeUntilDestroyed()).subscribe(() => {
+      const emailControl = this.forgotForm.controls.email;
+      if (emailControl.hasError('emailNotRegistered')) {
+        const { emailNotRegistered: _, ...remainingErrors } = emailControl.errors ?? {};
+        emailControl.setErrors(Object.keys(remainingErrors).length ? remainingErrors : null);
+      }
+      this.forgotError.set('');
+      this.forgotCompleted.set(false);
+    });
+
+    this.destroyRef.onDestroy(() => clearInterval(this.cooldownTimer));
+
     afterNextRender(() => this.initialiseFromRoute());
   }
 
@@ -270,7 +303,6 @@ export class LoginSignup {
     this.showSignupPassword.update((visible) => !visible);
   }
 
-  // CHANGED: new toggle for the Confirm Password field only
   protected toggleSignupConfirmPassword(): void {
     this.showSignupConfirmPassword.update((visible) => !visible);
   }
@@ -417,8 +449,9 @@ export class LoginSignup {
       return;
     }
 
-    if (params.get('view') === 'login') {
-      requestAnimationFrame(() => this.scrollTo('login', 'auto'));
+    const view = params.get('view');
+    if (view === 'login' || view === 'forgot') {
+      requestAnimationFrame(() => this.scrollTo(view, 'auto'));
     }
   }
 
@@ -506,5 +539,87 @@ export class LoginSignup {
       default:
         return 'Unable to log in. Please try again later.';
     }
+  }
+
+  /* ------------------------------------------------------------------------ */
+  /*  Forgot password (same logic as the old standalone page)                 */
+  /* ------------------------------------------------------------------------ */
+
+  protected submitForgot(): void {
+    this.forgotSubmitted.set(true);
+    this.forgotForm.markAllAsTouched();
+    if (this.forgotForm.invalid) return;
+    this.sendForgot();
+  }
+
+  protected resendForgot(): void {
+    if (this.resendCooldown() > 0) return;
+    this.sendForgot();
+  }
+
+  private sendForgot(): void {
+    if (this.forgotSubmitting()) return;
+
+    this.forgotSubmitting.set(true);
+    this.forgotCompleted.set(false);
+    this.forgotError.set('');
+
+    this.auth
+      .sendForgotPassword(this.forgotForm.controls.email.value.trim().toLowerCase())
+      .pipe(
+        timeout(REQUEST_TIMEOUT_MS),
+        finalize(() => this.forgotSubmitting.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: () => {
+          this.forgotCompleted.set(true);
+          this.startCooldown();
+        },
+        error: (error: unknown) => this.handleForgotError(error),
+      });
+  }
+
+  private startCooldown(): void {
+    clearInterval(this.cooldownTimer);
+    this.resendCooldown.set(RESEND_COOLDOWN_SECONDS);
+    this.cooldownTimer = setInterval(() => {
+      const next = this.resendCooldown() - 1;
+      this.resendCooldown.set(Math.max(next, 0));
+      if (next <= 0) clearInterval(this.cooldownTimer);
+    }, 1000);
+  }
+
+  private handleForgotError(error: unknown): void {
+    if (error instanceof TimeoutError) {
+      this.forgotError.set(
+        'This is taking longer than expected. Please check your inbox or try again.',
+      );
+      return;
+    }
+
+    const httpError = error as HttpErrorResponse;
+    const responseMessage = String(httpError.error?.message ?? '');
+    const emailNotRegistered =
+      httpError.status === 404 ||
+      responseMessage.toLowerCase().includes('email id is not registered');
+
+    if (emailNotRegistered) {
+      const emailControl = this.forgotForm.controls.email;
+      emailControl.setErrors({
+        ...(emailControl.errors ?? {}),
+        emailNotRegistered: true,
+      });
+      return;
+    }
+
+    if (httpError.status === 0 || httpError.status >= 500) {
+      this.forgotError.set('Unable to process the request. Please try again later.');
+      return;
+    }
+
+    this.forgotError.set(
+      responseMessage || 'The request could not be completed. Please try again.',
+    );
   }
 }

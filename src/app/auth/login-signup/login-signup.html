@@ -55,9 +55,9 @@
                 <label class="sr-only" for="firstName">First Name</label>
                 <input id="firstName" formControlName="firstName" [maxlength]="limits.name" class="peer h-10 w-full rounded-md border-0 bg-white px-3 text-xs text-[#333] outline-none placeholder:text-[#333]" type="text" autocomplete="given-name" placeholder=" " [attr.aria-invalid]="fieldError('firstName') ? 'true' : null" /><span class="float-label" aria-hidden="true">First Name<span class="text-red-500">*</span></span>
                 @if (fieldError('firstName'); as message) {
-                  <p class="absolute left-1 top-full mt-0.5 text-[9px] text-red-600" role="alert">{{ message }}</p>
+                  <p class="absolute left-1 top-full z-10 mt-0.5 text-[9px] leading-tight text-red-600" role="alert">{{ message }}</p>
                 } @else if (signupControls.firstName.value.length === limits.name) {
-                  <p class="absolute left-1 top-full mt-0.5 text-[9px] text-red-600" role="status">Maximum {{ limits.name }} characters reached.</p>
+                  <p class="absolute left-1 top-full z-10 mt-0.5 text-[9px] leading-tight text-red-600" role="status">Maximum {{ limits.name }} characters reached.</p>
                 }
               </div>
 
@@ -66,9 +66,9 @@
                 <label class="sr-only" for="lastName">Last Name</label>
                 <input id="lastName" formControlName="lastName" [maxlength]="limits.name" class="peer h-10 w-full rounded-md border-0 bg-white px-3 text-xs text-[#333] outline-none placeholder:text-[#333]" type="text" autocomplete="family-name" placeholder=" " [attr.aria-invalid]="fieldError('lastName') ? 'true' : null" /><span class="float-label" aria-hidden="true">Last Name<span class="text-red-500">*</span></span>
                 @if (fieldError('lastName'); as message) {
-                  <p class="absolute left-1 top-full mt-0.5 text-[9px] text-red-600" role="alert">{{ message }}</p>
+                  <p class="absolute left-1 top-full z-10 mt-0.5 text-[9px] leading-tight text-red-600" role="alert">{{ message }}</p>
                 } @else if (signupControls.lastName.value.length === limits.name) {
-                  <p class="absolute left-1 top-full mt-0.5 text-[9px] text-red-600" role="status">Maximum {{ limits.name }} characters reached.</p>
+                  <p class="absolute left-1 top-full z-10 mt-0.5 text-[9px] leading-tight text-red-600" role="status">Maximum {{ limits.name }} characters reached.</p>
                 }
               </div>
 
@@ -77,9 +77,9 @@
                 <label class="sr-only" for="signupEmail">Email</label>
                 <input id="signupEmail" formControlName="email" [maxlength]="limits.signupEmail" class="peer h-10 w-full rounded-md border-0 bg-white px-3 text-xs text-[#333] outline-none placeholder:text-[#333] disabled:bg-neutral-100 disabled:text-neutral-500" type="email" autocomplete="email" autocapitalize="none" spellcheck="false" placeholder=" " [attr.aria-invalid]="fieldError('email') ? 'true' : null" /><span class="float-label" aria-hidden="true">Email<span class="text-red-500">*</span></span>
                 @if (signupControls.email.value.length === limits.signupEmail) {
-                  <p class="absolute left-1 top-full mt-1 text-[10px] text-red-600" role="status">Maximum {{ limits.signupEmail }} characters reached.</p>
+                  <p class="absolute left-1 top-full z-10 mt-1 text-[10px] leading-tight text-red-600" role="status">Maximum {{ limits.signupEmail }} characters reached.</p>
                 } @else if (fieldError('email'); as message) {
-                  <p class="absolute left-1 top-full mt-0.5 text-[9px] text-red-600" role="alert">{{ message }}</p>
+                  <p class="absolute left-1 top-full z-10 mt-0.5 text-[9px] leading-tight text-red-600" role="alert">{{ message }}</p>
                 }
               </div>
 
@@ -103,9 +103,9 @@
                   <div class="relative min-w-0 flex-1"><input id="phoneNumber" formControlName="phoneNumber" [maxlength]="limits.phoneInput" inputmode="numeric" class="peer h-10 w-full rounded-md border-0 bg-white px-3 text-xs text-[#333] outline-none placeholder:text-[#333]" type="tel" autocomplete="tel-national" placeholder=" " [attr.aria-invalid]="fieldError('phoneNumber') ? 'true' : null" /><span class="float-label" aria-hidden="true">Ph.No<span class="text-red-500">*</span></span></div>
                 </div>
                 @if (fieldError('countryCode'); as message) {
-                  <p class="absolute left-1 top-full mt-0.5 text-[9px] text-red-600" role="alert">{{ message }}</p>
+                  <p class="absolute left-1 top-full z-10 mt-0.5 text-[9px] leading-tight text-red-600" role="alert">{{ message }}</p>
                 } @else if (fieldError('phoneNumber'); as message) {
-                  <p class="absolute left-1 top-full mt-0.5 text-[9px] text-red-600" role="alert">{{ message }}</p>
+                  <p class="absolute left-1 top-full z-10 mt-0.5 text-[9px] leading-tight text-red-600" role="alert">{{ signupControls.phoneNumber.hasError('phoneLength') ? 'Enter a valid number for the selected country.' : message }}</p>
                 }
               </div>
 
@@ -117,9 +117,9 @@
                   <ng-container [ngTemplateOutlet]="eyeIcon" [ngTemplateOutletContext]="{ $implicit: showSignupPassword() }" />
                 </button>
                 @if (fieldError('password'); as message) {
-                  <p class="absolute left-1 top-full mt-0.5 text-[9px] text-red-600" role="alert">{{ message }}</p>
+                  <p class="absolute left-1 top-full z-10 mt-0.5 text-[9px] leading-tight text-red-600" role="alert">{{ message }}</p>
                 } @else if (signupForm.hasError('passwordMatchesEmail') && signupControls.password.touched) {
-                  <p class="absolute left-1 top-full mt-0.5 text-[9px] text-red-600" role="alert">Password must not match Email ID.</p>
+                  <p class="absolute left-1 top-full z-10 mt-0.5 text-[9px] leading-tight text-red-600" role="alert">Password must not match Email ID.</p>
                 }
               </div>
 
@@ -131,9 +131,9 @@
                   <ng-container [ngTemplateOutlet]="eyeIcon" [ngTemplateOutletContext]="{ $implicit: showSignupConfirmPassword() }" />
                 </button>
                 @if (fieldError('confirmPassword'); as message) {
-                  <p class="absolute left-1 top-full mt-0.5 text-[9px] text-red-600" role="alert">{{ message }}</p>
+                  <p class="absolute left-1 top-full z-10 mt-0.5 text-[9px] leading-tight text-red-600" role="alert">{{ message }}</p>
                 } @else if (signupForm.hasError('passwordsMismatch') && signupControls.confirmPassword.touched) {
-                  <p class="absolute left-1 top-full mt-0.5 text-[9px] text-red-600" role="alert">Confirm Password does not match the Password field.</p>
+                  <p class="absolute left-1 top-full z-10 mt-0.5 text-[9px] leading-tight text-red-600" role="alert">Confirm Password does not match the Password field.</p>
                 }
               </div>
             </div>
@@ -141,7 +141,7 @@
             <!-- Terms -->
             <div class="relative mt-8">
               <label class="flex cursor-pointer items-center gap-2 text-[10px] text-[#333]">
-                <input type="checkbox" formControlName="acceptTerms" class="h-3.5 w-3.5 cursor-pointer appearance-none rounded-sm bg-white checked:bg-neutral-700 focus:ring-2 focus:ring-neutral-300" />I accept the <span class="text-[#41ACC0CC]">terms &amp; conditions</span>
+                <input type="checkbox" formControlName="acceptTerms" class="h-4 w-4 cursor-pointer appearance-none rounded-sm bg-white outline-none checked:bg-[radial-gradient(circle,#41ACC0CC_0,#41ACC0CC_42%,transparent_48%)] focus-visible:ring-2 focus-visible:ring-neutral-300" />I accept the <span class="text-[#41ACC0CC]">terms &amp; conditions</span>
               </label>
               @if (fieldError('acceptTerms'); as message) {
                 <p class="absolute left-1 top-full mt-0.5 text-[9px] text-red-600" role="alert">{{ message }}</p>
@@ -197,7 +197,7 @@
 
             <div class="mt-6 flex items-center justify-between text-[9px] text-[#333]">
               <label class="flex cursor-pointer items-center gap-2">
-                <input type="checkbox" formControlName="rememberMe" class="h-3.5 w-3.5 cursor-pointer appearance-none rounded-sm bg-white checked:bg-neutral-700 focus:ring-2 focus:ring-neutral-300" />Remember Me
+                <input type="checkbox" formControlName="rememberMe" class="h-4 w-4 cursor-pointer appearance-none rounded-sm bg-white outline-none checked:bg-[radial-gradient(circle,#41ACC0CC_0,#41ACC0CC_42%,transparent_48%)] focus-visible:ring-2 focus-visible:ring-neutral-300" />Remember Me
               </label>
               <button type="button" class="cursor-pointer hover:underline" (click)="scrollTo('forgot')">Forgot Password?</button>
             </div>

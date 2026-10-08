@@ -41,8 +41,9 @@
 /* ------------------------------------------------------------------ */
 .float-label {
   --label-bg: #f4f4f4; /* must match page background */
-  --notch-r: 5px;     /* bottom curve (notch) */
-  --notch-top-r: 7px; /* top curve (input corner next to notch) */
+  --notch-r: 4px;      /* bottom curve (notch) */
+  --notch-top-r: 5px;  /* top curve (input corner next to notch) */
+  --notch-top: -3px;   /* label top offset when floated */
   position: absolute;
   left: 12px;
   top: 50%;
@@ -57,9 +58,9 @@
 .peer:focus ~ .float-label,
 .peer:not(:placeholder-shown) ~ .float-label {
   left: 12px;
-  top: -5px;
+  top: var(--notch-top);
   transform: none;
-  padding: 0 13px 6px 10px;
+  padding: 0 11px 3px 9px;
   font-size: 11px;
   line-height: 1;
   background: var(--label-bg);
@@ -70,7 +71,7 @@
 .float-label::after {
   content: "";
   position: absolute;
-  top: 5px; /* input top edge */
+  top: calc(var(--notch-top) * -1); /* always = input top edge */
   width: var(--notch-top-r);
   height: var(--notch-top-r);
   display: none;
@@ -91,4 +92,14 @@
 .float-label::after {
   right: calc(var(--notch-top-r) * -1);
   background: radial-gradient(circle at 100% 100%, transparent var(--notch-top-r), var(--label-bg) calc(var(--notch-top-r) + 0.5px));
+}
+
+/* Push typed text down so it doesn't touch the notch curve */
+.peer {
+  transition: padding-top 200ms;
+}
+
+.peer:focus,
+.peer:not(:placeholder-shown) {
+  padding-top: 8px; /* increase for more gap (10px), decrease if text goes too low (6px) */
 }

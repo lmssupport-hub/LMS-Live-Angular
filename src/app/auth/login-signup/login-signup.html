@@ -141,8 +141,9 @@
             <!-- Terms -->
             <div class="relative mt-8">
               <label class="flex cursor-pointer items-center gap-2 text-[10px] text-[#333]">
-                <input type="checkbox" formControlName="acceptTerms" class="h-4 w-4 cursor-pointer appearance-none rounded-sm bg-white outline-none checked:bg-[radial-gradient(circle,#41ACC0CC_0,#41ACC0CC_42%,transparent_48%)] focus-visible:ring-2 focus-visible:ring-neutral-300" />I accept the <span class="text-[#41ACC0CC]">terms &amp; conditions</span>
-              </label>
+  <input type="checkbox" formControlName="acceptTerms" class="h-4 w-4 cursor-pointer appearance-none rounded-sm bg-white outline-none checked:bg-[radial-gradient(circle,#41ACC0CC_0,#41ACC0CC_42%,transparent_48%)] focus-visible:ring-2 focus-visible:ring-neutral-300" />
+  <span>I accept the <span class="text-[#41ACC0CC]">terms &amp; conditions</span></span>
+</label>
               @if (fieldError('acceptTerms'); as message) {
                 <p class="absolute left-1 top-full mt-0.5 text-[9px] text-red-600" role="alert">{{ message }}</p>
               }

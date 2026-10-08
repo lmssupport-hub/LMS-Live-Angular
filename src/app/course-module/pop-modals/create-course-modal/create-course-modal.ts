@@ -169,6 +169,18 @@ export class CreateCourseModal {
     return messagesForField[firstErrorKey] ?? 'This field is invalid.';
   }
 
+  courseNameLimitMessage(): string | null {
+    const control = this.form?.controls['name'];
+    if (!control || !(control.touched || control.dirty) || typeof control.value !== 'string') return null;
+    return control.value.length >= 100 ? 'Maximum length is 100 characters.' : null;
+  }
+
+  courseDescriptionLimitMessage(): string | null {
+    const control = this.form?.controls['description'];
+    if (!control || !(control.touched || control.dirty) || typeof control.value !== 'string') return null;
+    return control.value.length >= 1000 ? 'Maximum length is 1000 characters.' : null;
+  }
+
   submit(): void {
     if (this.viewOnly || this.submitting) return; // guards double-submit (Edge Case #1)
     if (this.form.invalid) {

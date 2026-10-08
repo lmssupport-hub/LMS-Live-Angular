@@ -451,15 +451,15 @@ export class CourseManagement {
    * Figma has no direct equivalent for it.
    */
   statusBadgeClasses(status: CourseStatus): string {
-    switch (status) {
-      case 'DRAFT':
-        return 'bg-amber-500';
-      case 'PUBLISHED':
-        return 'bg-violet-600';
-      case 'ARCHIVED':
-        return 'bg-slate-500';
-    }
+  switch (status) {
+    case 'DRAFT':
+      return 'bg-amber-500';
+    case 'PUBLISHED':
+      return 'bg-violet-600';
+    case 'ARCHIVED':
+      return 'bg-slate-500';
   }
+}
 
   /**
    * NEW: placeholder for the learner-facing "Enroll" action from the Figma. No enrollment

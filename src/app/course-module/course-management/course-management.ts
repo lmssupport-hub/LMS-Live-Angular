@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, HostListener, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-
+ 
 import { CreateCourseModal } from '../pop-modals/create-course-modal/create-course-modal';
 // NEW: Organize (sections) screen. TODO: adjust the path to where your component lives.
 import { OrganizeSections } from '../organize-sections/organize-sections';
@@ -18,12 +18,12 @@ import {
   MAX_THUMBNAIL_BYTES,
 } from '../course.model';
 import { CourseManagementService } from '../../services/course-management.service';
-
+ 
 import { AuthService } from '../../services/auth';
 import { environment } from '../../../environments/environment';
-
+ 
 type DropdownName = 'filter';
-
+ 
 @Component({
   selector: 'app-course-management',
   // CHANGED: added OrganizeSections
@@ -36,20 +36,20 @@ export class CourseManagement {
   private readonly authService = inject(AuthService);
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
-
+ 
   // ---------- list state ----------
   readonly courses = signal<Course[]>([]);
   readonly loading = signal(false);
   readonly loadError = signal<string | null>(null);
   readonly search = signal('');
   readonly courseFilter = signal<CourseFilter>('ALL');
-  readonly courseFilterOptions: CourseFilter[] = ['ALL', 'DRAFT', 'PUBLISHED', 'ARCHIVED'];
+  readonly courseFilterOptions: CourseFilter[] = ['ALL', 'DRAFT', 'PUBLISHED', 'ARCHIVED',];
   readonly openDropdown = signal<DropdownName | null>(null);
   // NEW: which course card's 3-dot menu is open
   readonly openCardMenuId = signal<number | null>(null);
   readonly successMessage = signal<string | null>(null);
   readonly permissionError = signal<string | null>(null);
-
+ 
   readonly filteredCourses = computed(() => {
     const term = this.search().trim().toLowerCase();
     const status = this.courseFilter();
@@ -59,7 +59,7 @@ export class CourseManagement {
       return matchesSearch && matchesFilter;
     });
   });
-
+ 
   // ---------- role checks ----------
   readonly isAdmin = computed(() => this.authService.user()?.role === 'ADMIN');
   readonly isLearner = computed(() => this.authService.user()?.role === 'LEARNER');
@@ -67,11 +67,11 @@ export class CourseManagement {
     const role = this.authService.user()?.role;
     return role === 'ADMIN' || role === 'INSTRUCTOR';
   });
-
+ 
   // ---------- organize (sections) state ----------
   // CHANGED: replaces the old contentEditorOpen / editorCourse pair.
   readonly organizingCourse = signal<Course | null>(null);
-
+ 
   // ---------- create/edit/view modal state (rendered via <app-create-course-modal>) ----------
   readonly modalOpen = signal(false);
   readonly editingCourse = signal<Course | null>(null);
@@ -87,7 +87,7 @@ export class CourseManagement {
   readonly formError = signal<string | null>(null);
   private selectedThumbnailFile: File | null = null;
   private thumbnailPreviewUrl: string | null = null;
-
+ 
   readonly form = this.fb.group({
     name: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(100)]],
     description: ['', [Validators.maxLength(1000)]],
@@ -96,17 +96,17 @@ export class CourseManagement {
     level: ['' as CourseLevel | '', Validators.required],
     status: ['' as CourseStatus | '', Validators.required],
   });
-
+ 
   // ---------- confirmation dialog state (delete / discard-unsaved-changes) ----------
   readonly confirmOpen = signal(false);
   readonly confirmTitle = signal('');
   readonly confirmMessage = signal('');
   readonly deleteTarget = signal<Course | null>(null);
-
+ 
   constructor() {
     this.loadCourses();
   }
-
+ 
   // ---------- list loading ----------
   loadCourses(): void {
     this.loading.set(true);
@@ -129,32 +129,32 @@ export class CourseManagement {
       },
     });
   }
-
+ 
   updateSearch(value: string): void {
     this.search.set(value);
   }
-
+ 
   toggleDropdown(name: DropdownName): void {
     this.openDropdown.update(current => (current === name ? null : name));
   }
-
+ 
   /** NEW: 3-dot button on a course card. */
   toggleCardMenu(courseId: number, event: Event): void {
     event.stopPropagation(); // otherwise the document click handler would close it immediately
     this.openCardMenuId.update(current => (current === courseId ? null : courseId));
   }
-
+ 
   selectCourseFilter(option: CourseFilter): void {
     this.courseFilter.set(option);
     this.openDropdown.set(null);
   }
-
+ 
   @HostListener('document:click')
   closeFilterDropdown(): void {
     this.openDropdown.set(null);
     this.openCardMenuId.set(null); // NEW: click anywhere else closes the card menu
   }
-
+ 
   // ---------- unsaved-changes guard (SRS Edge Cases #2, #3, #7) ----------
   @HostListener('window:beforeunload', ['$event'])
   onBeforeUnload(event: BeforeUnloadEvent): void {
@@ -163,20 +163,20 @@ export class CourseManagement {
       event.returnValue = '';
     }
   }
-
-  
-
+ 
+ 
+ 
   // ---------- organize (sections) ----------
   /** NEW: edit (pencil) icon on a course card opens the Organize screen. */
   openOrganize(course: Course): void {
     this.organizingCourse.set(course);
   }
-
+ 
   /** NEW: Back button inside the Organize screen. */
   closeOrganize(): void {
     this.organizingCourse.set(null);
   }
-
+ 
   /**
    * NEW: "Edit course details" link inside the Organize screen → open the edit-course modal.
    * CHANGED: the Organize screen stays open behind the modal, so closing / saving the modal
@@ -186,7 +186,7 @@ export class CourseManagement {
     const course = this.organizingCourse();
     if (course) this.openEditModal(course);
   }
-
+ 
   // ---------- create / edit / view ----------
   openCreateModal(): void {
     this.editingCourse.set(null);
@@ -195,7 +195,7 @@ export class CourseManagement {
     this.modalOpen.set(true);
     this.loadLookups();
   }
-
+ 
   openEditModal(course: Course): void {
     this.editingCourse.set(course);
     this.viewingCourse.set(null);
@@ -203,7 +203,7 @@ export class CourseManagement {
     this.modalOpen.set(true);
     this.loadLookups();
   }
-
+ 
   openViewModal(course: Course): void {
     this.editingCourse.set(null);
     this.viewingCourse.set(course);
@@ -214,7 +214,7 @@ export class CourseManagement {
     // but loading them keeps behavior consistent if the user flips into Edit from here later.
     this.loadLookups();
   }
-
+ 
   loadLookups(): void {
     this.lookupLoading.set(true);
     this.lookupError.set(null);
@@ -229,27 +229,27 @@ export class CourseManagement {
       },
     });
   }
-
+ 
   selectCategory(id: number): void {
     this.form.controls.categoryId.setValue(id);
     this.form.controls.categoryId.markAsDirty();
   }
-
+ 
   selectInstructor(id: number): void {
     this.form.controls.instructorId.setValue(id);
     this.form.controls.instructorId.markAsDirty();
   }
-
+ 
   selectLevel(level: CourseLevel): void {
     this.form.controls.level.setValue(level);
     this.form.controls.level.markAsDirty();
   }
-
+ 
   onThumbnailSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0] ?? null;
     this.thumbnailError.set(null);
-
+ 
     if (!file) {
       this.clearThumbnail();
       return;
@@ -265,21 +265,21 @@ export class CourseManagement {
       input.value = '';
       return;
     }
-
+ 
     this.selectedThumbnailFile = file;
     this.form.markAsDirty();
     if (this.thumbnailPreviewUrl) URL.revokeObjectURL(this.thumbnailPreviewUrl);
     this.thumbnailPreviewUrl = URL.createObjectURL(file);
     this.thumbnailPreview.set(this.thumbnailPreviewUrl);
   }
-
+ 
   private clearThumbnail(): void {
     this.selectedThumbnailFile = null;
     if (this.thumbnailPreviewUrl) URL.revokeObjectURL(this.thumbnailPreviewUrl);
     this.thumbnailPreviewUrl = null;
     this.thumbnailPreview.set(null);
   }
-
+ 
   saveCourse(): void {
     // SRS Edge Case #1: "user clicks Save Course multiple times" → process only the first.
     if (this.submitting()) return;
@@ -287,10 +287,10 @@ export class CourseManagement {
       this.form.markAllAsTouched();
       return;
     }
-
+ 
     this.submitting.set(true);
     this.formError.set(null);
-
+ 
     const request: CourseRequest = {
       name: this.form.value.name!.trim(),
       description: this.form.value.description || null,
@@ -299,12 +299,12 @@ export class CourseManagement {
       level: this.form.value.level as CourseLevel,
       status: this.form.value.status as CourseStatus,
     };
-
+ 
     const editing = this.editingCourse();
     const request$ = editing
       ? this.courseManagementService.updateCourse(editing.id, request, this.selectedThumbnailFile)
       : this.courseManagementService.createCourse(request, this.selectedThumbnailFile);
-
+ 
     request$.subscribe({
       next: () => {
         this.submitting.set(false);
@@ -327,7 +327,7 @@ export class CourseManagement {
       },
     });
   }
-
+ 
   // ---------- close / discard-changes confirmation ----------
   requestClose(): void {
     if (this.form.dirty && !this.viewingCourse()) {
@@ -339,7 +339,7 @@ export class CourseManagement {
     }
     this.closeModal();
   }
-
+ 
   private closeModal(): void {
     this.modalOpen.set(false);
     this.editingCourse.set(null);
@@ -348,7 +348,7 @@ export class CourseManagement {
     this.clearThumbnail();
     this.formError.set(null);
   }
-
+ 
   private resetForm(): void {
     this.form.reset({
       name: '',
@@ -360,7 +360,7 @@ export class CourseManagement {
     });
     this.form.markAsPristine();
   }
-
+ 
   private patchForm(course: Course): void {
     this.form.reset({
       name: course.name,
@@ -377,7 +377,7 @@ export class CourseManagement {
     this.selectedThumbnailFile = null;
     this.form.markAsPristine();
   }
-
+ 
   // ---------- delete ----------
   requestDelete(course: Course): void {
     this.deleteTarget.set(course);
@@ -385,16 +385,16 @@ export class CourseManagement {
     this.confirmMessage.set(`"${course.name}" will be permanently removed. This action cannot be undone.`);
     this.confirmOpen.set(true);
   }
-
+ 
   answerConfirmation(confirmed: boolean): void {
     const target = this.deleteTarget();
     this.confirmOpen.set(false);
-
+ 
     if (!confirmed) {
       this.deleteTarget.set(null);
       return;
     }
-
+ 
     if (target) {
       this.courseManagementService.deleteCourse(target.id).subscribe({
         next: () => {
@@ -410,16 +410,16 @@ export class CourseManagement {
       });
       return;
     }
-
+ 
     // No delete target → this was the "discard unsaved changes" confirmation.
     this.closeModal();
   }
-
+ 
   // ---------- display helpers ----------
   cardThumbnail(course: Course): string | null {
     return this.resolveThumbnailUrl(course.thumbnailUrl);
   }
-
+ 
   /**
    * NEW: thumbnailUrl comes back from the backend as a relative path like
    * "/uploads/thumbnails/abc.png" — that only resolves correctly if it's fetched
@@ -435,15 +435,15 @@ export class CourseManagement {
     }
     return `${environment.apiBaseUrl}${thumbnailUrl}`;
   }
-
+ 
   levelLabel(level: CourseLevel): string {
     return level.charAt(0) + level.slice(1).toLowerCase();
   }
-
+ 
   courseStatusLabel(status: CourseStatus): string {
     return status.charAt(0) + status.slice(1).toLowerCase();
   }
-
+ 
   /**
    * NEW: background color for the status pill shown on the card (matches the Figma's
    * Draft / Publish / Upcoming badges). We only have three real statuses on the backend
@@ -451,16 +451,17 @@ export class CourseManagement {
    * Figma has no direct equivalent for it.
    */
   statusBadgeClasses(status: CourseStatus): string {
-  switch (status) {
-    case 'DRAFT':
-      return 'bg-amber-500';
-    case 'PUBLISHED':
-      return 'bg-violet-600';
-    case 'ARCHIVED':
-      return 'bg-slate-500';
+    switch (status) {
+      case 'DRAFT':
+        return 'bg-amber-500';
+      case 'PUBLISHED':
+        return 'bg-violet-600';
+      case 'ARCHIVED':
+        return 'bg-slate-500';
+    }
+    return 'bg-slate-500';
   }
-}
-
+ 
   /**
    * NEW: placeholder for the learner-facing "Enroll" action from the Figma. No enrollment
    * API was shared yet (CourseManagementService only has CRUD + instructor lookup), so this
@@ -471,16 +472,16 @@ export class CourseManagement {
   enrollCourse(course: Course): void {
     this.openViewModal(course);
   }
-
+ 
   // ---------- out-of-scope entry points (other features, not part of the Create Course SRS) ----------
   manageRoles(): void {
     this.router.navigate(['/access-permission/role-management']);
   }
-
+ 
   openEnrollments(courseId: number): void {
   this.router.navigate(['/admin-dashboard', 'courses', courseId, 'enrollments']);
 }
-
+ 
   openQuestionBanks(courseId: number, moduleId: unknown): void {
     this.router.navigate(['/courses', courseId, 'question-banks'], { queryParams: { moduleId } });
   }

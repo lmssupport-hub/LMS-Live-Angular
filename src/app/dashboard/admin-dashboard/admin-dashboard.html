@@ -6,24 +6,35 @@
     <!-- Brand mark -->
     <a routerLink="/admin-dashboard" class="flex shrink-0 items-center gap-2" aria-label="Go to dashboard home">
       <img
-        src="/imgcomponent/Vativa%20logo.png"
+        src="/imgcomponent/trans%20logo 1.png"
         alt="VativaHub"
-        class="h-9 w-9 shrink-0 object-contain"
+        class="h-16 w-16 shrink-0 object-contain"
       />
-      <span class="hidden leading-tight sm:block">
-        <span class="block text-sm font-bold tracking-wide text-[#2f2f2f]">VATIVAHUB</span>
-        <span class="block text-[9px] uppercase tracking-wider text-neutral-400">Global Development</span>
-      </span>
     </a>
 
-        <!-- Breadcrumb (only on nested pages, e.g. Enrolled Course List) -->
+    <!-- Breadcrumb (Course List, Enrolled Course List, ...) -->
     @if (breadcrumbs().length) {
       <nav
         class="ml-2 flex min-w-0 items-center gap-1 overflow-x-auto whitespace-nowrap text-xs font-medium text-[#555] sm:ml-4"
         aria-label="Breadcrumb"
       >
         @for (crumb of breadcrumbs(); track crumb.label; let last = $last) {
-          @if (crumb.link && !last) {
+          @if (crumb.plain) {
+            <!-- Plain text style: "Content Management > Course List > Organize Modules" -->
+            @if (crumb.link && !last) {
+              <a
+                [routerLink]="crumb.link"
+                class="rounded px-1 text-[13px] text-[#555] outline-none transition hover:text-[#3e8d99] focus-visible:ring-2 focus-visible:ring-[#61b7c5]/60"
+              >{{ crumb.label }}</a>
+            } @else {
+              <span class="px-1 text-[13px] text-[#555]" [attr.aria-current]="last ? 'page' : null">{{ crumb.label }}</span>
+            }
+            @if (!last) {
+              <svg viewBox="0 0 24 24" class="h-3 w-3 shrink-0 fill-none stroke-[#555]" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="m9 6 6 6-6 6" />
+              </svg>
+            }
+          } @else if (crumb.link && !last) {
             <a
               [routerLink]="crumb.link"
               class="rounded-full px-2 py-2 outline-none transition hover:bg-white hover:text-[#3e8d99] focus-visible:ring-2 focus-visible:ring-[#61b7c5]/60"

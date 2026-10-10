@@ -23,34 +23,45 @@
 </button>
   }
 </label>
-      <div class="relative z-30" (click)="$event.stopPropagation()">
+  <div class="relative z-30 h-10 w-40" (click)="$event.stopPropagation()">
+
+  <!-- Dropdown card -->
+  @if (openDropdown() === 'filter') {
+    <div
+      class="absolute left-0 top-0 w-full overflow-hidden rounded-[20px] bg-white pb-1 pt-11 text-center shadow-[0_14px_25px_rgba(0,0,0,.2)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      role="menu"
+    >
+      @for (option of courseFilterOptions; track option) {
         <button
           type="button"
-          class="flex h-10 w-40 items-center justify-center gap-2 rounded-full border-0 bg-white px-4 text-xs shadow-sm outline-none transition hover:shadow-md focus-visible:ring-2 focus-visible:ring-[#62b9c8]/40"
-          aria-label="Filter courses"
-          aria-haspopup="menu"
-          [attr.aria-expanded]="openDropdown() === 'filter'"
-          (click)="toggleDropdown('filter')"
-        >
-          <span>{{ courseFilter() === 'ALL' ? 'Filter' : courseFilter().charAt(0) + courseFilter().slice(1).toLowerCase() }}</span>
-          <svg viewBox="0 0 24 24" class="h-4 w-4 fill-none stroke-[#666]" stroke-width="2.2" aria-hidden="true">
-            <path d="M4 6h16M7 12h10M10 18h4" stroke-linecap="round"></path>
-          </svg>
-        </button>
-        @if (openDropdown() === 'filter') {
-          <div class="absolute left-0 top-10 w-40 overflow-y-auto rounded-[28px] bg-white py-2 text-center shadow-[0_14px_25px_rgba(0,0,0,.2)] ring-1 ring-black/5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" role="menu">
-            @for (option of courseFilterOptions; track option) {
-              <button
-                type="button"
-                role="menuitem"
-                class="block h-10 w-full border-b border-neutral-100 px-4 text-[9px] text-[#555] transition last:border-0 hover:bg-[#f6f6f6]"
-                [class.font-semibold]="courseFilter() === option"
-                (click)="selectCourseFilter(option)"
-              >{{ option.charAt(0) + option.slice(1).toLowerCase() }}</button>
-            }
-          </div>
-        }
-      </div>
+          role="menuitem"
+          class="block h-8 w-full cursor-pointer border-0 border-b border-neutral-100 bg-transparent px-4 text-[11px] text-[#555] transition last:border-b-0 hover:bg-[#f6f6f6]"
+          [class.font-semibold]="courseFilter() === option"
+          (click)="selectCourseFilter(option)"
+        >{{ option.charAt(0) + option.slice(1).toLowerCase() }}</button>
+      }
+    </div>
+  }
+
+  <!-- Filter header -->
+  <button
+    type="button"
+    class="relative z-10 flex h-10 w-40 cursor-pointer items-center justify-center gap-2 rounded-[20px] border-0 bg-white px-4 text-xs font-medium text-[#555] outline-none transition focus-visible:ring-2 focus-visible:ring-[#62b9c8]/40"
+    [ngClass]="openDropdown() === 'filter'
+      ? 'shadow-[0_8px_10px_-4px_rgba(0,0,0,.35)]'
+      : 'shadow-sm hover:shadow-md'"
+    aria-label="Filter courses"
+    aria-haspopup="menu"
+    [attr.aria-expanded]="openDropdown() === 'filter'"
+    (click)="toggleDropdown('filter')"
+  >
+    <span>{{ courseFilter() === 'ALL' ? 'Filter' : courseFilter().charAt(0) + courseFilter().slice(1).toLowerCase() }}</span>
+    <svg viewBox="0 0 24 24" class="h-4 w-4 fill-none stroke-[#555]" stroke-width="2.2" aria-hidden="true">
+      <path d="M4 6h16M7 12h10M10 18h4" stroke-linecap="round"></path>
+    </svg>
+  </button>
+</div>
+
       @if (canManage()) {
         <button #createButton type="button" class="ml-auto h-10 cursor-pointer rounded-full border-0 border-transparent bg-white px-7 text-xs text-[#333] transition-all duration-300 ease-out enabled:hover:border-[#7fb9c7] enabled:hover:bg-[#4694A4] enabled:hover:text-[#f4fbfc] enabled:hover:shadow-[0_8px_18px_-2px_rgba(70,160,180,0.65),0_3px_8px_rgba(120,200,215,0.3)] enabled:focus-visible:border-[#7fb9c7] enabled:focus-visible:bg-[#4694A4] enabled:focus-visible:text-[#f4fbfc] enabled:focus-visible:shadow-[0_8px_18px_-2px_rgba(70,160,180,0.65),0_3px_8px_rgba(120,200,215,0.3)] focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50" (click)="openCreateModal()">
           + Create course
@@ -176,7 +187,9 @@
                 </div>
               }
               <div class="absolute inset-x-4 bottom-3">
-                <h2 class="text-sm font-medium">{{ course.name }}</h2>
+                @if (cardThumbnail(course)) {
+                  <h2 class="text-sm font-medium">{{ course.name }}</h2>
+                }
                 @if (course.description) {
                   <p class="mt-1 line-clamp-2 text-[9px] leading-snug text-neutral-200">{{ course.description }}</p>
                 }
@@ -225,6 +238,7 @@
     (retryLookups)="loadLookups()"
     (saved)="saveCourse()"
     (thumbnailSelected)="onThumbnailSelected($event)"
+    (thumbnailRemoved)="removeThumbnail()"
     (categorySelected)="selectCategory($event)"
     (instructorSelected)="selectInstructor($event)"
     (levelSelected)="selectLevel($event)"

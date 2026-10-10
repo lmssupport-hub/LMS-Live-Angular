@@ -260,7 +260,35 @@
     }
 </div>
 </div>
-        <div class="mt-3"><div class="relative flex h-11 items-center justify-between rounded-lg bg-[#f5f5f5] pl-3 pr-2 text-[11px]"><span>Course Thumbnail</span>@if (!viewOnly) { <input #thumbnailInput id="courseThumbnail" class="absolute size-px opacity-0" type="file" accept=".jpg,.jpeg,.png,image/jpeg,image/png" (change)="thumbnailSelected.emit($event)" /><label for="courseThumbnail" class="cursor-pointer rounded-md bg-white px-3 py-2 text-[9px]">Upload image</label> }</div>@if (thumbnailError) { <small class="block p-1 text-[10px] text-red-700">{{ thumbnailError }}</small> }</div>
+
+<div class="mt-3">
+  <div class="relative flex h-11 items-center justify-between rounded-lg bg-[#f5f5f5] pl-3 pr-2 text-[11px]">
+    <span>Course Thumbnail</span>
+    @if (!viewOnly) {
+      <input #thumbnailInput id="courseThumbnail" class="absolute size-px opacity-0" type="file" accept=".jpg,.jpeg,.png,image/jpeg,image/png" (change)="onThumbnailChange($event)" />
+      <label for="courseThumbnail" class="cursor-pointer rounded-md bg-white px-3 py-2 text-[9px]">Upload image</label>
+    }
+  </div>
+
+  @if (thumbnailError) { <small class="block p-1 text-[10px] text-red-700">{{ thumbnailError }}</small> }
+
+  <!-- Selected image name + close button -->
+  @if (displayedThumbnailName(); as fileName) {
+    <div class="mt-2 flex h-9 items-center justify-between gap-2 rounded-lg bg-[#f5f5f5] pl-3 pr-2 text-[10px] text-[#444]">
+      <span class="min-w-0 flex-1 truncate" [title]="fileName">{{ fileName }}</span>
+      @if (!viewOnly) {
+        <button
+          type="button"
+          class="grid size-5 shrink-0 cursor-pointer place-items-center rounded-full bg-[#ff5d59] text-xs leading-none text-white transition hover:bg-red-600"
+          aria-label="Remove thumbnail"
+          title="Remove image"
+          (click)="removeThumbnail()"
+        >×</button>
+      }
+    </div>
+  }
+</div>
+
         @if (formError) { <p class="mt-3 text-center text-xs text-red-700" role="alert">{{ formError }}</p> }
         @if (!viewOnly) { <button type="submit" class="mx-auto mt-5 block h-11 w-36 cursor-pointer rounded-full border border-transparent bg-white px-8 text-sm text-[#333] transition-all duration-300 ease-out enabled:hover:border-[#7fb9c7] enabled:hover:bg-[#4694A4] enabled:hover:text-[#f4fbfc] enabled:hover:shadow-[0_8px_18px_-2px_rgba(70,160,180,0.65),0_3px_8px_rgba(120,200,215,0.3)] enabled:focus-visible:border-[#7fb9c7] enabled:focus-visible:bg-[#4694A4] enabled:focus-visible:text-[#f4fbfc] enabled:focus-visible:shadow-[0_8px_18px_-2px_rgba(70,160,180,0.65),0_3px_8px_rgba(120,200,215,0.3)] focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50" [disabled]="!!thumbnailError || submitting || lookupLoading || !!lookupError">{{ submitting ? 'Saving…' : editing ? 'Update course' : 'Save course' }}</button> }
       </form>

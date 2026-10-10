@@ -1,10 +1,11 @@
 import { CommonModule } from '@angular/common';
-import { Component, HostListener, computed, inject, signal } from '@angular/core';
+import { Component, HostListener, computed, effect, inject, signal, untracked } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
+import { map } from 'rxjs/operators';
  
 import { CreateCourseModal } from '../pop-modals/create-course-modal/create-course-modal';
-// NEW: Organize (sections) screen. TODO: adjust the path to where your component lives.
 import { OrganizeSections } from '../organize-sections/organize-sections';
 import {
   ALLOWED_THUMBNAIL_TYPES,
@@ -36,6 +37,8 @@ export class CourseManagement {
   private readonly authService = inject(AuthService);
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
+  // NEW: used to keep the Organize screen in sync with the URL (?organize=<courseId>)
+  private readonly route = inject(ActivatedRoute);
  
   // ---------- list state ----------
   readonly courses = signal<Course[]>([]);
@@ -71,6 +74,12 @@ export class CourseManagement {
   // ---------- organize (sections) state ----------
   // CHANGED: replaces the old contentEditorOpen / editorCourse pair.
   readonly organizingCourse = signal<Course | null>(null);
+
+  /** NEW: course id from the URL (?organize=<id>), or null when the Organize screen is closed. */
+  private readonly organizeId = toSignal(
+    this.route.queryParamMap.pipe(map(params => Number(params.get('organize')) || null)),
+    { initialValue: null },
+  );
  
   // ---------- create/edit/view modal state (rendered via <app-create-course-modal>) ----------
   readonly modalOpen = signal(false);
@@ -104,6 +113,14 @@ export class CourseManagement {
   readonly deleteTarget = signal<Course | null>(null);
  
   constructor() {
+    // NEW: the URL is the source of truth for the Organize screen.
+    // ?organize=<id> opens it, no param closes it (header breadcrumb / browser back).
+    effect(() => {
+      const id = this.organizeId();
+      const course = id ? this.courses().find(c => c.id === id) ?? null : null;
+      untracked(() => this.organizingCourse.set(course));
+    });
+
     this.loadCourses();
   }
  
@@ -170,11 +187,23 @@ export class CourseManagement {
   /** NEW: edit (pencil) icon on a course card opens the Organize screen. */
   openOrganize(course: Course): void {
     this.organizingCourse.set(course);
+    // CHANGED: also put it in the URL so the header breadcrumb can show "Organize Modules"
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { organize: course.id },
+      queryParamsHandling: 'merge',
+    });
   }
  
-  /** NEW: Back button inside the Organize screen. */
+  /** NEW: Back button inside the Organize screen (also used when the header "Course List" crumb is clicked). */
   closeOrganize(): void {
     this.organizingCourse.set(null);
+    // CHANGED: remove ?organize from the URL
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { organize: null },
+      queryParamsHandling: 'merge',
+    });
   }
  
   /**
@@ -278,6 +307,13 @@ export class CourseManagement {
     if (this.thumbnailPreviewUrl) URL.revokeObjectURL(this.thumbnailPreviewUrl);
     this.thumbnailPreviewUrl = null;
     this.thumbnailPreview.set(null);
+  }
+
+  /** NEW: × next to the thumbnail file name in the modal -> remove the selected image. */
+  removeThumbnail(): void {
+    this.clearThumbnail();
+    this.thumbnailError.set(null);
+    this.form.markAsDirty();
   }
  
   saveCourse(): void {

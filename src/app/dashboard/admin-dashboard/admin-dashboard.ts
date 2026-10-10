@@ -9,6 +9,8 @@ import { AuthService } from '../../services/auth';
 interface Breadcrumb {
   label: string;
   link: string[] | null;
+  /** true = plain text style (no pill), used for simple 2-level crumbs */
+  plain?: boolean;
 }
 
 @Component({
@@ -54,19 +56,36 @@ export class AdminDashboard {
 
   /**
    * Breadcrumb shown in the header, right after the logo.
-   * Only nested pages that need one return items; every other page returns [] (nothing rendered).
+   * Only pages that need one return items; every other page returns [] (nothing rendered).
    * To add another page later, add one more `if` here.
    */
   readonly breadcrumbs = computed<Breadcrumb[]>(() => {
-    const path = this.currentUrl().split(/[?#]/)[0];
+    const [path, query = ''] = this.currentUrl().split('#')[0].split('?');
+
+    // /admin-dashboard/courses            -> Content Management > Course List
+    // /admin-dashboard/courses?organize=5 -> Content Management > Course List > Organize Modules
+    if (/^\/admin-dashboard\/courses\/?$/.test(path)) {
+      const courseList = ['/admin-dashboard', 'courses'];
+      if (new URLSearchParams(query).has('organize')) {
+        return [
+          { label: 'Content Management', link: null, plain: true },
+          { label: 'Course List', link: courseList, plain: true },
+          { label: 'Organize Modules', link: null, plain: true },
+        ];
+      }
+      return [
+        { label: 'Content Management', link: null, plain: true },
+        { label: 'Course List', link: null, plain: true },
+      ];
+    }
 
     // /admin-dashboard/courses/:courseId/enrollments
     if (/^\/admin-dashboard\/courses\/\d+\/enrollments\/?$/.test(path)) {
       const courseList = ['/admin-dashboard', 'courses'];
       return [
-        { label: 'Course Module', link: courseList },
-        { label: 'Course List', link: courseList },
-        { label: 'Enrolled Course List', link: null },
+        { label: 'Course Module', link: courseList, plain: true },
+        { label: 'Course List', link: courseList, plain: true },
+        { label: 'Enrolled Course List', link: null, plain: true },
       ];
     }
     return [];

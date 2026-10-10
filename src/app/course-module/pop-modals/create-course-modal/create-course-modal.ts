@@ -7,6 +7,7 @@ import {
   HostListener,
   Input,
   Output,
+  ViewChild,
   inject,
   signal,
 } from '@angular/core';
@@ -38,6 +39,9 @@ type DropdownName = 'status'|'category' | 'instructor' | 'level'  ;
 })
 export class CreateCourseModal {
   private readonly elementRef = inject(ElementRef<HTMLElement>);
+
+  /** NEW: the hidden file input (only rendered when not in view mode). */
+  @ViewChild('thumbnailInput') private thumbnailInput?: ElementRef<HTMLInputElement>;
  
   @Input({ required: true }) form!: FormGroup;
   @Input() categories: CourseCategory[] = [];
@@ -57,6 +61,8 @@ export class CreateCourseModal {
   @Output() retryLookups = new EventEmitter<void>();
   @Output() saved = new EventEmitter<void>();
   @Output() thumbnailSelected = new EventEmitter<Event>();
+  /** NEW: user clicked the × next to the selected thumbnail name. */
+  @Output() thumbnailRemoved = new EventEmitter<void>();
   @Output() categorySelected = new EventEmitter<number>();
   @Output() instructorSelected = new EventEmitter<number>();
   @Output() levelSelected = new EventEmitter<CourseLevel>();
@@ -64,6 +70,9 @@ export class CreateCourseModal {
   readonly courseStatuses = COURSE_STATUSES;
   readonly openDropdown = signal<DropdownName | null>(null);
   readonly previewVisible = signal(false);
+
+  /** NEW: name of the file the user just picked in this session. */
+  readonly thumbnailFileName = signal<string | null>(null);
  
   /** Field List #1 error copy. */
   private readonly nameErrorMessages: Record<string, string> = {
@@ -142,6 +151,40 @@ export class CreateCourseModal {
   chooseLevel(level: CourseLevel): void {
     this.levelSelected.emit(level);
     this.openDropdown.set(null);
+  }
+
+  // ---------- thumbnail (file name chip) ----------
+  /**
+   * NEW: file input change. The parent validates the file (type / size) synchronously inside
+   * the emit and clears the input when it is rejected, so reading `files` right after the
+   * emit tells us whether the file was accepted.
+   */
+  onThumbnailChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.thumbnailSelected.emit(event);
+    this.thumbnailFileName.set(input.files?.[0]?.name ?? null);
+  }
+
+  /**
+   * NEW: name shown in the chip under the Course Thumbnail row.
+   * - a freshly picked file -> its file name
+   * - an already-saved thumbnail (edit / view) -> last segment of its URL
+   * - nothing selected -> null (no chip)
+   */
+  displayedThumbnailName(): string | null {
+    if (!this.thumbnailPreview) return null;
+    const picked = this.thumbnailFileName();
+    if (picked) return picked;
+    if (this.thumbnailPreview.startsWith('blob:')) return null;
+    const last = this.thumbnailPreview.split(/[?#]/)[0].split('/').pop();
+    return last ? decodeURIComponent(last) : null;
+  }
+
+  /** NEW: × on the chip -> remove the selected image. */
+  removeThumbnail(): void {
+    if (this.thumbnailInput) this.thumbnailInput.nativeElement.value = ''; // allow re-picking the same file
+    this.thumbnailFileName.set(null);
+    this.thumbnailRemoved.emit();
   }
  
   levelLabel(level: CourseLevel | '' | null | undefined): string {

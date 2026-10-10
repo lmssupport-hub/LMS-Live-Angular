@@ -1,22 +1,35 @@
 <div
   class="fixed inset-0 z-50 grid place-items-center bg-black/25 p-5 backdrop-blur-[4px]"
-  (click)="cancelled.emit()"
+  (click)="!submitting() && cancelled.emit()"
 >
   <section
-    class="w-full max-w-[500px] rounded-2xl bg-white p-7 shadow-[0_10px_30px_rgba(0,0,0,.25)]"
+    class="relative w-full max-w-[500px] rounded-2xl bg-white p-7 shadow-[0_10px_30px_rgba(0,0,0,.25)]"
     role="dialog"
     aria-modal="true"
     aria-labelledby="role-dialog-title"
     (click)="$event.stopPropagation()"
   >
+    <button
+      type="button"
+      (click)="cancelled.emit()"
+      [disabled]="submitting()"
+      class="absolute right-0 top-0 grid h-11 w-11 place-items-center rounded-tr-2xl rounded-bl-2xl bg-[#F7635B] text-white shadow-md transition hover:bg-[#e5544c] disabled:opacity-50"
+      aria-label="Close"
+    >
+      <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true" focusable="false">
+        <path d="M6 6l12 12M18 6L6 18" />
+      </svg>
+    </button>
     <h2 id="role-dialog-title" class="text-xl font-semibold">
       {{ editing() ? 'Update Role' : 'Create Role' }}
     </h2>
     <p class="mt-1 text-xs">Configure the role name and permissions</p>
     <form [formGroup]="form()" (ngSubmit)="continued.emit()" class="mt-6 space-y-4">
+     
       <label for="roleName" class="block text-xs font-medium"
         >Role Name<span class="text-red-500">*</span></label
       >
+     
       <input
         id="roleName"
         formControlName="roleName"
@@ -33,14 +46,18 @@
           <option [value]="roleName"></option>
         }
       </datalist>
-      <p id="role-name-guidance" class="text-[10px] text-neutral-500">
+      <div id="role-name-guidance" class="text-[10px] text-neutral-500">
         Choose a suggested role or enter another role name.
-      </p>
+        {{ 50 - (form().controls['roleName'].value?.length ?? 0) }} characters remaining
+   
+      </div>
       @if (form().controls['roleName'].touched) {
         @if (form().controls['roleName'].hasError('required')) {
           <p class="text-xs text-red-500">Role Name is required.</p>
         } @else if (form().controls['roleName'].hasError('whitespace')) {
           <p class="text-xs text-red-500">Role Name cannot contain only spaces.</p>
+        } @else if (form().controls['roleName'].hasError('pattern')) {
+          <p class="text-xs text-red-500">Role Name can contain letters and spaces only.</p>
         } @else if (form().controls['roleName'].hasError('minlength')) {
           <p class="text-xs text-red-500">Role Name must contain at least 4 characters.</p>
         } @else if (form().controls['roleName'].hasError('maxlength')) {
@@ -69,3 +86,5 @@
     </form>
   </section>
 </div>
+ 
+ 

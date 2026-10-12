@@ -224,6 +224,11 @@ export class MultimediaUpload implements OnInit {
   protected get safePreviewUrl(): SafeResourceUrl | null {
     return this.safePdfUrl();
   }
+  /** Extension of the picked file, or of the saved file in edit mode (drives the preview icon). */
+  protected get previewExtension(): string {
+    const picked = this.file();
+    return picked ? extensionOf(picked.name) : (this.existing()?.fileExtension ?? '');
+  }
   protected get resourceName(): string {
     return this.name();
   }
@@ -235,6 +240,10 @@ export class MultimediaUpload implements OnInit {
   }
   protected get resourceFile(): File | null {
     return this.file();
+  }
+  /** Name of the picked file, or of the saved file in edit mode. */
+  protected get resourceFileName(): string {
+    return this.file()?.name ?? this.existing()?.originalFileName ?? '';
   }
   protected get resourceFileSize(): string {
     const picked = this.file();

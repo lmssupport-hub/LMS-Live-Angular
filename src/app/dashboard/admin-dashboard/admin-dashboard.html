@@ -3,52 +3,61 @@
   <!-- ============ Global app header ============ -->
   <header class="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-4 bg-[#f5f5f5] pl-1 pr-4 sm:pr-6">
 
-  <!-- Brand mark -->
-  <a routerLink="/admin-dashboard" class="flex shrink-0 items-center gap-2" aria-label="Go to dashboard home">
-    <img
-      src="/imgcomponent/trans%20logo%201.png"
-      alt="VativaHub"
-      class="h-16 w-16 shrink-0 object-contain"
-    />
-  </a>
+    <!-- Brand mark -->
+    <a routerLink="/admin-dashboard" class="flex shrink-0 items-center gap-2" aria-label="Go to dashboard home">
+      <img
+        src="/imgcomponent/trans%20logo%201.png"
+        alt="VativaHub"
+        class="h-16 w-16 shrink-0 object-contain"
+      />
+    </a>
 
-
-    <!-- Breadcrumb (Course List, Enrolled Course List, ...) -->
-    @if (breadcrumbs().length) {
-      <nav
-        class="ml-2 flex min-w-0 items-center gap-1 overflow-x-auto whitespace-nowrap text-xs font-medium text-[#555] sm:ml-4"
-        aria-label="Breadcrumb"
-      >
-        @for (crumb of breadcrumbs(); track crumb.label; let last = $last) {
-          @if (crumb.plain) {
-            <!-- Plain text style: "Content Management > Course List > Organize Modules" -->
-            @if (crumb.link && !last) {
-              <a
-                [routerLink]="crumb.link"
-                class="rounded px-1 text-[13px] text-[#555] outline-none transition hover:text-[#3e8d99] focus-visible:ring-2 focus-visible:ring-[#61b7c5]/60"
-              >{{ crumb.label }}</a>
-            } @else {
-              <span class="px-1 text-[13px] text-[#555]" [attr.aria-current]="last ? 'page' : null">{{ crumb.label }}</span>
-            }
-            @if (!last) {
-              <svg viewBox="0 0 24 24" class="h-3 w-3 shrink-0 fill-none stroke-[#555]" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="m9 6 6 6-6 6" />
-              </svg>
-            }
-          } @else if (crumb.link && !last) {
-            <a
-              [routerLink]="crumb.link"
-              class="rounded-full px-2 py-2 outline-none transition hover:bg-white hover:text-[#3e8d99] focus-visible:ring-2 focus-visible:ring-[#61b7c5]/60"
-            >{{ crumb.label }}</a>
-            <span class="text-neutral-400" aria-hidden="true">›</span>
-          } @else {
-            <span class="rounded-full bg-white px-3 py-2 font-semibold text-[#3e8d99]" aria-current="page">
-              {{ crumb.label }}
-            </span>
-          }
-        }
-      </nav>
+    <!-- Breadcrumb (pill tabs + animated underline, login-button teal) -->
+@if (breadcrumbs().length) {
+  <nav
+    class="ml-2 flex min-w-0 items-center gap-1 overflow-x-auto whitespace-nowrap [scrollbar-width:none] sm:ml-4 [&::-webkit-scrollbar]:hidden"
+    aria-label="Breadcrumb"
+  >
+    @for (crumb of breadcrumbs(); track crumb.label; let last = $last) {
+      @if (last) {
+        <!-- Current page -->
+        <span
+          class="group relative cursor-default rounded-full border border-transparent px-4 py-1.5 text-[13px] font-medium text-[#4694A4] outline-none transition-all duration-300 ease-out hover:border-[#7fb9c7] hover:bg-[#4694A4] hover:text-[#f4fbfc]"
+          aria-current="page"
+        >
+          {{ crumb.label }}
+          <span
+            class="absolute inset-x-4 bottom-0.5 h-0.5 origin-left animate-[crumb-underline_0.45s_cubic-bezier(0.4,0,0.2,1)] rounded bg-[#4694A4] transition-colors duration-300 group-hover:bg-[#f4fbfc]"
+            aria-hidden="true"
+          ></span>
+        </span>
+      } @else if (crumb.link) {
+        <!-- Clickable crumb -->
+        <a
+          [routerLink]="crumb.link"
+          class="group relative rounded-full border border-transparent px-4 py-1.5 text-[13px] font-medium text-[#333] outline-none transition-all duration-300 ease-out hover:border-[#7fb9c7] hover:bg-[#4694A4] hover:text-[#f4fbfc] focus-visible:border-[#7fb9c7] focus-visible:bg-[#4694A4] focus-visible:text-[#f4fbfc] active:scale-95"
+        >
+          {{ crumb.label }}
+          <span
+            class="absolute inset-x-4 bottom-0.5 h-0.5 origin-left scale-x-0 rounded bg-[#f4fbfc] transition-transform duration-500 ease-out group-hover:scale-x-100"
+            aria-hidden="true"
+          ></span>
+        </a>
+      } @else {
+        <!-- Non-clickable parent label -->
+        <span
+          class="group relative cursor-default rounded-full border border-transparent px-4 py-1.5 text-[13px] font-medium text-[#333] transition-all duration-300 ease-out hover:border-[#7fb9c7] hover:bg-[#4694A4] hover:text-[#f4fbfc]"
+        >
+          {{ crumb.label }}
+          <span
+            class="absolute inset-x-4 bottom-0.5 h-0.5 origin-left scale-x-0 rounded bg-[#f4fbfc] transition-transform duration-500 ease-out group-hover:scale-x-100"
+            aria-hidden="true"
+          ></span>
+        </span>
+      }
     }
+  </nav>
+}
 
     <!-- Everything else lives on the right: search, then the icon actions, then account -->
     <div class="ml-auto flex items-center gap-3">

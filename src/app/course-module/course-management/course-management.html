@@ -26,22 +26,31 @@
   <div class="relative z-30 h-10 w-40" (click)="$event.stopPropagation()">
 
   <!-- Dropdown card -->
-  @if (openDropdown() === 'filter') {
-    <div
-      class="absolute left-0 top-0 w-full overflow-hidden rounded-[20px] bg-white pb-1 pt-11 text-center shadow-[0_14px_25px_rgba(0,0,0,.2)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-      role="menu"
-    >
-      @for (option of courseFilterOptions; track option) {
+         <!-- Dropdown card (always in DOM so the close animation can play) -->
+  <div
+    class="dd-clip"
+    [class.dd-open]="openDropdown() === 'filter'"
+    [class.dd-closing]="ddUsed() && openDropdown() !== 'filter'"
+    [attr.inert]="openDropdown() === 'filter' ? null : ''"
+    [attr.aria-hidden]="openDropdown() !== 'filter'"
+    role="menu"
+  >
+    <div class="dd-panel">
+      <div class="dd-spacer" aria-hidden="true"></div>
+      @for (option of courseFilterOptions; track option; let i = $index) {
         <button
           type="button"
           role="menuitem"
-          class="block h-8 w-full cursor-pointer border-0 border-b border-neutral-100 bg-transparent px-4 text-[11px] text-[#555] transition last:border-b-0 hover:bg-[#f6f6f6]"
+          class="dd-item"
+          [style.--i]="i"
+          [style.--r]="courseFilterOptions.length - 1 - i"
           [class.font-semibold]="courseFilter() === option"
           (click)="selectCourseFilter(option)"
         >{{ option.charAt(0) + option.slice(1).toLowerCase() }}</button>
       }
     </div>
-  }
+  </div>
+  
 
   <!-- Filter header -->
   <button
@@ -53,7 +62,7 @@
     aria-label="Filter courses"
     aria-haspopup="menu"
     [attr.aria-expanded]="openDropdown() === 'filter'"
-    (click)="toggleDropdown('filter')"
+    (click)="toggleDropdown('filter'); ddUsed.set(true)"
   >
     <span>{{ courseFilter() === 'ALL' ? 'Filter' : courseFilter().charAt(0) + courseFilter().slice(1).toLowerCase() }}</span>
     <svg viewBox="0 0 24 24" class="h-4 w-4 fill-none stroke-[#555]" stroke-width="2.2" aria-hidden="true">

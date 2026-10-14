@@ -39,6 +39,7 @@ export class CourseManagement {
   private readonly router = inject(Router);
   // NEW: used to keep the Organize screen in sync with the URL (?organize=<courseId>)
   private readonly route = inject(ActivatedRoute);
+  readonly ddUsed = signal(false);
  
   // ---------- list state ----------
   readonly courses = signal<Course[]>([]);

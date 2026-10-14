@@ -104,6 +104,15 @@ export class OrganizeSections implements OnInit, OnDestroy {
   readonly draggedActivity = signal<{ sectionId: number; index: number } | null>(null);
   readonly activityDropTarget = signal<{ sectionId: number; index: number } | null>(null);
   private readonly noActivities: SectionActivity[] = [];
+  private readonly activityMenuUsedIds = signal<number[]>([]);
+
+isActivityMenuUsed(sectionId: number): boolean {
+  return this.activityMenuUsedIds().includes(sectionId);
+}
+
+markActivityMenuUsed(sectionId: number): void {
+  this.activityMenuUsedIds.update(ids => (ids.includes(sectionId) ? ids : [...ids, sectionId]));
+}
 
   // ---------- multimedia (NEW) ----------
   /** Resources already fetched, keyed by section id. */

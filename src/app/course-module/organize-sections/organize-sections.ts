@@ -31,6 +31,10 @@ const MAX_CHARS = 100;
 const GENERIC_ERROR =
   'Unable to complete the requested action due to a server error. Please try again later.';
 
+/** Section Name: emoji (incl. flags, skin tones, joined/variation sequences) are not allowed; other special characters are. */
+const EMOJI_PATTERN = /[\p{Extended_Pictographic}\p{Emoji_Modifier}\p{Regional_Indicator}\u200D\uFE0F\u20E3]/u;
+const NAME_EMOJI_MESSAGE = 'Emojis are not allowed.';
+
 /* ---- Activities: Multimedia is live; Ebook / Question Bank come in the next phase ---- */
 export type ActivityKind = 'Ebook' | 'Multimedia' | 'Question Bank';
 export interface SectionActivity {
@@ -268,6 +272,12 @@ export class OrganizeSections implements OnInit, OnDestroy {
     this.sectionDraft.set('');
     this.sectionError.set('');
     this.sectionRetryAvailable.set(false);
+  }
+
+  /** Stops emoji from being typed or pasted into Section Name (validateName still catches anything else). */
+  blockEmoji(event: Event): void {
+    const data = (event as InputEvent).data;
+    if (data && EMOJI_PATTERN.test(data)) event.preventDefault();
   }
 
   retrySectionSave(): void {
@@ -690,6 +700,7 @@ export class OrganizeSections implements OnInit, OnDestroy {
   /** Same rules as SectionService.validateAndNormalizeName + the duplicate check. */
   private validateName(name: string, excludeId: number | null): string | null {
     if (!name) return 'Section Name is required.';
+    if (EMOJI_PATTERN.test(name)) return NAME_EMOJI_MESSAGE;
     if (name.length < MIN_CHARS) return `Section Name must be at least ${MIN_CHARS} characters.`;
     if (name.length > MAX_CHARS) return `Section Name must not exceed ${MAX_CHARS} characters.`;
     const duplicate = this.sections().some(
@@ -724,4 +735,4 @@ export class OrganizeSections implements OnInit, OnDestroy {
     this.resourceSuccessMessage.set(message);
     this.toastTimer = setTimeout(() => this.resourceSuccessMessage.set(''), 3000);
   }
-}
+} 

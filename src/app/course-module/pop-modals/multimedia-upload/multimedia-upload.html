@@ -1,9 +1,9 @@
 <div class="fixed inset-0 z-[75] grid place-items-center bg-black/35 p-4 backdrop-blur-sm">
-  <section class="grid max-h-[94vh] w-[min(960px,96vw)] gap-[35px] overflow-y-auto rounded-[20px] bg-white px-[35px] pb-6 pt-[31px] shadow-2xl md:grid-cols-[minmax(0,1fr)_367px]" role="dialog" aria-modal="true" [attr.aria-label]="kind + ' editor'">
+  <section class="grid max-h-[94vh] w-[min(960px,96vw)] gap-[35px] overflow-y-auto rounded-[20px] bg-white p-[35px] shadow-2xl md:grid-cols-[minmax(0,1fr)_367px]" role="dialog" aria-modal="true" [attr.aria-label]="kind + ' editor'">
 
     <!-- Left: always-visible preview -->
-    <section id="resource-preview-panel" class="min-w-0 self-start" aria-label="File preview" aria-live="polite">
-      <article class="relative h-[402px] overflow-hidden rounded-xl bg-gradient-to-br from-slate-700 to-neutral-950 text-white">
+    <section id="resource-preview-panel" class="flex min-w-0 flex-col" aria-label="File preview" aria-live="polite">
+      <article class="relative min-h-[402px] flex-1 overflow-hidden rounded-xl bg-gradient-to-br from-slate-700 to-neutral-950 text-white">
         @switch (previewType) {
           @case ('image') { <img [src]="previewUrl" [alt]="resourceName || resourceFileName || 'Resource preview'" class="h-full w-full object-contain" /> }
           @case ('video') { <video [src]="previewUrl" class="h-full w-full bg-black object-contain" controls preload="metadata"></video> }
@@ -12,6 +12,7 @@
           @case ('file') {
             <div class="grid h-full place-content-center px-8 text-center">
               @switch (previewExtension) {
+                @case ('pdf') { <div class="mx-auto grid size-24 place-items-center rounded-2xl bg-[#d93025] text-3xl font-bold text-white shadow-lg" role="img" aria-label="PDF document">PDF</div> }
                 @case ('docx') { <div class="mx-auto grid size-24 place-items-center rounded-2xl bg-[#2b579a] text-5xl font-bold text-white shadow-lg" role="img" aria-label="Word document">W</div> }
                 @case ('pptx') { <div class="mx-auto grid size-24 place-items-center rounded-2xl bg-[#d24726] text-5xl font-bold text-white shadow-lg" role="img" aria-label="PowerPoint presentation">P</div> }
                 @case ('xlsx') { <div class="mx-auto grid size-24 place-items-center rounded-2xl bg-[#217346] text-5xl font-bold text-white shadow-lg" role="img" aria-label="Excel spreadsheet">X</div> }
@@ -43,15 +44,18 @@
       <!-- Resource name -->
       <label class="relative mt-4 block h-[37px] rounded-lg bg-[#f5f5f5]" [class]="resourceNameError ? 'ring-1 ring-red-500' : ''">
         <span class="pointer-events-none absolute left-3 text-neutral-700 transition-all duration-150" [class]="resourceName ? 'top-[3px] text-[8px]' : 'top-1/2 -translate-y-1/2 text-[11px]'">Resource Name<span class="text-red-500">*</span></span>
-        <input type="text" class="h-full w-full bg-transparent px-3 pb-0.5 pt-3 text-[11px] outline-none" [value]="resourceName" (input)="nameChanged.emit($any($event.target).value)" minlength="4" maxlength="100" required [attr.aria-invalid]="!!resourceNameError" [attr.aria-describedby]="resourceNameError ? 'resource-name-error' : null" />
+        <input type="text" class="h-full w-full bg-transparent px-3 pb-0.5 pt-3 text-[11px] outline-none" [value]="resourceName" (beforeinput)="blockEmoji($event)" (input)="nameChanged.emit($any($event.target).value)" maxlength="100" required [attr.aria-invalid]="!!resourceNameError" [attr.aria-describedby]="resourceNameError ? 'resource-name-error' : null" />
       </label>
-      @if (resourceNameError) { <p id="resource-name-error" class="mt-1 text-[9px] text-red-600" role="alert">{{ resourceNameError }}</p> }
+      <div class="mt-1 flex items-start justify-between gap-2">
+        @if (resourceNameError) { <p id="resource-name-error" class="min-w-0 flex-1 text-[9px] text-red-600" role="alert">{{ resourceNameError }}</p> }
+        <span class="ml-auto shrink-0 text-[9px] text-neutral-600">{{ resourceName.length }}/100</span>
+      </div>
 
       <!-- Resource description -->
-      <label class="relative mt-[18px] block h-[103px] rounded-lg bg-[#f5f5f5]" [class]="resourceDescriptionError ? 'ring-1 ring-red-500' : ''">
-        <span class="pointer-events-none absolute left-3 top-2.5 text-[11px] text-neutral-700">Resource Description</span>
-        <textarea class="h-full w-full resize-none bg-transparent px-3 pb-6 pt-8 text-[11px] outline-none" [value]="resourceDescription" (input)="descriptionChanged.emit($any($event.target).value)" maxlength="300" [attr.aria-invalid]="!!resourceDescriptionError" [attr.aria-describedby]="resourceDescriptionError ? 'resource-description-error' : null"></textarea>
-        <span class="pointer-events-none absolute bottom-1.5 right-2.5 text-[9px] text-neutral-600">Maximum character {{ resourceDescription.length }}/300</span>
+      <label class="mt-[18px] flex h-[103px] flex-col overflow-hidden rounded-lg bg-[#f5f5f5]" [class]="resourceDescriptionError ? 'ring-1 ring-red-500' : ''">
+        <span class="pointer-events-none shrink-0 px-3 pt-2.5 text-[11px] leading-4 text-neutral-700">Resource Description</span>
+        <textarea class="min-h-0 w-full flex-1 resize-none bg-transparent px-3 text-[11px] outline-none" [value]="resourceDescription" (input)="descriptionChanged.emit($any($event.target).value)" maxlength="500" [attr.aria-invalid]="!!resourceDescriptionError" [attr.aria-describedby]="resourceDescriptionError ? 'resource-description-error' : null"></textarea>
+        <span class="pointer-events-none shrink-0 px-2.5 pb-1.5 pt-0.5 text-right text-[9px] leading-3 text-neutral-600">Maximum character {{ resourceDescription.length }}/500</span>
       </label>
       @if (resourceDescriptionError) { <p id="resource-description-error" class="mt-1 text-[9px] text-red-600" role="alert">{{ resourceDescriptionError }}</p> }
 
@@ -91,8 +95,8 @@
 
       <!-- Actions -->
       <div class="mt-[31px] grid grid-cols-2 gap-[18px] px-[59px]">
-        <button type="button" data-no-teal-hover class="h-[31px] rounded-lg bg-[#f5f5f5] text-[11px] text-neutral-600 outline-none transition hover:bg-neutral-200" (click)="cancelled.emit()" aria-label="Cancel resource editing">Cancel</button>
-        <button type="button" data-no-teal-hover class="h-[31px] rounded-lg bg-[#f5f5f5] text-[11px] text-neutral-600 outline-none transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-50" [disabled]="!canSave || saving" (click)="saved.emit()" aria-label="Save resource">{{ saving ? 'Saving…' : 'Save' }}</button>
+        <button type="button" data-no-teal-hover class="h-[31px] rounded-lg bg-[#f5f5f5] text-[11px] text-neutral-600 outline-none transition hover:bg-neutral-200 cursor-pointer" (click)="cancelled.emit()" aria-label="Cancel resource editing">Cancel</button>
+        <button type="button" data-no-teal-hover class="h-[31px] rounded-lg bg-[#f5f5f5] text-[11px] text-neutral-600 outline-none transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer" [disabled]="!canSave || saving" (click)="saved.emit()" aria-label="Save resource">{{ saving ? 'Saving…' : 'Save' }}</button>
       </div>
     </section>
   </section>

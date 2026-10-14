@@ -187,7 +187,7 @@ export function validateResourceName(normalized: string): string {
 }
 
 export function validateResourceDescription(raw: string): string {
-  return raw.trim().length > RESOURCE_DESCRIPTION_MAX ? 'Description exceeds maximum length.' : '';
+  return raw.trim().length > RESOURCE_DESCRIPTION_MAX ? `Maximum ${RESOURCE_DESCRIPTION_MAX} characters.` : '';
 }
 
 /** Synchronous file checks (SRS Field List #3). Returns '' when the file is acceptable. */

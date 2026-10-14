@@ -60,6 +60,10 @@ const UPLOAD_FAILED_MESSAGE = 'Upload failed. Please check your internet connect
 const GENERIC_ERROR =
   'Unable to complete the requested action due to a server error. Please try again later.'; // SRS Edge Case #5
 
+/** Resource Name: emoji (incl. flags, skin tones, joined/variation sequences) are not allowed; other special characters are. */
+const EMOJI_PATTERN = /[\p{Extended_Pictographic}\p{Emoji_Modifier}\p{Regional_Indicator}‍️⃣]/u;
+const NAME_EMOJI_MESSAGE = 'Emojis are not allowed.';
+
 type Field = 'name' | 'type';
 
 /**
@@ -143,7 +147,10 @@ export class MultimediaUpload implements OnInit {
   );
   private readonly isEdit = computed(() => this.existing() !== null);
   private readonly normalizedName = computed(() => normalizeResourceName(this.name()));
-  private readonly nameIssue = computed(() => validateResourceName(this.normalizedName()));
+  private readonly nameIssue = computed(() => {
+    const value = this.normalizedName();
+    return validateResourceName(value) || (EMOJI_PATTERN.test(value) ? NAME_EMOJI_MESSAGE : '');
+  });
   private readonly descriptionIssue = computed(() => validateResourceDescription(this.description()));
   private readonly typeIssue = computed(() => (this.type() ? '' : 'Resource Type is required.'));
   private readonly hasFile = computed(
@@ -170,10 +177,12 @@ export class MultimediaUpload implements OnInit {
   private readonly currentPreviewUrl = computed(
     () => this.objectUrl() ?? (this.file() ? null : this.remoteUrl()),
   );
-  private readonly previewKind = computed<PreviewType>(() => {
+    private readonly previewKind = computed<PreviewType>(() => {
     if (!this.currentPreviewUrl()) return 'none';
     const picked = this.file();
-    return previewTypeOf(picked ? extensionOf(picked.name) : (this.savedFileExtension()));
+    const type = previewTypeOf(picked ? extensionOf(picked.name) : this.savedFileExtension());
+    // A saved PDF is a remote URL that can be blocked by the host (e.g. 401), so show the file card instead of an iframe.
+    return !picked && type === 'pdf' ? 'file' : type;
   });
   /**
    * The only place a URL is marked trusted. It is a blob: URL created here from a file whose
@@ -356,6 +365,12 @@ export class MultimediaUpload implements OnInit {
   // ---------------------------------------------------------------------
   // field handlers
   // ---------------------------------------------------------------------
+  /** Stops emoji from being typed or pasted into Resource Name (validation still catches anything else). */
+  protected blockEmoji(event: Event): void {
+    const data = (event as InputEvent).data;
+    if (data && EMOJI_PATTERN.test(data)) event.preventDefault();
+  }
+
   private onNameChanged(value: string): void {
     this.name.set(typeof value === 'string' ? value : '');
     this.touch('name');

@@ -55,7 +55,7 @@
       </label>
       @if (resourceDescriptionError) { <p id="resource-description-error" class="mt-1 text-[9px] text-red-600" role="alert">{{ resourceDescriptionError }}</p> }
 
-      <!-- Upload zone -->
+      <!-- Upload zone (CHANGED: always shows the hint text; the picked file name now appears in the chip below) -->
       <label class="mt-[17px] flex h-[109px] flex-col items-center justify-center rounded-lg border-[1.5px] border-dashed text-center transition" [class]="(resourceFileError ? 'border-red-500 ' : 'border-[#67b9c7] ') + (canUpload && !saving ? 'cursor-pointer hover:bg-cyan-50/40' : 'cursor-not-allowed opacity-60')">
         <input type="file" class="sr-only" [attr.accept]="acceptedFileTypes" [disabled]="!canUpload || saving" (change)="fileSelected.emit($event)" required [attr.aria-invalid]="!!resourceFileError" [attr.aria-describedby]="resourceFileError ? 'resource-file-error' : null" />
         <span class="flex h-[21px] w-[70px] items-center justify-center gap-1 rounded-[5px] bg-white text-[8px] text-neutral-700 shadow-sm">
@@ -63,10 +63,28 @@
           Upload
         </span>
         <span class="mt-[7px] max-w-[300px] truncate text-[8.5px] leading-[14px] text-neutral-700">
-          @if (resourceFileName) { {{ resourceFileName }} } @else { Choose a file or drag and drop it here<span class="text-red-500">*</span> }
+          Choose a file or drag and drop it here<span class="text-red-500">*</span>
         </span>
         <span class="mt-1 text-[7px] leading-3 text-neutral-600">Format allowed - MP4, MP3, PDF, DOCX, PPTX, XLSX, JPG, JPEG, PNG, ZIP</span>
       </label>
+
+      <!-- NEW: selected file name + close button (same design as the Course Thumbnail chip) -->
+      @if (resourceFileName) {
+        <div class="mt-2 flex h-9 items-center justify-between gap-2 rounded-lg bg-[#f5f5f5] pl-3 pr-2 text-[10px] text-[#444]">
+          <span class="min-w-0 flex-1 truncate" [title]="resourceFileName">{{ resourceFileName }}</span>
+          @if (resourceFileSize) { <span class="shrink-0 text-[9px] text-neutral-500">{{ resourceFileSize }}</span> }
+          @if (canRemoveFile) {
+            <button
+              type="button"
+              class="grid size-5 shrink-0 cursor-pointer place-items-center rounded-full bg-[#ff5d59] text-xs leading-none text-white transition hover:bg-red-600"
+              aria-label="Remove selected file"
+              title="Remove file"
+              (click)="fileRemoved.emit()"
+            >×</button>
+          }
+        </div>
+      }
+
       @if (resourceFileError) { <p id="resource-file-error" class="mt-1 text-[9px] text-red-600" role="alert">{{ resourceFileError }}</p> }
 
       @if (error) { <p class="mt-2 text-center text-xs text-red-600" role="alert">{{ error }}</p> }

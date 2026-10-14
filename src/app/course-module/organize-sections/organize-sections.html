@@ -30,12 +30,11 @@
           }
           <div class="absolute inset-0 bg-gradient-to-r from-black/70 via-black/35 to-black/50"></div>
         </div>
-        <!-- Course title -->
+        <!-- Course title + details (CHANGED: always visible, no longer tied to the preview button) -->
         <div class="absolute inset-x-7 bottom-5 max-w-[70%] text-white">
           <p class="text-sm font-medium">
             {{ course.name }}
           </p>
-          @if (outlinePreviewVisible()) {
           <p class="mt-1 line-clamp-2 text-[10px] text-white/80">
             {{ course.description || 'No course description provided.' }}
           </p>
@@ -44,16 +43,13 @@
             <span>{{ levelLabel(course.level) }}</span>
             <span>{{ course.instructorName }}</span>
           </div>
-          }
         </div>
-        <!-- Preview button -->
+        <!-- CHANGED: Preview button is now always "Show Preview" and does nothing for now.
+             Later: add (click)="openPreviewPage()" to navigate to the separate preview page. -->
         <button type="button" data-no-teal-hover
-          class="absolute right-2 top-2 z-10 flex h-9 w-[124px] shrink-0 items-center justify-center gap-2 overflow-hidden rounded-lg border-0 bg-white px-3 text-[10px] text-[#555] shadow-sm outline-none transition hover:bg-neutral-100 focus-visible:ring-2 focus-visible:ring-[#61b7c5]/40"
-          (click)="toggleOutlinePreview()" [attr.aria-expanded]="outlinePreviewVisible()">
+          class="absolute right-2 top-2 z-10 flex h-9 w-[124px] shrink-0 items-center justify-center gap-2 overflow-hidden rounded-lg border-0 bg-white px-3 text-[10px] text-[#555] shadow-sm outline-none transition hover:bg-neutral-100 focus-visible:ring-2 focus-visible:ring-[#61b7c5]/40">
           <span class="text-[#61b7c5]" aria-hidden="true">▶</span>
-          <span class="whitespace-nowrap">
-            {{ outlinePreviewVisible() ? 'Hide Preview' : 'Show Preview' }}
-          </span>
+          <span class="whitespace-nowrap">Show Preview</span>
         </button>
 
         <!-- Bottom-right notch with "Edit course" button.
@@ -218,9 +214,10 @@
                 <path d="m14 7 3 3" stroke-linecap="round" />
               </svg>
             </button>
+            <!-- CHANGED: delete now asks for confirmation first -->
             <button type="button"
               class="grid size-7 place-items-center rounded-full bg-[#61b7c5] text-white transition hover:bg-red-500"
-              [attr.aria-label]="'Delete ' + activity.title" (click)="removeActivity(section.id, activity.id)"
+              [attr.aria-label]="'Delete ' + activity.title" (click)="requestRemoveActivity(section.id, activity)"
               title="Delete activity">
               <svg viewBox="0 0 24 24" class="size-3.5 fill-none stroke-current" stroke-width="2" aria-hidden="true">
                 <path d="M4 7h16" stroke-linecap="round" />
@@ -429,6 +426,28 @@
           Cancel</button><button type="button" class="rounded-lg bg-[#ff5d59] px-4 py-2 text-sm text-white"
           (click)="answerRemoveSection(true)">
           Delete section
+        </button>
+      </div>
+    </section>
+  </div>
+  }
+
+  <!-- NEW: delete confirmation for activities (multimedia) -->
+  @if (activityConfirmOpen()) {
+  <div class="fixed inset-0 z-[85] grid place-items-center bg-black/50 p-5 backdrop-blur-sm">
+    <section class="w-[min(430px,92vw)] rounded-2xl bg-white p-7 shadow-2xl" role="alertdialog" aria-modal="true"
+      aria-labelledby="activity-confirm-title" aria-describedby="activity-confirm-message">
+      <h2 id="activity-confirm-title" class="text-xl font-semibold">Delete activity?</h2>
+      <p id="activity-confirm-message" class="mt-2 text-sm text-neutral-500">
+        {{ activityConfirmMessage() }}
+      </p>
+      <div class="mt-6 flex w-full items-center justify-end gap-3">
+        <button type="button"
+          class="rounded-lg bg-neutral-100 px-4 py-2 text-sm text-neutral-700 transition hover:bg-neutral-200"
+          (click)="answerRemoveActivity(false)">
+          Cancel</button><button type="button" class="rounded-lg bg-[#ff5d59] px-4 py-2 text-sm text-white"
+          (click)="answerRemoveActivity(true)">
+          Delete activity
         </button>
       </div>
     </section>

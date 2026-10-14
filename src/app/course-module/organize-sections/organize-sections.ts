@@ -67,7 +67,7 @@ export class OrganizeSections implements OnInit, OnDestroy {
   readonly sectionsRetryAvailable = signal(false);
   readonly sectionSaveMessage = signal('');
   readonly resourceSuccessMessage = signal(''); // top-right toast (used for section toasts too)
-  readonly outlinePreviewVisible = signal(false);
+  // CHANGED: outlinePreviewVisible removed - "Show Preview" will navigate to a separate page later.
   readonly expandedSectionId = signal<number | null>(null);
   readonly previewingSection = signal<Section | null>(null);
 
@@ -84,10 +84,15 @@ export class OrganizeSections implements OnInit, OnDestroy {
   readonly maxNameChars = MAX_CHARS;
   readonly sectionCharCount = computed(() => this.sectionDraft().length);
 
-  // ---------- delete confirmation ----------
+  // ---------- delete confirmation (section) ----------
   readonly confirmOpen = signal(false);
   readonly confirmMessage = signal('');
   private pendingDelete: Section | null = null;
+
+  // ---------- delete confirmation (activity / multimedia) - NEW ----------
+  readonly activityConfirmOpen = signal(false);
+  readonly activityConfirmMessage = signal('');
+  private pendingActivityDelete: { sectionId: number; activity: SectionActivity } | null = null;
 
   // ---------- reorder ----------
   readonly reorderingSectionId = signal<number | null>(null);
@@ -106,13 +111,13 @@ export class OrganizeSections implements OnInit, OnDestroy {
   private readonly noActivities: SectionActivity[] = [];
   private readonly activityMenuUsedIds = signal<number[]>([]);
 
-isActivityMenuUsed(sectionId: number): boolean {
-  return this.activityMenuUsedIds().includes(sectionId);
-}
+  isActivityMenuUsed(sectionId: number): boolean {
+    return this.activityMenuUsedIds().includes(sectionId);
+  }
 
-markActivityMenuUsed(sectionId: number): void {
-  this.activityMenuUsedIds.update(ids => (ids.includes(sectionId) ? ids : [...ids, sectionId]));
-}
+  markActivityMenuUsed(sectionId: number): void {
+    this.activityMenuUsedIds.update(ids => (ids.includes(sectionId) ? ids : [...ids, sectionId]));
+  }
 
   // ---------- multimedia (NEW) ----------
   /** Resources already fetched, keyed by section id. */
@@ -170,9 +175,8 @@ markActivityMenuUsed(sectionId: number): void {
     this.closed.emit();
   }
 
-  toggleOutlinePreview(): void {
-    this.outlinePreviewVisible.update(v => !v);
-  }
+  // CHANGED: toggleOutlinePreview() removed. Later add e.g. openPreviewPage() that navigates
+  // to the separate preview page and wire it to the "Show Preview" button.
 
   // =====================================================================
   // course display helpers
@@ -568,6 +572,25 @@ markActivityMenuUsed(sectionId: number): void {
     });
     this.resourceDialog.set(null);
     this.showToast(created ? 'Resource uploaded successfully.' : 'Resource updated successfully.');
+  }
+
+  /** NEW: delete icon on an activity row -> open the confirmation popup first. */
+  requestRemoveActivity(sectionId: number, activity: SectionActivity): void {
+    this.pendingActivityDelete = { sectionId, activity };
+    this.activityConfirmMessage.set(
+      `Are you sure you want to delete "${activity.title}"? This action cannot be undone.`,
+    );
+    this.activityConfirmOpen.set(true);
+  }
+
+  /** NEW: Cancel / Delete activity buttons of the confirmation popup. */
+  answerRemoveActivity(confirmed: boolean): void {
+    const target = this.pendingActivityDelete;
+    this.pendingActivityDelete = null;
+    this.activityConfirmOpen.set(false);
+    if (confirmed && target) {
+      this.removeActivity(target.sectionId, target.activity.id);
+    }
   }
 
   removeActivity(sectionId: number, activityId: number): void {

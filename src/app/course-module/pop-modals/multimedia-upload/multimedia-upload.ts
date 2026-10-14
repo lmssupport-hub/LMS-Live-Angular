@@ -64,7 +64,7 @@ type Field = 'name' | 'type';
 
 /**
  * The finished template calls `<event>.emit(...)`. These adapters route every call to a handler
- * method on this component, so the markup stays untouched. Replace the seven calls in the HTML with
+ * method on this component, so the markup stays untouched. Replace the calls in the HTML with
  * direct method calls if you would rather drop this indirection.
  */
 interface Emitter<T = void> {
@@ -116,6 +116,8 @@ export class MultimediaUpload implements OnInit {
   private readonly file = signal<File | null>(null);
   private readonly objectUrl = signal<string | null>(null);
   private readonly existing = signal<MultimediaResource | null>(null);
+  /** NEW: edit mode - the user clicked × on the saved file, so a replacement file is now required. */
+  private readonly existingRemoved = signal(false);
 
   private readonly previewShown = signal(false);
   private readonly isSaving = signal(false);
@@ -144,18 +146,26 @@ export class MultimediaUpload implements OnInit {
   private readonly nameIssue = computed(() => validateResourceName(this.normalizedName()));
   private readonly descriptionIssue = computed(() => validateResourceDescription(this.description()));
   private readonly typeIssue = computed(() => (this.type() ? '' : 'Resource Type is required.'));
-  private readonly hasFile = computed(() => this.file() !== null || this.existing() !== null);
+  private readonly hasFile = computed(
+    () => this.file() !== null || (this.existing() !== null && !this.existingRemoved()),
+  );
 
   /** Edit mode: the chosen type no longer fits the stored file, so a replacement file is required. */
   private readonly existingTypeConflict = computed(() => {
     const current = this.existing();
     const type = this.type();
-    return !!current && !this.file() && !!type && type !== groupOfKind(current.resourceType);
+    return (
+      !!current &&
+      !this.file() &&
+      !this.existingRemoved() &&
+      !!type &&
+      type !== groupOfKind(current.resourceType)
+    );
   });
 
   private readonly remoteUrl = computed(() => {
     const current = this.existing();
-    return current ? trustedMediaUrl(current.fileUrl) : null;
+    return current && !this.existingRemoved() ? trustedMediaUrl(current.fileUrl) : null;
   });
   private readonly currentPreviewUrl = computed(
     () => this.objectUrl() ?? (this.file() ? null : this.remoteUrl()),
@@ -163,7 +173,7 @@ export class MultimediaUpload implements OnInit {
   private readonly previewKind = computed<PreviewType>(() => {
     if (!this.currentPreviewUrl()) return 'none';
     const picked = this.file();
-    return previewTypeOf(picked ? extensionOf(picked.name) : (this.existing()?.fileExtension ?? ''));
+    return previewTypeOf(picked ? extensionOf(picked.name) : (this.savedFileExtension()));
   });
   /**
    * The only place a URL is marked trusted. It is a blob: URL created here from a file whose
@@ -185,7 +195,8 @@ export class MultimediaUpload implements OnInit {
       return (
         this.normalizedName() !== current.name ||
         this.description().trim() !== (current.description ?? '') ||
-        this.file() !== null
+        this.file() !== null ||
+        this.existingRemoved()
       );
     }
     return !!(this.normalizedName() || this.description().trim() || this.file() || this.type());
@@ -227,7 +238,7 @@ export class MultimediaUpload implements OnInit {
   /** Extension of the picked file, or of the saved file in edit mode (drives the preview icon). */
   protected get previewExtension(): string {
     const picked = this.file();
-    return picked ? extensionOf(picked.name) : (this.existing()?.fileExtension ?? '');
+    return picked ? extensionOf(picked.name) : this.savedFileExtension();
   }
   protected get resourceName(): string {
     return this.name();
@@ -243,13 +254,20 @@ export class MultimediaUpload implements OnInit {
   }
   /** Name of the picked file, or of the saved file in edit mode. */
   protected get resourceFileName(): string {
-    return this.file()?.name ?? this.existing()?.originalFileName ?? '';
+    return this.file()?.name ?? (this.existingRemoved() ? '' : (this.existing()?.originalFileName ?? ''));
   }
   protected get resourceFileSize(): string {
     const picked = this.file();
     if (picked) return formatBytes(picked.size);
     const current = this.existing();
-    return current ? formatBytes(current.fileSize) : '';
+    return current && !this.existingRemoved() ? formatBytes(current.fileSize) : '';
+  }
+  /**
+   * NEW: the × on the file chip is shown whenever a file is displayed - a freshly picked one,
+   * or the already-saved one in edit mode (removing it just means a replacement is required before Save).
+   */
+  protected get canRemoveFile(): boolean {
+    return !this.isSaving() && (this.file() !== null || (this.existing() !== null && !this.existingRemoved()));
   }
   protected get resourceNameError(): string {
     return this.nameServerError() || (this.isRevealed('name') ? this.nameIssue() : '');
@@ -296,6 +314,8 @@ export class MultimediaUpload implements OnInit {
   protected readonly descriptionChanged = emitter<string>(value => this.onDescriptionChanged(value));
   protected readonly resourceTypeChanged = emitter<string>(value => this.onResourceTypeChanged(value));
   protected readonly fileSelected = emitter<Event>(event => void this.onFileSelected(event));
+  /** NEW: × on the file chip. */
+  protected readonly fileRemoved = emitter(() => this.onFileRemoved());
   protected readonly previewToggled = emitter(() => this.previewShown.update(shown => !shown));
   protected readonly cancelled = emitter(() => this.onCancel());
   protected readonly saved = emitter(() => this.onSave());
@@ -396,6 +416,29 @@ export class MultimediaUpload implements OnInit {
     } finally {
       if (token === this.fileCheckToken) this.fileChecking.set(false);
     }
+  }
+
+  /**
+   * NEW: × on the file chip.
+   * - picked file: dropped (edit mode falls back to the saved file, create mode has no file again)
+   * - saved file (edit mode): hidden, and a replacement file must be chosen before Save is enabled
+   * (The <input type="file"> value is already cleared right after every pick, so the same file can be re-selected.)
+   */
+  private onFileRemoved(): void {
+    if (this.isSaving()) return;
+    this.fileCheckToken++; // invalidates any signature check that is still running
+    this.fileChecking.set(false);
+    if (this.file()) {
+      // A freshly picked file: drop it (edit mode falls back to the saved file unless that was removed earlier).
+      this.discardFile();
+    } else if (this.existing()) {
+      // The saved file: hide it and require a replacement before Save.
+      this.existingRemoved.set(true);
+      this.showAllErrors.set(true);
+    }
+    this.fileError.set('');
+    this.previewError.set('');
+    this.generalError.set('');
   }
 
   // ---------------------------------------------------------------------
@@ -519,6 +562,10 @@ export class MultimediaUpload implements OnInit {
     const url = this.objectUrl();
     if (url) URL.revokeObjectURL(url); // avoids leaking the blob for the lifetime of the page
     this.objectUrl.set(null);
+  }
+
+  private savedFileExtension(): string {
+    return this.existingRemoved() ? '' : (this.existing()?.fileExtension ?? '');
   }
 
   private touch(field: Field): void {

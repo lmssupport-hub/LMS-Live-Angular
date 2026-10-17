@@ -72,7 +72,7 @@ export class EnrollUser implements AfterViewInit {
     const names = this.users()
       .filter(u => ids.has(u.id))
       .map(u => u.name);
-    if (names.length === 0) return 'Select user(s)';
+    if (names.length === 0) return 'Select Users';
     if (names.length <= 2) return names.join(', ');
     return `${names.length} users selected`;
   });

@@ -11,7 +11,7 @@
       <span class="text-neutral-400">{{
         sectionSaveMessage() || 'Changes save automatically'
         }}</span>
-    </div> 
+    </div>
   </header>
   @if (resourceSuccessMessage()) {
   <div class="fixed right-8 top-24 z-[90] rounded-xl bg-[#61b7c5] px-5 py-3 text-sm text-white shadow-lg" role="status"
@@ -118,10 +118,13 @@
     } @else {
     <div class="mt-5 space-y-4">
       @for (section of sections(); track section.id) {
+      <!-- CHANGED: expanded section now gets a faint teal ring (drag-over ring still wins) -->
       <article class="relative rounded-xl bg-[#f8f8f8] p-2.5 transition" [class]="
               dragOverSectionId() === section.id && draggedSectionId() !== section.id
                 ? 'ring-2 ring-[#61b7c5] ring-offset-2'
-                : ''
+                : expandedSectionId() === section.id
+                  ? 'ring-1 ring-[#61b7c5]/40'
+                  : ''
             " (dragover)="dragOverSection($event, section)" (drop)="dropSection($event, section)">
         <div class="flex min-h-10 items-center gap-2">
           <div class="flex h-10 w-16 shrink-0 flex-col items-center justify-center rounded-lg bg-white"
@@ -130,32 +133,52 @@
             <output class="text-[10px] font-medium" [attr.aria-label]="'Section Order ' + section.sectionOrder"
               [attr.data-section-order]="section.id">{{ section.sectionOrder.toString().padStart(2, '0') }}</output>
           </div>
+
+          <!-- CHANGED: clearer expand/collapse affordance.
+               - whole toggle area has hover feedback + pointer cursor + tooltip
+               - activity count pill shows the row has content
+               - chevron sits in a visible teal circle and rotates when open
+               - aria-controls links the button to the panel below -->
           <button type="button" data-no-teal-hover
-            class="flex min-w-0 flex-1 items-center gap-2 bg-transparent text-left text-xs text-neutral-700 outline-none"
-            (click)="toggleSection(section.id)" [attr.aria-expanded]="expandedSectionId() === section.id">
-            <span class="min-w-0 truncate">{{ section.name }}</span>
-            <svg viewBox="0 0 20 20"
-              class="size-3.5 shrink-0 fill-none stroke-current text-neutral-500 transition-transform duration-200"
-              [class.rotate-90]="expandedSectionId() === section.id" stroke-width="1.8" aria-hidden="true">
-              <path d="m7 4 6 6-6 6" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
+            class="group flex min-w-0 flex-1 cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1 text-left text-xs text-neutral-700 outline-none transition-colors hover:bg-white/70 focus-visible:ring-2 focus-visible:ring-[#61b7c5]/40 motion-reduce:transition-none"
+            (click)="toggleSection(section.id)"
+            [attr.aria-expanded]="expandedSectionId() === section.id"
+            [attr.aria-controls]="'section-panel-' + section.id"
+            [attr.title]="expandedSectionId() === section.id ? 'Collapse section' : 'Expand section'">
+            <span class="min-w-0 truncate" [class.font-medium]="expandedSectionId() === section.id">{{ section.name }}</span>
+            <span
+              class="shrink-0 rounded-full bg-white px-2 py-0.5 text-[9px] text-neutral-500 transition-colors group-hover:bg-[#eef8fa]">
+              {{ activitiesForSection(section.id).length }}
+              {{ activitiesForSection(section.id).length === 1 ? 'activity' : 'activities' }}
+            </span>
+            <span
+              class="grid size-6 shrink-0 place-items-center rounded-full border border-[#61b7c5]/50 text-[#3e8d99] transition-colors group-hover:bg-[#eef8fa] motion-reduce:transition-none">
+              <svg viewBox="0 0 20 20"
+                class="size-3.5 fill-none stroke-current transition-transform duration-200 motion-reduce:transition-none"
+                [class.rotate-90]="expandedSectionId() === section.id" stroke-width="2" aria-hidden="true">
+                <path d="m7 4 6 6-6 6" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </span>
           </button>
-          <!-- Edit / Delete icons + drag handle -->
+
+          <!-- Edit / Delete icons + drag handle
+               NOTE: the two SVG paths below were rewritten with clean Material-style paths
+               (the pasted originals were corrupted). -->
           <button type="button"
             class="grid size-7 shrink-0 place-items-center rounded-full bg-[#61b7c5] text-white transition hover:bg-[#489daa] disabled:opacity-50"
             [disabled]="sectionsSaving()" [attr.aria-label]="'Edit ' + section.name" (click)="openEditSection(section)"
             title="Edit section">
-            <svg class="h-4 w-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+            <svg class="h-4 w-4 text-white" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path
-                d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25Zm17.71-10.04a1 1 0 0 0 0-1.42l-2.5-2.5a1 1 0 0 0-1.42 0l-1.83 1.83 3.75 3.75  5a2 2 0 0 1 2-2h7v2H5v14h14v-7h2v7a2 2 0 0 1-2 2H5a2 2 0 0 2-2-2V7Z" />
+                d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25ZM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83Z" />
             </svg>
           </button>
           <button type="button"
             class="grid size-7 shrink-0 place-items-center rounded-full bg-[#61b7c5] text-white transition hover:bg-red-500 disabled:opacity-50"
             [disabled]="sectionsSaving()" [attr.aria-label]="'Delete ' + section.name"
             (click)="requestRemoveSection(section)" title="Delete section">
-            <svg class="h-4 w-4 text-white" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M9 3V2h6v1h5v2H4V3h5Zm10 4H5v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7ZM 9h2v10H8V9Zm6" />
+            <svg class="h-4 w-4 text-white" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12ZM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4Z" />
             </svg>
           </button>
           <span
@@ -185,13 +208,21 @@
         </div>
         }
         @if (expandedSectionId() === section.id) {
-        <div class="mt-2 space-y-2 px-2 pb-1">
+        <!-- CHANGED: id added so the toggle button's aria-controls points at this panel -->
+        <div [id]="'section-panel-' + section.id" class="mt-2 space-y-2 px-2 pb-1">
           @for (
           activity of activitiesForSection(section.id);
           track activity.id;
           let activityIndex = $index
           ) {
-          <div class="flex h-10 items-center gap-3 rounded-xl bg-white px-5 text-xs transition" [class]="
+          <!-- CHANGED: clicking the activity row itself opens it (Ebook / Multimedia / Question Bank).
+               Inner buttons stop propagation so they don't trigger this as well. -->
+          <div class="flex h-10 cursor-pointer items-center gap-3 rounded-xl bg-white px-5 text-xs outline-none transition hover:bg-[#f7fcfd] focus-visible:ring-2 focus-visible:ring-[#61b7c5]/40"
+            role="button" tabindex="0" [attr.aria-label]="'Open ' + activity.title"
+            (click)="(activity.kind === 'Question Bank' ? openQuestionBankList(section.id) : openResourceDialog(activity.kind, section.id, activity))"
+            (keydown.enter)="$event.target === $event.currentTarget && (activity.kind === 'Question Bank' ? openQuestionBankList(section.id) : openResourceDialog(activity.kind, section.id, activity))"
+            (keydown.space)="$event.target === $event.currentTarget && $event.preventDefault(); $event.target === $event.currentTarget && (activity.kind === 'Question Bank' ? openQuestionBankList(section.id) : openResourceDialog(activity.kind, section.id, activity))"
+            [class]="
                       activityDropTarget()?.sectionId === section.id &&
                       activityDropTarget()?.index === activityIndex &&
                       draggedActivity()
@@ -207,7 +238,7 @@
             <button type="button"
               class="grid size-7 place-items-center rounded-full bg-[#61b7c5] text-white transition hover:bg-[#489daa]"
               [attr.aria-label]="'Edit ' + activity.title"
-              (click)="openResourceDialog(activity.kind, section.id, activity)" title="Edit activity">
+              (click)="$event.stopPropagation(); openResourceDialog(activity.kind, section.id, activity)" title="Edit activity">
               <svg viewBox="0 0 24 24" class="size-3.5 fill-none stroke-current" stroke-width="2" aria-hidden="true">
                 <path d="m4 20 4.5-1 10-10a2.1 2.1 0 0 0-3-3l-10 10L4 20Z" stroke-linecap="round"
                   stroke-linejoin="round" />
@@ -217,7 +248,7 @@
             <!-- CHANGED: delete now asks for confirmation first -->
             <button type="button"
               class="grid size-7 place-items-center rounded-full bg-[#61b7c5] text-white transition hover:bg-red-500"
-              [attr.aria-label]="'Delete ' + activity.title" (click)="requestRemoveActivity(section.id, activity)"
+              [attr.aria-label]="'Delete ' + activity.title" (click)="$event.stopPropagation(); requestRemoveActivity(section.id, activity)"
               title="Delete activity">
               <svg viewBox="0 0 24 24" class="size-3.5 fill-none stroke-current" stroke-width="2" aria-hidden="true">
                 <path d="M4 7h16" stroke-linecap="round" />
@@ -227,6 +258,7 @@
               </svg>
             </button>
             <span class="cursor-grab select-none text-lg text-neutral-300 active:cursor-grabbing" draggable="true"
+              (click)="$event.stopPropagation()"
               (dragstart)="startActivityDrag($event, section.id, activityIndex)" (dragend)="endActivityDrag()"
               title="Drag activity within or between sections" aria-label="Drag activity">⠿</span>
           </div>

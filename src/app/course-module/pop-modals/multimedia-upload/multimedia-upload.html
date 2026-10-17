@@ -51,9 +51,11 @@
         <span class="ml-auto shrink-0 text-[9px] text-neutral-600">{{ resourceName.length }}/100</span>
       </div>
 
-      <!-- Resource description -->
+      <!-- Resource description
+           CHANGED: the label now shrinks to 8px (same size / position as the Resource Name label)
+           as soon as the user types, instead of staying at 11px. -->
       <label class="mt-[18px] flex h-[103px] flex-col overflow-hidden rounded-lg bg-[#f5f5f5]" [class]="resourceDescriptionError ? 'ring-1 ring-red-500' : ''">
-        <span class="pointer-events-none shrink-0 px-3 pt-2.5 text-[11px] leading-4 text-neutral-700">Resource Description</span>
+        <span class="pointer-events-none shrink-0 px-3 text-neutral-700 transition-all duration-150" [class]="resourceDescription ? 'pt-[3px] text-[8px] leading-3' : 'pt-2.5 text-[11px] leading-4'">Resource Description</span>
         <textarea class="min-h-0 w-full flex-1 resize-none bg-transparent px-3 text-[11px] outline-none" [value]="resourceDescription" (input)="descriptionChanged.emit($any($event.target).value)" maxlength="500" [attr.aria-invalid]="!!resourceDescriptionError" [attr.aria-describedby]="resourceDescriptionError ? 'resource-description-error' : null"></textarea>
         <span class="pointer-events-none shrink-0 px-2.5 pb-1.5 pt-0.5 text-right text-[9px] leading-3 text-neutral-600">Maximum character {{ resourceDescription.length }}/500</span>
       </label>

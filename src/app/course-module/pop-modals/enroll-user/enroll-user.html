@@ -26,7 +26,7 @@
       Select users who can access the course
     </p>
 
-    <form class="mt-5" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <form class="mt-5 mb-3"  [formGroup]="form" (ngSubmit)="submit()" novalidate>
       <div class="relative" (click)="stopOptionsClick($event)">
         <span
           id="enroll-users-label"
@@ -66,26 +66,20 @@
           <div
             id="eligible-user-options"
             class="absolute inset-x-0 top-[calc(100%+5px)] z-20 max-h-56 overflow-y-auto rounded-xl border border-neutral-100 bg-white py-1 shadow-xl"
-            role="listbox"
-            aria-multiselectable="true"
+            role="group"
             aria-labelledby="enroll-users-label"
           >
             @if (users().length) {
               @for (user of users(); track user.id) {
-                <button
-                  type="button"
+                <label
                   class="flex min-h-11 w-full items-center gap-3 px-3 py-2 text-left outline-none transition hover:bg-[#f4fafb] focus-visible:bg-[#eaf7f9]"
-                  role="option"
-                  [attr.aria-selected]="isSelected(user.id)"
-                  (click)="toggleUser(user.id)"
                 >
-                  <span
-                    class="grid size-4 shrink-0 place-items-center rounded border border-neutral-300 bg-white text-[10px] text-white"
-                    [class.border-[#61b7c5]]="isSelected(user.id)"
-                    [class.bg-[#61b7c5]]="isSelected(user.id)"
-                    aria-hidden="true"
-                    >{{ isSelected(user.id) ? '✓' : '' }}</span
-                  >
+                  <input
+                    type="checkbox"
+                    class="grid size-3.5 shrink-0 cursor-pointer appearance-none place-content-center rounded-[3px] border border-neutral-300 bg-white checked:border-[#61b7c5] checked:bg-[#61b7c5] focus-visible:outline-2 focus-visible:outline-[#3e8d99] focus-visible:outline-offset-2 before:block before:size-2 before:scale-0 before:bg-white before:content-[''] before:[clip-path:polygon(14%_44%,0_59%,40%_100%,100%_16%,84%_3%,38%_70%)] checked:before:scale-100"
+                    [checked]="isSelected(user.id)"
+                    (change)="toggleUser(user.id)"
+                  />
                   <span class="min-w-0">
                     <span class="block truncate text-[11px] font-medium">{{ user.name }}</span>
                     @if (user.email) {
@@ -94,7 +88,7 @@
                       }}</span>
                     }
                   </span>
-                </button>
+                </label>
               }
             } @else {
               <p class="px-4 py-5 text-center text-[11px] text-neutral-500">
@@ -167,10 +161,10 @@
         </button>
         <button
           type="submit"
-          class="h-10 min-w-36 rounded-lg bg-[#f5f5f5] px-4 text-[11px] outline-none transition enabled:hover:bg-[#61b7c5] enabled:hover:text-white focus-visible:ring-2 focus-visible:ring-[#61b7c5]/60 disabled:cursor-not-allowed disabled:opacity-50"
+          class="h-10 min-w-36 cursor-pointer rounded-full border  border-transparent bg-[#f5f5f5] px-6 text-sm text-[#333] transition-all duration-300 ease-out enabled:hover:border-[#7fb9c7] enabled:hover:bg-[#4694A4] enabled:hover:text-[#f4fbfc] enabled:hover:shadow-[0_8px_18px_-2px_rgba(70,160,180,0.65),0_3px_8px_rgba(120,200,215,0.3)] enabled:focus-visible:border-[#7fb9c7] enabled:focus-visible:bg-[#4694A4] enabled:focus-visible:text-[#f4fbfc] enabled:focus-visible:shadow-[0_8px_18px_-2px_rgba(70,160,180,0.65),0_3px_8px_rgba(120,200,215,0.3)] focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
           [disabled]="submitting() || loading() || !!loadError()"
         >
-          {{ submitting() ? 'Enrolling…' : 'Enroll Selected User(s)' }}
+          {{ submitting() ? 'Enrolling…' : 'Enroll Selected Users' }}
         </button>
       </div>
     </form>

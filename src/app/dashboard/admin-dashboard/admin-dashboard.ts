@@ -62,8 +62,6 @@ export class AdminDashboard {
   readonly breadcrumbs = computed<Breadcrumb[]>(() => {
     const [path, query = ''] = this.currentUrl().split('#')[0].split('?');
 
-    // /admin-dashboard/courses            -> Content Management > Course List
-    // /admin-dashboard/courses?organize=5 -> Content Management > Course List > Organize Modules
     if (/^\/admin-dashboard\/courses\/?$/.test(path)) {
       const courseList = ['/admin-dashboard', 'courses'];
       if (new URLSearchParams(query).has('organize')) {

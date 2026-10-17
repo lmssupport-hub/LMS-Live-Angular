@@ -1,75 +1,74 @@
 <div class="relative w-full font-sans text-[#505050]" [class.hidden]="!!organizingCourse()">
- 
+
   <main class="relative z-10 px-4 pb-7 sm:px-6 lg:px-10">
     <div class="my-2 mb-5 flex flex-wrap items-center gap-3">
-     
-<label class="flex h-10 w-40 items-center rounded-full bg-white px-5 text-xs">
-<svg viewBox="0 0 24 24" class="mr-2 h-4 w-4 shrink-0 fill-none stroke-[#777]" stroke-width="1.8" aria-hidden="true">
-<circle cx="11" cy="11" r="7"></circle>
-<path d="m20 20-4-4"></path>
-</svg>
-  <input class="w-full min-w-0 bg-transparent outline-none placeholder:text-[#777] [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden"
-    type="search"
-    placeholder="Find"
-    aria-label="Find courses"
-    pattern="[A-Za-z0-9 ]*"
-    [value]="search()"
-    (input)="updateSearch($any($event.target).value)"/>
-  @if (search()) {
-<button type="button"class="ml-1 flex h-4 w-4 shrink-0 items-center justify-center text-red-500 hover:text-red-600"aria-label="Clear search" (click)="updateSearch('')">
-<svg viewBox="0 0 24 24" class="h-4 w-4" fill="none"stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
-<path d="M18 6 6 18M6 6l12 12"></path>
-</svg>
-</button>
-  }
-</label>
-  <div class="relative z-30 h-10 w-40" (click)="$event.stopPropagation()">
 
-  <!-- Dropdown card -->
-         <!-- Dropdown card (always in DOM so the close animation can play) -->
-  <div
-    class="dd-clip"
-    [class.dd-open]="openDropdown() === 'filter'"
-    [class.dd-closing]="ddUsed() && openDropdown() !== 'filter'"
-    [attr.inert]="openDropdown() === 'filter' ? null : ''"
-    [attr.aria-hidden]="openDropdown() !== 'filter'"
-    role="menu"
-  >
-    <div class="dd-panel">
-      <div class="dd-spacer" aria-hidden="true"></div>
-      @for (option of courseFilterOptions; track option; let i = $index) {
+      <label class="flex h-10 w-40 items-center rounded-full bg-white px-5 text-xs">
+        <svg viewBox="0 0 24 24" class="mr-2 h-4 w-4 shrink-0 fill-none stroke-[#777]" stroke-width="1.8" aria-hidden="true">
+          <circle cx="11" cy="11" r="7"></circle>
+          <path d="m20 20-4-4"></path>
+        </svg>
+        <input class="w-full min-w-0 bg-transparent outline-none placeholder:text-[#777] [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden"
+          type="search"
+          placeholder="Find"
+          aria-label="Find courses"
+          pattern="[A-Za-z0-9 ]*"
+          [value]="search()"
+          (input)="updateSearch($any($event.target).value)"/>
+        @if (search()) {
+          <button type="button" class="ml-1 flex h-4 w-4 shrink-0 items-center justify-center text-red-500 hover:text-red-600" aria-label="Clear search" (click)="updateSearch('')">
+            <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+              <path d="M18 6 6 18M6 6l12 12"></path>
+            </svg>
+          </button>
+        }
+      </label>
+
+      <div class="relative z-30 h-10 w-40" (click)="$event.stopPropagation()">
+
+        <!-- Dropdown card (always in DOM so the close animation can play) -->
+        <div
+          class="dd-clip"
+          [class.dd-open]="openDropdown() === 'filter'"
+          [class.dd-closing]="ddUsed() && openDropdown() !== 'filter'"
+          [attr.inert]="openDropdown() === 'filter' ? null : ''"
+          [attr.aria-hidden]="openDropdown() !== 'filter'"
+          role="menu"
+        >
+          <div class="dd-panel">
+            <div class="dd-spacer" aria-hidden="true"></div>
+            @for (option of courseFilterOptions; track option; let i = $index) {
+              <button
+                type="button"
+                role="menuitem"
+                class="dd-item"
+                [style.--i]="i"
+                [style.--r]="courseFilterOptions.length - 1 - i"
+                [class.font-semibold]="courseFilter() === option"
+                (click)="selectCourseFilter(option)"
+              >{{ option.charAt(0) + option.slice(1).toLowerCase() }}</button>
+            }
+          </div>
+        </div>
+
+        <!-- Filter header -->
         <button
           type="button"
-          role="menuitem"
-          class="dd-item"
-          [style.--i]="i"
-          [style.--r]="courseFilterOptions.length - 1 - i"
-          [class.font-semibold]="courseFilter() === option"
-          (click)="selectCourseFilter(option)"
-        >{{ option.charAt(0) + option.slice(1).toLowerCase() }}</button>
-      }
-    </div>
-  </div>
-  
-
-  <!-- Filter header -->
-  <button
-    type="button"
-    class="relative z-10 flex h-10 w-40 cursor-pointer items-center justify-center gap-2 rounded-[20px] border-0 bg-white px-4 text-xs font-medium text-[#555] outline-none transition focus-visible:ring-2 focus-visible:ring-[#62b9c8]/40"
-    [ngClass]="openDropdown() === 'filter'
-      ? 'shadow-[0_8px_10px_-4px_rgba(0,0,0,.35)]'
-      : 'shadow-sm hover:shadow-md'"
-    aria-label="Filter courses"
-    aria-haspopup="menu"
-    [attr.aria-expanded]="openDropdown() === 'filter'"
-    (click)="toggleDropdown('filter'); ddUsed.set(true)"
-  >
-    <span>{{ courseFilter() === 'ALL' ? 'Filter' : courseFilter().charAt(0) + courseFilter().slice(1).toLowerCase() }}</span>
-    <svg viewBox="0 0 24 24" class="h-4 w-4 fill-none stroke-[#555]" stroke-width="2.2" aria-hidden="true">
-      <path d="M4 6h16M7 12h10M10 18h4" stroke-linecap="round"></path>
-    </svg>
-  </button>
-</div>
+          class="relative z-10 flex h-10 w-40 cursor-pointer items-center justify-center gap-2 rounded-[20px] border-0 bg-white px-4 text-xs font-medium text-[#555] outline-none transition focus-visible:ring-2 focus-visible:ring-[#62b9c8]/40"
+          [ngClass]="openDropdown() === 'filter'
+            ? 'shadow-[0_8px_10px_-4px_rgba(0,0,0,.35)]'
+            : 'shadow-sm hover:shadow-md'"
+          aria-label="Filter courses"
+          aria-haspopup="menu"
+          [attr.aria-expanded]="openDropdown() === 'filter'"
+          (click)="toggleDropdown('filter'); ddUsed.set(true)"
+        >
+          <span>{{ courseFilter() === 'ALL' ? 'Filter' : courseFilter().charAt(0) + courseFilter().slice(1).toLowerCase() }}</span>
+          <svg viewBox="0 0 24 24" class="h-4 w-4 fill-none stroke-[#555]" stroke-width="2.2" aria-hidden="true">
+            <path d="M4 6h16M7 12h10M10 18h4" stroke-linecap="round"></path>
+          </svg>
+        </button>
+      </div>
 
       @if (canManage()) {
         <button #createButton type="button" class="ml-auto h-10 cursor-pointer rounded-full border-0 border-transparent bg-white px-7 text-xs text-[#333] transition-all duration-300 ease-out enabled:hover:border-[#7fb9c7] enabled:hover:bg-[#4694A4] enabled:hover:text-[#f4fbfc] enabled:hover:shadow-[0_8px_18px_-2px_rgba(70,160,180,0.65),0_3px_8px_rgba(120,200,215,0.3)] enabled:focus-visible:border-[#7fb9c7] enabled:focus-visible:bg-[#4694A4] enabled:focus-visible:text-[#f4fbfc] enabled:focus-visible:shadow-[0_8px_18px_-2px_rgba(70,160,180,0.65),0_3px_8px_rgba(120,200,215,0.3)] focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50" (click)="openCreateModal()">
@@ -77,7 +76,7 @@
         </button>
       }
     </div>
- 
+
     @if (successMessage()) {
       <div class="fixed bottom-6 right-7 z-[70] rounded-xl bg-emerald-700 px-5 py-3 text-white shadow-xl" role="status" aria-live="polite">{{ successMessage() }}</div>
     }
@@ -90,7 +89,7 @@
         <button type="button" (click)="loadCourses()">Retry</button>
       </div>
     }
- 
+
     <section class="min-h-[65vh] overflow-y-auto rounded-2xl bg-white p-4 pr-8 pt-5 sm:max-h-[calc(108vh-220px)] sm:min-h-[calc(108vh-220px)] sm:p-6 sm:pr-8" aria-label="Course list">
       @if (loading() && !courses().length) {
         <p class="p-12 text-center">Loading courses…</p>
@@ -105,21 +104,21 @@
             <article class="group relative h-64 rounded-2xl text-white shadow-lg">
               <!-- clipping wrapper: keeps image zoom inside the rounded card -->
               <div class="absolute inset-0 overflow-hidden rounded-2xl bg-neutral-800">
-              @if (cardThumbnail(course)) {
-                <img [src]="cardThumbnail(course)" [alt]="course.name + ' thumbnail'" class="h-full w-full scale-100 object-cover transition-transform duration-700 ease-out will-change-transform group-hover:scale-[1.20]" />
-              } @else {
-                <div class="grid h-full w-full place-items-center bg-gradient-to-br from-slate-700 to-neutral-950 p-6 text-center text-3xl font-bold" aria-hidden="true">{{ course.name }}</div>
-              }
-              <div class="absolute inset-0 bg-gradient-to-b from-black/5 via-black/20 to-black/90"></div>
+                @if (cardThumbnail(course)) {
+                  <img [src]="cardThumbnail(course)" [alt]="course.name + ' thumbnail'" class="h-full w-full scale-100 object-cover transition-transform duration-700 ease-out will-change-transform group-hover:scale-[1.20]" />
+                } @else {
+                  <div class="grid h-full w-full place-items-center bg-gradient-to-br from-slate-700 to-neutral-950 p-6 text-center text-3xl font-bold" aria-hidden="true">{{ course.name }}</div>
+                }
+                <div class="absolute inset-0 bg-gradient-to-b from-black/5 via-black/20 to-black/90"></div>
               </div>
- 
+
               <span
                 class="absolute left-3 top-3 rounded-full px-3 py-1 text-[9px] font-semibold uppercase tracking-wide text-white shadow-sm"
                 [ngClass]="statusBadgeClasses(course.status)"
               >{{ courseStatusLabel(course.status) }}</span>
- 
+
               @if (canManage()) {
-                <!-- CHANGED: 3-dot stays in the same top-right position; actions now open in an arc BELOW / around it, inside the card -->
+                <!-- 3-dot stays top-right; actions open in an arc around it, inside the card -->
                 <div class="absolute right-3 top-3 z-20 size-8">
                   <button
                     type="button"
@@ -136,11 +135,11 @@
                       <circle cx="12" cy="19" r="1.8" />
                     </svg>
                   </button>
- 
+
                   <!-- Enrollments (left of the 3-dot) -->
                   <button
                     type="button"
-                    class="absolute left-0.5 top-0.5 grid size-7 cursor-pointer place-items-center rounded-full border-0 bg-[#61b7c5] text-white shadow-md transition-all duration-300 ease-out hover:bg-[#459aa7]"
+                    class="group/btn absolute left-0.5 top-0.5 z-[2] grid size-7 cursor-pointer place-items-center rounded-full border-0 bg-[#61b7c5] text-white shadow-md transition-all duration-300 ease-out hover:bg-[#459aa7]"
                     [class.opacity-0]="openCardMenuId() !== course.id"
                     [class.pointer-events-none]="openCardMenuId() !== course.id"
                     [style.transform]="openCardMenuId() === course.id ? 'translate(-44px, 0)' : 'translate(0, 0) scale(0.5)'"
@@ -149,17 +148,23 @@
                     data-course-enrollments
                     (click)="openEnrollments(course.id)"
                     [attr.aria-label]="'Manage enrollments for ' + course.name"
-                    title="Enrolled course list"
                   >
-                    <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm10-4v6m3-3h-6" />
-                    </svg>
+                    <!-- sliding label -->
+                    <span
+                      class="pointer-events-none absolute right-1/2 top-0 -z-10 flex h-7 origin-right scale-x-0 items-center whitespace-nowrap rounded-l-full bg-inherit pl-3 pr-5 text-[10px] font-semibold text-white opacity-0 shadow-md transition-all duration-500 group-hover/btn:scale-x-100 group-hover/btn:opacity-100"
+                    >Enrollments List</span>
+                    <!-- rotating icon -->
+                    <span class="relative z-10 grid place-items-center transition-transform duration-500 ease-linear group-hover/btn:rotate-[360deg]">
+                      <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm10-4v6m3-3h-6" />
+                      </svg>
+                    </span>
                   </button>
- 
+
                   <!-- Organize sections (bottom-left of the 3-dot) -->
                   <button
                     type="button"
-                    class="absolute left-0.5 top-0.5 grid size-7 cursor-pointer place-items-center rounded-full border-0 bg-[#61b7c5] text-white shadow-md transition-all duration-300 ease-out hover:bg-[#459aa7]"
+                    class="group/btn absolute left-0.5 top-0.5 z-[2] grid size-7 cursor-pointer place-items-center rounded-full border-0 bg-[#61b7c5] text-white shadow-md transition-all duration-300 ease-out hover:bg-[#459aa7]"
                     [class.opacity-0]="openCardMenuId() !== course.id"
                     [class.pointer-events-none]="openCardMenuId() !== course.id"
                     [style.transform]="openCardMenuId() === course.id ? 'translate(-31px, 31px)' : 'translate(0, 0) scale(0.5)'"
@@ -168,18 +173,22 @@
                     data-course-organize
                     (click)="openOrganize(course)"
                     [attr.aria-label]="'Organize modules for ' + course.name"
-                    title="Organize modules"
                   >
-                    <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M9 6h11M9 12h11M9 18h11" />
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h.01M4 12h.01M4 18h.01" />
-                    </svg>
+                    <span
+                      class="pointer-events-none absolute right-1/2 top-0 -z-10 flex h-7 origin-right scale-x-0 items-center whitespace-nowrap rounded-l-full bg-inherit pl-3 pr-5 text-[10px] font-semibold text-white opacity-0 shadow-md transition-all duration-500 group-hover/btn:scale-x-100 group-hover/btn:opacity-100"
+                    >Organize Edit</span>
+                    <span class="relative z-10 grid place-items-center transition-transform duration-500 ease-linear group-hover/btn:rotate-[360deg]">
+                      <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 6h11M9 12h11M9 18h11" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h.01M4 12h.01M4 18h.01" />
+                      </svg>
+                    </span>
                   </button>
- 
+
                   <!-- Delete (directly below the 3-dot) -->
                   <button
                     type="button"
-                    class="absolute left-0.5 top-0.5 grid size-7 cursor-pointer place-items-center rounded-full border-0 bg-[#61b7c5] text-white shadow-md transition-all duration-300 ease-out hover:bg-red-500"
+                    class="group/btn absolute left-0.5 top-0.5 z-[1] grid size-7 cursor-pointer place-items-center rounded-full border-0 bg-[#61b7c5] text-white shadow-md transition-all duration-300 ease-out hover:bg-red-500"
                     [class.opacity-0]="openCardMenuId() !== course.id"
                     [class.pointer-events-none]="openCardMenuId() !== course.id"
                     [style.transform]="openCardMenuId() === course.id ? 'translate(0, 44px)' : 'translate(0, 0) scale(0.5)'"
@@ -187,11 +196,15 @@
                     role="menuitem"
                     (click)="requestDelete(course)"
                     [attr.aria-label]="'Delete ' + course.name"
-                    title="Delete course"
                   >
-                    <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                      <path stroke-linecap="round" d="M4 7h16M9 7V4h6v3m-8 0 1 13h8l1-13M10 11v5m4-5v5" />
-                    </svg>
+                    <span
+                      class="pointer-events-none absolute left-0 top-1/2 -z-10 flex w-full origin-top scale-y-0 items-center justify-center whitespace-nowrap rounded-b-full bg-inherit pb-2.5 pt-[16px] text-[10px] font-semibold leading-none tracking-[-0.12em] text-white opacity-0 shadow-md transition-all duration-500 [text-orientation:upright] [writing-mode:vertical-rl] group-hover/btn:scale-y-100 group-hover/btn:opacity-100"
+                    >Delete</span>
+                    <span class="relative z-10 grid place-items-center transition-transform duration-500 ease-linear group-hover/btn:rotate-[360deg]">
+                      <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path stroke-linecap="round" d="M4 7h16M9 7V4h6v3m-8 0 1 13h8l1-13M10 11v5m4-5v5" />
+                      </svg>
+                    </span>
                   </button>
                 </div>
               }
@@ -227,7 +240,7 @@
     </section>
   </main>
 </div>
- 
+
 @if (modalOpen()) {
   <app-create-course-modal
     [form]="form"
@@ -267,7 +280,7 @@
     </section>
   </div>
 }
- 
+
 <!-- Organize (sections) screen, opened from the card actions -->
 @if (organizingCourse(); as organizing) {
   <app-organize-sections
@@ -276,4 +289,3 @@
     (editCourseRequested)="editFromOrganize()"
   />
 }
- 

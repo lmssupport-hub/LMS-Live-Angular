@@ -11,7 +11,8 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { finalize } from 'rxjs/operators';
+// CHANGED: added `take` (forkJoin / of / catchError are no longer needed)
+import { finalize, take } from 'rxjs/operators';
 
 import { environment } from '../../../environments/environment';
 import { Course } from '../course.model';
@@ -218,6 +219,8 @@ export class OrganizeSections implements OnInit, OnDestroy {
         next: list => {
           this.sections.set(this.sortByOrder(list));
           this.sectionsLoading.set(false);
+          // CHANGED: fetch every section's activities so the count pills are correct on page load / refresh
+          this.loadAllResources(this.sections());
         },
         error: (err: unknown) => {
           this.sectionsLoading.set(false);
@@ -354,8 +357,14 @@ export class OrganizeSections implements OnInit, OnDestroy {
   // =====================================================================
 
   toggleSection(sectionId: number): void {
+    // CHANGED: the Add Activity menu lives inside the expanded panel, which is destroyed on collapse.
+    // Reset its state so a re-opened panel doesn't render the menu already in its "closing" state
+    // (that was the "activity menu appears then closes" flash).
+    this.activityMenuSectionId.set(null);
+    this.activityMenuUsedIds.set([]);
+
     this.expandedSectionId.update(current => (current === sectionId ? null : sectionId));
-    // CHANGED: fetch this section's multimedia when it is opened
+    // Refresh this section's multimedia when it is opened
     if (this.expandedSectionId() === sectionId) this.loadResources(sectionId);
   }
 
@@ -621,13 +630,24 @@ export class OrganizeSections implements OnInit, OnDestroy {
       });
   }
 
-  private loadResources(sectionId: number): void {
+  /** CHANGED: page load / refresh - fetch every section's multimedia so the count pills are correct. */
+  private loadAllResources(sections: Section[]): void {
+    sections.forEach(s => this.loadResources(s.id, true));
+  }
+
+  /**
+   * CHANGED: `silent` = background load (page load) - failures don't pop an error toast.
+   * Expanding / previewing a section still reports errors.
+   */
+  private loadResources(sectionId: number, silent = false): void {
     this.multimediaService
       .getResources(this.course.id, sectionId)
-      .pipe(takeUntilDestroyed(this.destroyRef))
+      .pipe(take(1), takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: list => this.resourcesBySection.update(map => new Map(map).set(sectionId, list)),
-        error: (err: unknown) => this.showToast(this.messageOf(err)),
+        error: (err: unknown) => {
+          if (!silent) this.showToast(this.messageOf(err));
+        },
       });
   }
 
@@ -735,4 +755,4 @@ export class OrganizeSections implements OnInit, OnDestroy {
     this.resourceSuccessMessage.set(message);
     this.toastTimer = setTimeout(() => this.resourceSuccessMessage.set(''), 3000);
   }
-} 
+}

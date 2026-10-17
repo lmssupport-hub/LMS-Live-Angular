@@ -267,58 +267,33 @@ export class EnrolledCourseList {
     return value === null || value === undefined ? '—' : `${Math.round(value)}%`;
   }
 
- 
-
-readonly openStatusDropdownFor = signal<string | number | null>(null);
+  // ---------- Status (read-only, auto-populated from the enrollment data) ----------
   readonly statusOptions: { value: EnrollmentStatus; label: string }[] = [
     { value: 'NOT_STARTED', label: 'Not Started' },
     { value: 'IN_PROGRESS', label: 'In Progress' },
     { value: 'COMPLETED', label: 'Completed' },
   ];
 
-toggleStatusDropdown(id: string | number): void {
-  this.openStatusDropdownFor.update(
-    current => current === id ? null : id
-  );
-}
+  /** Normalizes whatever the API sends ("In Progress", "in-progress", ...) to a known status value. */
+  getStatusValue(status: string | null | undefined): EnrollmentStatus {
+    const normalizedStatus = (status ?? '')
+      .trim()
+      .toUpperCase()
+      .replace(/[\s-]+/g, '_');
 
-  selectEnrollmentStatus(enrollment: Enrollment, status: EnrollmentStatus): void {
-  this.updateEnrollmentStatus(enrollment, status);
-  this.openStatusDropdownFor.set(null);
-}
-
-
-getStatusValue(status: string | null | undefined): string {
-  const normalizedStatus = (status ?? '')
-    .trim()
-    .toUpperCase()
-    .replace(/[\s-]+/g, '_');
-
-  switch (normalizedStatus) {
-    case 'NOT_STARTED':
-      return 'NOT_STARTED';
-
-    case 'IN_PROGRESS':
-      return 'IN_PROGRESS';
-
-    case 'COMPLETED':
-      return 'COMPLETED';
-
-    default:
-      return 'NOT_STARTED';
+    switch (normalizedStatus) {
+      case 'IN_PROGRESS':
+        return 'IN_PROGRESS';
+      case 'COMPLETED':
+        return 'COMPLETED';
+      default:
+        return 'NOT_STARTED';
+    }
   }
-}
 
   statusLabel(status: string | null | undefined): string {
     return this.statusOptions.find(option => option.value === this.getStatusValue(status))?.label ?? 'Not Started';
   }
-
-  updateEnrollmentStatus(enrollment: Enrollment, status: EnrollmentStatus): void {
-  enrollment.status = status;
-}
-
-
-
 
   // ---------- internals ----------
   private resetState(): void {

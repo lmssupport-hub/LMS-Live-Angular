@@ -92,6 +92,15 @@ export const routes: Routes = [
   title: 'Enrolled Course List',
 },
 
+      {
+  path: 'courses/:courseId/sections/:sectionId/question-banks/:bankId',
+  loadComponent: () =>
+    import('./course-module/question-bank/question-bank').then(
+      (m) => m.QuestionBankComponent,
+    ),
+  title: 'Create Question Bank',
+},
+
     ],
   },
 

@@ -13,7 +13,7 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 // CHANGED: added `take` (forkJoin / of / catchError are no longer needed)
 import { finalize, take } from 'rxjs/operators';
-
+import { Router } from '@angular/router';
 import { environment } from '../../../environments/environment';
 import { Course } from '../course.model';
 import {
@@ -25,6 +25,9 @@ import {
 import { MultimediaUpload } from '../pop-modals/multimedia-upload/multimedia-upload';
 import { MultimediaManagementService } from '../../services/multimedia-management.service';
 import { MultimediaResource, MultimediaSaveResult } from '../multimedia.model';
+// NEW: question banks (activity inside an organize section)
+import { QuestionBankService, toUiError } from '../../services/question-bank.service';
+import { ApiBankResponse } from '../question-bank.model';
 
 // Must match SectionService.validateAndNormalizeName on the backend.
 const MIN_CHARS = 3;
@@ -36,9 +39,10 @@ const GENERIC_ERROR =
 const EMOJI_PATTERN = /[\p{Extended_Pictographic}\p{Emoji_Modifier}\p{Regional_Indicator}\u200D\uFE0F\u20E3]/u;
 const NAME_EMOJI_MESSAGE = 'Emojis are not allowed.';
 
-/* ---- Activities: Multimedia is live; Ebook / Question Bank come in the next phase ---- */
+/* ---- Activities: Multimedia and Question Bank are live; Ebook comes in the next phase ---- */
 export type ActivityKind = 'Ebook' | 'Multimedia' | 'Question Bank';
 export interface SectionActivity {
+  /** Multimedia resource id OR question bank id - ids of different kinds can be equal, so track by kind + id. */
   id: number;
   kind: ActivityKind;
   title: string;
@@ -61,8 +65,9 @@ export class OrganizeSections implements OnInit, OnDestroy {
   readonly editCourseRequested = output<void>();
 
   private readonly sectionService = inject(SectionManagementService);
-  // NEW
+  
   private readonly multimediaService = inject(MultimediaManagementService);
+  private readonly questionBankService = inject(QuestionBankService);
   private readonly destroyRef = inject(DestroyRef);
 
   // ---------- page state ----------
@@ -94,7 +99,7 @@ export class OrganizeSections implements OnInit, OnDestroy {
   readonly confirmMessage = signal('');
   private pendingDelete: Section | null = null;
 
-  // ---------- delete confirmation (activity / multimedia) - NEW ----------
+  // ---------- delete confirmation (activity / multimedia / question bank) - NEW ----------
   readonly activityConfirmOpen = signal(false);
   readonly activityConfirmMessage = signal('');
   private pendingActivityDelete: { sectionId: number; activity: SectionActivity } | null = null;
@@ -115,6 +120,7 @@ export class OrganizeSections implements OnInit, OnDestroy {
   readonly activityDropTarget = signal<{ sectionId: number; index: number } | null>(null);
   private readonly noActivities: SectionActivity[] = [];
   private readonly activityMenuUsedIds = signal<number[]>([]);
+  private readonly router = inject(Router);
 
   isActivityMenuUsed(sectionId: number): boolean {
     return this.activityMenuUsedIds().includes(sectionId);
@@ -127,14 +133,30 @@ export class OrganizeSections implements OnInit, OnDestroy {
   // ---------- multimedia (NEW) ----------
   /** Resources already fetched, keyed by section id. */
   private readonly resourcesBySection = signal<ReadonlyMap<number, MultimediaResource[]>>(new Map());
-  /** Same data shaped for the activity rows in the template. */
+  // ---------- question banks (NEW) ----------
+  /** Question banks already fetched, keyed by ORGANIZE section id. */
+  private readonly banksBySection = signal<ReadonlyMap<number, ApiBankResponse[]>>(new Map());
+  /** Blocks double clicks on Add Activity -> Question Bank while the bank is being created. */
+  private readonly bankCreating = signal(false);
+  /** CHANGED: multimedia rows first, then question banks - shaped for the activity rows in the template. */
   private readonly activitiesBySection = computed(() => {
+    const resources = this.resourcesBySection();
+    const banks = this.banksBySection();
     const map = new Map<number, SectionActivity[]>();
-    for (const [sectionId, list] of this.resourcesBySection()) {
-      map.set(
-        sectionId,
-        list.map(r => ({ id: r.id, kind: 'Multimedia' as const, title: r.name })),
-      );
+    const sectionIds = new Set<number>([...resources.keys(), ...banks.keys()]);
+    for (const sectionId of sectionIds) {
+      map.set(sectionId, [
+        ...(resources.get(sectionId) ?? []).map(r => ({
+          id: r.id,
+          kind: 'Multimedia' as const,
+          title: r.name,
+        })),
+        ...(banks.get(sectionId) ?? []).map(b => ({
+          id: b.id,
+          kind: 'Question Bank' as const,
+          title: b.name,
+        })),
+      ]);
     }
     return map;
   });
@@ -447,6 +469,12 @@ export class OrganizeSections implements OnInit, OnDestroy {
             next.delete(target.id);
             return next;
           });
+          // NEW: ...and its cached question banks (the backend cascades the delete)
+          this.banksBySection.update(map => {
+            const next = new Map(map);
+            next.delete(target.id);
+            return next;
+          });
           if (this.expandedSectionId() === target.id) this.expandedSectionId.set(null);
           if (this.reorderingSectionId() === target.id) this.reorderingSectionId.set(null);
           if (this.previewingSection()?.id === target.id) this.previewingSection.set(null);
@@ -555,7 +583,7 @@ export class OrganizeSections implements OnInit, OnDestroy {
 
   // =====================================================================
   // ACTIVITIES
-  // Multimedia is implemented below. Ebook / Question Bank / activity drag & drop
+  // Multimedia and Question Bank are implemented below. Ebook / activity drag & drop
   // are still placeholders so the template compiles.
   // =====================================================================
 
@@ -566,6 +594,11 @@ export class OrganizeSections implements OnInit, OnDestroy {
   /** Add Activity -> Multimedia opens the upload dialog; the pencil icon on a row opens it in edit mode. */
   openResourceDialog(kind: ActivityKind, sectionId: number, activity?: SectionActivity): void {
     this.activityMenuSectionId.set(null);
+    // NEW: the pencil icon of a Question Bank row opens that bank's editor
+    if (kind === 'Question Bank') {
+      if (activity) this.openQuestionBankList(sectionId, activity);
+      return;
+    }
     if (kind !== 'Multimedia') {
       this.showToast(`${kind} upload will be available soon.`);
       return;
@@ -597,7 +630,9 @@ export class OrganizeSections implements OnInit, OnDestroy {
   requestRemoveActivity(sectionId: number, activity: SectionActivity): void {
     this.pendingActivityDelete = { sectionId, activity };
     this.activityConfirmMessage.set(
-      `Are you sure you want to delete "${activity.title}"? This action cannot be undone.`,
+      activity.kind === 'Question Bank'
+        ? `Are you sure you want to delete "${activity.title}"? All its sections and questions will be removed. This action cannot be undone.`
+        : `Are you sure you want to delete "${activity.title}"? This action cannot be undone.`,
     );
     this.activityConfirmOpen.set(true);
   }
@@ -608,7 +643,12 @@ export class OrganizeSections implements OnInit, OnDestroy {
     this.pendingActivityDelete = null;
     this.activityConfirmOpen.set(false);
     if (confirmed && target) {
-      this.removeActivity(target.sectionId, target.activity.id);
+      // CHANGED: a Question Bank row is deleted through the question-bank API, not the multimedia API
+      if (target.activity.kind === 'Question Bank') {
+        this.removeBank(target.sectionId, target.activity.id);
+      } else {
+        this.removeActivity(target.sectionId, target.activity.id);
+      }
     }
   }
 
@@ -630,7 +670,26 @@ export class OrganizeSections implements OnInit, OnDestroy {
       });
   }
 
-  /** CHANGED: page load / refresh - fetch every section's multimedia so the count pills are correct. */
+  /** NEW: deletes a Question Bank (the backend cascades its question sections, questions and options). */
+  private removeBank(sectionId: number, bankId: number): void {
+    this.questionBankService
+      .deleteBank({ courseId: this.course.id, sectionId, bankId })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.banksBySection.update(map =>
+            new Map(map).set(
+              sectionId,
+              (map.get(sectionId) ?? []).filter(b => b.id !== bankId),
+            ),
+          );
+          this.showToast('Question bank deleted successfully.');
+        },
+        error: (err: unknown) => this.showToast(toUiError(err).message),
+      });
+  }
+
+  /** CHANGED: page load / refresh - fetch every section's multimedia + question banks so the count pills are correct. */
   private loadAllResources(sections: Section[]): void {
     sections.forEach(s => this.loadResources(s.id, true));
   }
@@ -640,6 +699,7 @@ export class OrganizeSections implements OnInit, OnDestroy {
    * Expanding / previewing a section still reports errors.
    */
   private loadResources(sectionId: number, silent = false): void {
+    this.loadBanks(sectionId, silent); // NEW
     this.multimediaService
       .getResources(this.course.id, sectionId)
       .pipe(take(1), takeUntilDestroyed(this.destroyRef))
@@ -651,9 +711,75 @@ export class OrganizeSections implements OnInit, OnDestroy {
       });
   }
 
-  openQuestionBankList(_sectionId: number): void {
+  /** NEW: question banks of one organize section. */
+  private loadBanks(sectionId: number, silent: boolean): void {
+    this.questionBankService
+      .listBanks(this.course.id, sectionId)
+      .pipe(take(1), takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: list => this.banksBySection.update(map => new Map(map).set(sectionId, list)),
+        error: (err: unknown) => {
+          if (!silent) this.showToast(toUiError(err).message);
+        },
+      });
+  }
+
+  /**
+   * CHANGED: Question Bank activity.
+   *  - Add Activity -> Question Bank (no `activity`): creates a new empty bank in THIS organize section
+   *    and opens its editor.
+   *  - Click / pencil on an existing Question Bank row (`activity` given): opens that bank's editor.
+   * The editor route carries courseId + organize sectionId + bankId.
+   */
+  openQuestionBankList(sectionId: number, activity?: SectionActivity): void {
     this.activityMenuSectionId.set(null);
-    this.showToast('Question Bank will be available soon.');
+    if (activity) {
+      this.goToBank(sectionId, activity.id);
+      return;
+    }
+    this.createBankAndOpen(sectionId);
+  }
+
+  private createBankAndOpen(sectionId: number): void {
+    if (this.bankCreating()) return; // repeated clicks must create only one bank
+    this.bankCreating.set(true);
+
+    this.questionBankService
+      .createBank(this.course.id, sectionId, this.nextBankName(sectionId))
+      .pipe(
+        finalize(() => this.bankCreating.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: bank => {
+          this.banksBySection.update(map => new Map(map).set(sectionId, [...(map.get(sectionId) ?? []), bank]));
+          this.goToBank(sectionId, bank.id);
+        },
+        error: (err: unknown) => this.showToast(toUiError(err).message),
+      });
+  }
+
+  private goToBank(sectionId: number, bankId: number): void {
+    void this.router.navigate([
+      '/admin-dashboard',
+      'courses',
+      this.course.id,
+      'sections',
+      sectionId,
+      'question-banks',
+      bankId,
+    ]);
+  }
+
+  /** "Question Bank 1", "Question Bank 2" ... - unique inside the section (backend rejects duplicate names). */
+  private nextBankName(sectionId: number): string {
+    const existing = this.banksBySection().get(sectionId) ?? [];
+    const taken = new Set(existing.map(b => b.name.trim().toLowerCase()));
+    for (let n = existing.length + 1; n < existing.length + 1000; n++) {
+      const candidate = `Question Bank ${n}`;
+      if (!taken.has(candidate.toLowerCase())) return candidate;
+    }
+    return `Question Bank ${Date.now()}`;
   }
 
   startActivityDrag(event: DragEvent, sectionId: number, index: number): void {
@@ -702,6 +828,7 @@ export class OrganizeSections implements OnInit, OnDestroy {
 
   /**
    * Moves a multimedia row inside its section (local order only).
+   * Question Bank rows come after the multimedia rows and are not reorderable.
    * TODO: call the backend reorder endpoint here once it exists, otherwise the order resets
    * when the section is collapsed / expanded (loadResources re-fetches the server order).
    */
@@ -709,7 +836,7 @@ export class OrganizeSections implements OnInit, OnDestroy {
     const next = [...(this.resourcesBySection().get(sectionId) ?? [])];
     if (from < 0 || from >= next.length || from === to) return;
     const [moved] = next.splice(from, 1);
-    next.splice(to, 0, moved);
+    next.splice(Math.min(to, next.length), 0, moved);
     this.resourcesBySection.update(map => new Map(map).set(sectionId, next));
   }
 

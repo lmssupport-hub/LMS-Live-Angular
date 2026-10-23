@@ -1,14 +1,16 @@
 import { ChangeDetectionStrategy, Component, HostListener, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { ActivatedRouteSnapshot, NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { filter, map, startWith } from 'rxjs/operators';
 
 import { AuthService } from '../../services/auth';
 
-/** One item of the header breadcrumb. `link: null` = current page (not clickable). */
+/** One item of the header breadcrumb. `link: null` = not clickable (current page or plain parent). */
 interface Breadcrumb {
   label: string;
   link: string[] | null;
+  /** Query params for the link, e.g. { organize: '12' } to open "Organize Modules" of course 12. */
+  queryParams?: Record<string, string>;
   /** true = plain text style (no pill), used for simple 2-level crumbs */
   plain?: boolean;
 }
@@ -61,10 +63,11 @@ export class AdminDashboard {
    */
   readonly breadcrumbs = computed<Breadcrumb[]>(() => {
     const [path, query = ''] = this.currentUrl().split('#')[0].split('?');
+    const params = new URLSearchParams(query);
+    const courseList = ['/admin-dashboard', 'courses'];
 
     if (/^\/admin-dashboard\/courses\/?$/.test(path)) {
-      const courseList = ['/admin-dashboard', 'courses'];
-      if (new URLSearchParams(query).has('organize')) {
+      if (params.has('organize')) {
         return [
           { label: 'Content Management', link: null, plain: true },
           { label: 'Course List', link: courseList, plain: true },
@@ -79,15 +82,45 @@ export class AdminDashboard {
 
     // /admin-dashboard/courses/:courseId/enrollments
     if (/^\/admin-dashboard\/courses\/\d+\/enrollments\/?$/.test(path)) {
-      const courseList = ['/admin-dashboard', 'courses'];
       return [
         { label: 'Course Module', link: courseList, plain: true },
         { label: 'Course List', link: courseList, plain: true },
         { label: 'Enrolled Course List', link: null, plain: true },
       ];
     }
+
+    // Question Bank page (any route under /admin-dashboard that contains "question-bank" / "questionbank").
+    // Flow: Content Management > Course List > Organize Modules > Question Bank
+    if (/^\/admin-dashboard\/.*question-?bank/i.test(path)) {
+      // Read courseId the same way the Question Bank page does: route param `courseId`, else ?courseId=.
+      // (Reading the real route params works for ANY route shape, unlike parsing the URL text.)
+      const courseId = this.findParam('courseId') ?? params.get('courseId');
+      return [
+        { label: 'Content Management', link: null, plain: true },
+        { label: 'Course List', link: courseList, plain: true },
+        {
+          label: 'Organize Modules',
+          link: courseList,
+          queryParams: courseId ? { organize: courseId } : undefined,
+          plain: true,
+        },
+        { label: 'Question Bank', link: null, plain: true },
+      ];
+    }
     return [];
   });
+
+  /** Finds a route param (e.g. `courseId`) anywhere in the activated route tree, falling back to the query string. */
+  private findParam(name: string): string | null {
+    const root = this.router.routerState.snapshot.root;
+    let route: ActivatedRouteSnapshot | null = root;
+    while (route) {
+      const value = route.paramMap.get(name);
+      if (value) return value;
+      route = route.firstChild;
+    }
+    return root.queryParamMap.get(name);
+  }
 
   // ---------- header: account dropdown ----------
   readonly accountMenuOpen = signal(false);

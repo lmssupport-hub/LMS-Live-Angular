@@ -1,0 +1,436 @@
+<!-- Own scroll container: sticky bar binds to THIS div, so it works even when the app shell scrolls weirdly.
+     84px = top navbar height. Adjust if your navbar is taller/shorter. -->
+<div class="flex h-[calc(100vh-84px)] flex-col overflow-hidden bg-[#f6f6f6] font-sans text-[#505050]">
+  <main class="relative mx-auto flex min-h-0 w-full max-w-[1500px] flex-1 flex-col px-4 pb-8 pt-5 sm:px-6 xl:px-10">
+    <!-- Header -->
+    <header class="relative mb-7 flex shrink-0 flex-wrap items-center justify-between gap-5">
+      <div class="flex items-start gap-3">
+        <!-- Back: sits in the left gutter on xl screens so the title lines up with the design -->
+        <!-- <button type="button" (click)="back()" [disabled]="saving()" aria-label="Back"
+          class="grid size-8 shrink-0 place-items-center rounded-full bg-white text-base hover:bg-[#e9f6f8] disabled:opacity-50 xl:absolute xl:-left-9 xl:top-0">←</button> -->
+        <div>
+          <h3 class="text-xl font-semibold leading-7">Create Question Bank</h3>
+          <p class="mt-1 text-sm">Add sections, questions, answer options, scores and feedback</p>
+        </div>
+      </div>
+      <div class="flex flex-wrap gap-3">
+        <button type="button" (click)="fileInput.click()" [disabled]="busy()"
+          class="h-[30px] min-w-[80px] rounded-full bg-white px-4 text-xs hover:bg-[#e9f6f8] disabled:opacity-50">
+          {{ importing() ? 'Importing...' : 'Import' }}
+        </button>
+        <input #fileInput type="file" hidden [accept]="importAccept" (change)="importFile($event)">
+        <button type="button" (click)="exportQuestions()" [disabled]="busy() || !canExport()"
+          class="h-[30px] min-w-[80px] rounded-full bg-white px-4 text-xs hover:bg-[#e9f6f8] disabled:opacity-50">
+          {{ exporting() ? 'Exporting...' : 'Export' }}
+        </button>
+        <button type="button" (click)="openExisting()" [disabled]="busy()"
+          class="h-[30px] min-w-[80px] rounded-full bg-white px-4 text-xs hover:bg-[#e9f6f8] disabled:opacity-50">Existing</button>
+      </div>
+    </header>
+
+    <div class="flex min-h-0 flex-1 flex-col rounded-3xl bg-white p-4 sm:p-6 lg:px-[30px] lg:pb-[30px] lg:pt-6">
+      <!-- Type + Save (frozen: outside the scroll area) -->
+      <div class="mb-4 shrink-0">
+        <div class="flex flex-wrap items-center gap-x-5 gap-y-3 rounded-2xl bg-[#f6f6f6] px-[17px] py-2.5">
+          <span class="mr-1 text-sm">Question Type</span>
+          @for (type of questionTypes; track type.value) {
+            <label
+              [class]="'flex cursor-pointer items-center gap-2 text-sm ' + (type.value === 'mixed' && selectedType() !== 'mixed' ? 'text-[#8a8a8a]' : '')">
+              <input type="radio" name="questionType"
+                class="size-[18px] shrink-0 cursor-pointer appearance-none rounded-full border-white bg-white checked:border-[5px] checked:bg-[#64bbcb] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#64bbcb]"
+                [checked]="selectedType() === type.value"
+                (change)="setDefaultType(type.value)">
+              {{ type.label }}
+            </label>
+          }
+          <button type="button" (click)="save()" [disabled]="busy() || !dirty()"
+            class="ml-auto h-[35px] w-[95px] rounded-lg bg-white text-xs hover:bg-[#e9f6f8] disabled:opacity-50">
+            {{ saving() ? 'Saving...' : 'Save' }}
+          </button>
+        </div>
+      </div>
+
+      @if (banner(); as b) {
+        <!-- Popup toast: absolute inside <main> (which is relative), so it sits BELOW the app header, centered over the page content -->
+        <div class="absolute left-1/2 top-3 z-[60] flex w-max max-w-[min(24rem,calc(100%-2rem))] -translate-x-1/2 items-center gap-2 rounded-lg border px-3 py-1.5 text-xs shadow-md"
+          [attr.role]="b.kind === 'error' ? 'alert' : 'status'"
+          [class]="b.kind === 'error' ? 'border-red-200 bg-red-50 text-red-600' : 'border-[#bfe3ea] bg-[#e9f6f8] text-[#357f8d]'">
+          <span class="flex-1">{{ b.text }}</span>
+          @if (b.conflict) {
+            <button type="button" (click)="reloadLatest()" class="rounded-md bg-white px-2 py-1 text-[11px]">Reload latest</button>
+          }
+          <button type="button" (click)="banner.set(null)" aria-label="Dismiss" class="text-[11px] leading-none">✕</button>
+        </div>
+      }
+
+      <!-- Only this area scrolls -->
+      <div class="min-h-0 flex-1 overflow-y-auto">
+      @if (loading()) {
+        <p class="py-16 text-center text-sm text-gray-400">Loading...</p>
+      } @else {
+        <div class="grid grid-cols-1 gap-5 lg:grid-cols-2" [attr.inert]="saving() ? '' : null">
+          <!-- Question editor -->
+          <section class="min-h-[515px] rounded-2xl bg-[#f6f6f6] px-4 py-4">
+            <div class="mb-[26px] flex items-center justify-between gap-2">
+              <input type="text" [maxlength]="limits.sectionNameChars" aria-label="Section name"
+                [ngModel]="activeSection()?.name ?? ''"
+                (ngModelChange)="activeSection() && renameSection(activeSection()!, $event)"
+                [disabled]="!activeSection()" placeholder="Section name"
+                class="min-w-0 flex-1 bg-transparent text-sm font-semibold outline-none">
+              <button type="button" (click)="addSection()"
+                class="h-8 shrink-0 rounded-full bg-white px-4 text-xs hover:bg-[#e9f6f8]">+ Add Section</button>
+            </div>
+
+            @if (activeSection(); as section) {
+              @for (question of section.questions; track question.clientId; let qi = $index) {
+                <article class="group relative mb-8 scroll-mt-4 rounded-2xl last-of-type:mb-[19px]" [id]="'q-' + question.clientId"
+                  [class.ring-2]="highlightId() === question.clientId"
+                  [class.ring-red-400]="highlightId() === question.clientId">
+
+                  <!-- label row: label on the left, floating action pill on the right (in normal flow, so it can never overlap "Question N") -->
+                  <div class="mb-4 flex min-h-[32px] items-center justify-between gap-3">
+                    <div class="flex min-w-0 items-center gap-2">
+                      <span class="text-sm">Question {{ qi + 1 }}</span>
+                      @if (question.hidden) {
+                        <span class="rounded-full bg-white px-2 py-0.5 text-[11px] text-[#8a8a8a]">Hidden</span>
+                      }
+                    </div>
+
+                    <!-- Action pill: slides up + fades in on hover / focus (always visible on touch or while its menu is open) -->
+                    <div class="relative flex shrink-0 items-center gap-0.5 rounded-full bg-white p-1 text-xs text-[#505050] shadow-sm ring-1 ring-black/5 transition-all duration-200 ease-out [@media(hover:none)]:translate-y-0 [@media(hover:none)]:opacity-100"
+                      [class]="menuOpenId() === question.clientId
+                        ? 'translate-y-0 opacity-100'
+                        : 'translate-y-1 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:translate-y-0 group-focus-within:opacity-100'">
+
+                      <span class="relative">
+                        <select aria-label="Question type" [ngModel]="question.type"
+                          (ngModelChange)="changeQuestionType(question, $event)"
+                          class="h-7 cursor-pointer appearance-none rounded-full bg-transparent pl-3 pr-7 text-xs outline-none transition-colors hover:bg-[#e9f6f8] focus-visible:ring-2 focus-visible:ring-[#64bbcb]">
+                          @for (t of typeOptions; track t.value) {
+                            <option [value]="t.value">{{ t.label }}</option>
+                          }
+                        </select>
+                        <svg class="pointer-events-none absolute right-2 top-1/2 size-3 -translate-y-1/2 text-[#8a8a8a]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+                      </span>
+
+                      <button type="button" (click)="toggleScoring(question.clientId)"
+                        [attr.aria-pressed]="scoringOpenId() === question.clientId"
+                        class="h-7 rounded-full px-3 text-xs transition-colors"
+                        [class]="scoringOpenId() === question.clientId ? 'bg-[#64bbcb] text-white' : 'hover:bg-[#e9f6f8] hover:text-[#357f8d]'">Scoring</button>
+
+                      <span class="mx-1 h-4 w-px bg-[#e6e6e6]"></span>
+
+                      <button type="button" (click)="moveQuestion(section, qi, -1)" [disabled]="qi === 0" aria-label="Move question up" title="Move up"
+                        class="grid size-7 place-items-center rounded-full text-[#6b6b6b] transition-colors hover:bg-[#e9f6f8] hover:text-[#357f8d] disabled:pointer-events-none disabled:opacity-30">
+                        <svg class="size-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m18 15-6-6-6 6" /></svg>
+                      </button>
+                      <button type="button" (click)="moveQuestion(section, qi, 1)" [disabled]="qi === section.questions.length - 1" aria-label="Move question down" title="Move down"
+                        class="grid size-7 place-items-center rounded-full text-[#6b6b6b] transition-colors hover:bg-[#e9f6f8] hover:text-[#357f8d] disabled:pointer-events-none disabled:opacity-30">
+                        <svg class="size-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+                      </button>
+
+                      <button type="button" (click)="toggleMenu(question.clientId, $event)" aria-label="More actions" title="More"
+                        aria-haspopup="menu" [attr.aria-expanded]="menuOpenId() === question.clientId"
+                        class="grid size-7 place-items-center rounded-full text-[#6b6b6b] transition-colors hover:bg-[#e9f6f8] hover:text-[#357f8d] disabled:pointer-events-none disabled:opacity-30"
+                        [class]="menuOpenId() === question.clientId ? 'bg-[#e9f6f8] text-[#357f8d]' : ''">
+                        <svg class="size-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.6" /><circle cx="12" cy="12" r="1.6" /><circle cx="19" cy="12" r="1.6" /></svg>
+                      </button>
+
+                      <!-- dropdown: scale + fade from the top-right corner -->
+                      <div role="menu" aria-label="Question actions" [attr.inert]="menuOpenId() === question.clientId ? null : ''"
+                        class="absolute right-0 top-full z-20 mt-2 w-44 origin-top-right rounded-2xl bg-white p-1.5 shadow-xl ring-1 ring-black/5 transition duration-150 ease-out"
+                        [class]="menuOpenId() === question.clientId ? 'scale-100 opacity-100' : 'pointer-events-none scale-95 opacity-0'">
+                        <button type="button" role="menuitem" (click)="duplicateQuestion(section, question)" class="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs transition-colors hover:bg-[#eef8fa] hover:text-[#357f8d]">
+                          <svg class="size-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>Duplicate
+                        </button>
+                        <button type="button" role="menuitem" (click)="copyQuestion(question)" class="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs transition-colors hover:bg-[#eef8fa] hover:text-[#357f8d]">
+                          <svg class="size-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="2" width="8" height="4" rx="1" /><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" /></svg>Copy
+                        </button>
+                        <button type="button" role="menuitem" (click)="cutQuestion(section, question)" class="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs transition-colors hover:bg-[#eef8fa] hover:text-[#357f8d]">
+                          <svg class="size-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="6" r="3" /><circle cx="6" cy="18" r="3" /><path d="M20 4 8.12 15.88M14.47 14.48 20 20M8.12 8.12 12 12" /></svg>Cut
+                        </button>
+                        <button type="button" role="menuitem" (click)="toggleHidden(question)" class="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs transition-colors hover:bg-[#eef8fa] hover:text-[#357f8d]">
+                          @if (question.hidden) {
+                            <svg class="size-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></svg>Show
+                          } @else {
+                            <svg class="size-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68M6.61 6.61A13.53 13.53 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61M2 2l20 20" /></svg>Hide
+                          }
+                        </button>
+                        <div class="my-1 h-px bg-[#efefef]"></div>
+                        <button type="button" role="menuitem" (click)="requestDeleteQuestion(section, question)"
+                          class="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs text-red-600 transition-colors hover:bg-red-50">
+                          <svg class="size-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>Delete
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  @if (question.hidden) {
+                    <p class="rounded-2xl bg-white p-4 text-sm italic text-gray-400">
+                      Hidden question: {{ question.text ? (question.text.length > 80 ? question.text.slice(0, 80) + '…' : question.text) : 'Untitled' }}
+                    </p>
+                  } @else {
+                    <textarea [(ngModel)]="question.text" (ngModelChange)="markDirty(question)"
+                      [maxlength]="limits.questionChars" rows="1" placeholder="Enter your question" aria-label="Question"
+                      class="mb-3 block min-h-[51px] w-full resize-y rounded-2xl border-0 bg-white px-5 py-3.5 text-sm outline-none focus:ring-1 focus:ring-[#64bbcb]"></textarea>
+
+                    @if (question.type === 'short') {
+                      <p class="mb-1.5 text-sm">Answer</p>
+                      <textarea [(ngModel)]="question.expectedAnswer" (ngModelChange)="markDirty(question)"
+                        [maxlength]="limits.answerChars" rows="3" placeholder="Enter expected short answer" aria-label="Expected answer"
+                        class="block w-full resize-y rounded-2xl bg-white px-5 py-3.5 text-sm outline-none focus:ring-1 focus:ring-[#64bbcb]"></textarea>
+                    } @else {
+                      <p class="mb-1.5 text-sm">Answers</p>
+                      <div>
+                        @for (option of question.options; track option.clientId; let oi = $index; let last = $last) {
+                          <div class="group/opt mb-[13px] flex min-h-[51px] items-center gap-5 rounded-2xl bg-white pl-[22px] pr-5 last:mb-0">
+                            @if (question.type === 'single') {
+                              <input type="radio" [name]="'answer-' + question.clientId" [checked]="option.correct"
+                                (change)="setCorrect(question, oi)" aria-label="Correct answer"
+                                class="size-3 shrink-0 cursor-pointer appearance-none rounded-full border-white bg-[#ececec] checked:border-[3px] checked:bg-[#64bbcb] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#64bbcb]">
+                            } @else {
+                              <input type="checkbox" [checked]="option.correct"
+                                (change)="setCorrect(question, oi)" aria-label="Correct answer"
+                                class="size-3 shrink-0 cursor-pointer appearance-none rounded-[3px] border-white bg-[#ececec] checked:border-[3px] checked:bg-[#64bbcb] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#64bbcb]">
+                            }
+                            <input [(ngModel)]="option.text" (ngModelChange)="markDirty(question)" [maxlength]="limits.optionChars"
+                              [placeholder]="'Option ' + (oi + 1)" [attr.aria-label]="'Option ' + (oi + 1)"
+                              class="min-w-0 flex-1 bg-transparent py-3 text-sm outline-none placeholder:text-[#505050]">
+                            @if (question.scoringType === 'advanced') {
+                              <input type="number" min="0" max="100" step="1" [ngModel]="option.points"
+                                (ngModelChange)="setOptionPoints(question, oi, $event)" placeholder="Points" aria-label="Option points"
+                                class="w-20 rounded-lg bg-[#f6f6f6] p-2 text-xs outline-none">
+                            }
+                            <span class="flex items-center gap-2 opacity-0 transition-opacity focus-within:opacity-100 group-hover/opt:opacity-100 [@media(hover:none)]:opacity-100">
+                              <button type="button" (click)="duplicateOption(question, oi)" aria-label="Duplicate option" class="text-xs hover:text-[#64bbcb]">⧉</button>
+                              <button type="button" (click)="deleteOption(question, oi)" aria-label="Delete option" class="text-xs hover:text-red-500">✕</button>
+                            </span>
+                            @if (last && question.options.length < limits.maxOptions) {
+                              <button type="button" (click)="addOption(question)" aria-label="Add option"
+                                class="shrink-0 text-sm text-[#7a7a7a] hover:text-[#64bbcb]">+ Add</button>
+                            }
+                          </div>
+                        }
+                      </div>
+                    }
+
+                    <!-- per-question scoring + feedback: closed by default (open with the "Scoring" action) -->
+                    @if (scoringOpenId() === question.clientId) {
+                      <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                        @if (question.type !== 'short') {
+                          <label class="text-xs">Scoring
+                            <select [ngModel]="question.scoringType" (ngModelChange)="changeScoring(question, $event)"
+                              class="mt-1.5 block h-9 w-full rounded-lg bg-white px-3 text-xs outline-none">
+                              <option value="basic">Basic</option>
+                              <option value="advanced">Advanced</option>
+                            </select>
+                          </label>
+                        }
+                        @if (question.scoringType === 'basic') {
+                          <label class="text-xs">Correct score
+                            <input type="number" min="0" max="100" step="1" [ngModel]="question.correctScore"
+                              (ngModelChange)="setScore(question, 'correctScore', $event)" placeholder="Enter Score"
+                              class="mt-1.5 block h-9 w-full rounded-lg bg-white px-3 text-xs outline-none placeholder:text-[#b5b5b5]">
+                          </label>
+                          <label class="text-xs">Incorrect score
+                            <input type="number" min="0" max="100" step="1" [ngModel]="question.incorrectScore"
+                              (ngModelChange)="setScore(question, 'incorrectScore', $event)" placeholder="Enter Score"
+                              class="mt-1.5 block h-9 w-full rounded-lg bg-white px-3 text-xs outline-none placeholder:text-[#b5b5b5]">
+                          </label>
+                        }
+                      </div>
+                      <div class="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
+                        <label class="text-xs">Correct feedback
+                          <textarea [(ngModel)]="question.correctFeedback" (ngModelChange)="markDirty(question)"
+                            [maxlength]="limits.feedbackChars" rows="2" placeholder="Enter the Text"
+                            class="mt-1.5 block w-full resize-y rounded-lg bg-white px-3 py-2.5 text-xs outline-none placeholder:text-[#b5b5b5] focus:ring-1 focus:ring-[#64bbcb]"></textarea>
+                        </label>
+                        <label class="text-xs">Incorrect feedback
+                          <textarea [(ngModel)]="question.incorrectFeedback" (ngModelChange)="markDirty(question)"
+                            [maxlength]="limits.feedbackChars" rows="2" placeholder="Enter the Text"
+                            class="mt-1.5 block w-full resize-y rounded-lg bg-white px-3 py-2.5 text-xs outline-none placeholder:text-[#b5b5b5] focus:ring-1 focus:ring-[#64bbcb]"></textarea>
+                        </label>
+                      </div>
+                    }
+                  }
+                </article>
+              }
+
+              <div class="flex justify-center gap-3">
+                <button type="button" (click)="addQuestion()" [disabled]="section.questions.length >= limits.maxQuestionsPerSection"
+                  class="h-8 rounded-full bg-white px-6 text-xs hover:bg-[#e9f6f8] disabled:opacity-50">+ Add Question</button>
+                @if (hasClipboard()) {
+                  <button type="button" (click)="pasteQuestion()" class="h-8 rounded-full bg-white px-6 text-xs hover:bg-[#e9f6f8]">Paste</button>
+                }
+              </div>
+            } @else {
+              <div class="flex min-h-[380px] flex-col items-center justify-center gap-4 text-center">
+                <p class="text-sm text-gray-400">No sections created yet</p>
+                <button type="button" (click)="addSection()" class="h-8 rounded-full bg-white px-6 text-xs hover:bg-[#e9f6f8]">+ Add Section</button>
+              </div>
+            }
+          </section>
+
+          <!-- Organize sections -->
+          <section class="min-h-[515px] rounded-2xl bg-[#f6f6f6] px-4 pb-4 pt-[21px]">
+            <div class="mb-[23px] flex items-start justify-between gap-2">
+              <div>
+                <h2 class="mb-[5px] text-sm font-semibold">Organize Section</h2>
+                <p class="text-sm">You can rearrange the sections</p>
+              </div>
+              @if (hasSectionClipboard()) {
+                <button type="button" (click)="pasteSection()"
+                  class="h-8 shrink-0 rounded-full bg-white px-4 text-xs hover:bg-[#e9f6f8]">Paste Section</button>
+              }
+            </div>
+
+            <div cdkDropList (cdkDropListDropped)="dropSection($event)" class="space-y-5">
+              @for (section of sections(); track section.clientId; let si = $index) {
+                <div cdkDrag class="group/sec flex min-h-[51px] items-center gap-3 rounded-2xl bg-white pl-[25px] pr-[19px]">
+                  <div class="min-w-0 flex-1 cursor-pointer py-3.5 text-sm"
+                    (click)="selectSection(section.clientId)" (dblclick)="editSection(section.clientId)">
+                    @if (editingSectionId() === section.clientId) {
+                      <input [id]="'section-name-' + section.clientId" [ngModel]="section.name"
+                        (ngModelChange)="renameSection(section, $event)"
+                        (blur)="editingSectionId.set(null)" (keydown.enter)="editingSectionId.set(null)"
+                        [maxlength]="limits.sectionNameChars" aria-label="Section name"
+                        class="w-full border-b border-[#64bbcb] outline-none">
+                    } @else {
+                      <span class="block truncate">{{ section.name }}</span>
+                    }
+                  </div>
+
+                  <!-- reorder / duplicate: hidden until hover or keyboard focus (always visible on touch) -->
+                  <span class="flex items-center gap-1 opacity-0 transition-opacity focus-within:opacity-100 group-hover/sec:opacity-100 [@media(hover:none)]:opacity-100">
+                    <button type="button" (click)="moveSection(section, -1)" [disabled]="si === 0" aria-label="Move section up" class="px-1 text-xs disabled:opacity-30">↑</button>
+                    <button type="button" (click)="moveSection(section, 1)" [disabled]="si === sections().length - 1" aria-label="Move section down" class="px-1 text-xs disabled:opacity-30">↓</button>
+                    <button type="button" (click)="duplicateSection(section)" aria-label="Duplicate section" title="Duplicate section"
+                      class="px-1 text-xs hover:text-[#64bbcb]">⧉</button>
+                    <button type="button" (click)="copySection(section)" aria-label="Copy section" title="Copy section"
+                      class="px-1 text-xs hover:text-[#64bbcb]">⎘</button>
+                  </span>
+
+                  <button type="button" (click)="editSection(section.clientId)" aria-label="Rename section" title="Rename section"
+                    class="grid size-[26px] shrink-0 place-items-center rounded-full bg-[#61b7c5] text-white hover:bg-[#489daa]">
+                    <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M12 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6" />
+                      <path d="M18.4 2.6a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4 9.4-9.4z" />
+                    </svg>
+                  </button>
+                  <button type="button" (click)="requestDeleteSection(section)" aria-label="Delete section" title="Delete section"
+                    class="grid size-[26px] shrink-0 place-items-center rounded-full bg-[#61b7c5] text-white hover:bg-red-500">
+                    <svg class="size-3.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                      <path d="M9 3h6l1 1h4v2H4V4h4l1-1zM6 8h12l-1 12a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L6 8z" />
+                    </svg>
+                  </button>
+                  <button type="button" cdkDragHandle aria-label="Drag to reorder" title="Drag to reorder"
+                    class="grid shrink-0 cursor-grab place-items-center text-[#b5b5b5] hover:text-[#8a8a8a]">
+                    <svg class="h-[18px] w-3" viewBox="0 0 12 18" fill="currentColor" aria-hidden="true">
+                      <circle cx="3" cy="3" r="1.4" /><circle cx="9" cy="3" r="1.4" />
+                      <circle cx="3" cy="9" r="1.4" /><circle cx="9" cy="9" r="1.4" />
+                      <circle cx="3" cy="15" r="1.4" /><circle cx="9" cy="15" r="1.4" />
+                    </svg>
+                  </button>
+                </div>
+              }
+            </div>
+          </section>
+        </div>
+
+        <!-- Section points (design: bottom panel) -->
+        @if (activeSection(); as section) {
+          <section class="mt-5 rounded-2xl bg-[#f6f6f6] px-[15px] pb-3.5 pt-4">
+            <h2 class="text-sm">{{ section.name }} points</h2>
+            <div class="mt-2 grid grid-cols-1 gap-x-5 gap-y-3 md:grid-cols-[195px_1fr]">
+              <div class="text-sm">
+                <label for="section-score">Score</label>
+                <input id="section-score" type="number" min="0" max="100" step="1" placeholder="Enter Score"
+                  [ngModel]="sectionScore(section)" (ngModelChange)="setSectionScore(section, $event)"
+                  class="mt-2.5 block h-9 w-full rounded-lg bg-white px-3.5 text-xs outline-none placeholder:text-[#b5b5b5] focus:ring-1 focus:ring-[#64bbcb]">
+              </div>
+              <div class="text-sm">
+                <label for="section-feedback">Feedback</label>
+                <input id="section-feedback" type="text" placeholder="Enter the Text" [maxlength]="limits.feedbackChars"
+                  [ngModel]="sectionFeedback(section)" (ngModelChange)="setSectionFeedback(section, $event)"
+                  class="mt-2.5 block h-9 w-full rounded-lg bg-white px-3.5 text-xs outline-none placeholder:text-[#b5b5b5] focus:ring-1 focus:ring-[#64bbcb]">
+              </div>
+            </div>
+          </section>
+        }
+      }
+      </div>
+    </div>
+  </main>
+
+  <!-- Back confirmation (SRS field #12) -->
+  @if (showBackDialog()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" aria-labelledby="back-title">
+      <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+        <h2 id="back-title" class="text-lg font-semibold">Unsaved Changes</h2>
+        <p class="mt-3 text-sm">Would you like to save or discard your changes?</p>
+        <div class="mt-6 flex flex-wrap justify-end gap-3">
+          <button type="button" (click)="showBackDialog.set(false)" class="rounded-lg bg-gray-100 px-4 py-2 text-sm">Cancel</button>
+          <button type="button" (click)="discardChanges()" class="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600">Discard Changes</button>
+          <button type="button" (click)="saveAndBack()" class="rounded-lg bg-[#64bbcb] px-4 py-2 text-sm text-white">Save Changes</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Delete confirmation -->
+  @if (confirm(); as c) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title">
+      <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+        <h2 id="confirm-title" class="text-lg font-semibold">{{ c.title }}</h2>
+        <p class="mt-3 text-sm">{{ c.message }}</p>
+        <div class="mt-6 flex justify-end gap-3">
+          <button type="button" (click)="confirm.set(null)" class="rounded-lg bg-gray-100 px-4 py-2 text-sm">Cancel</button>
+          <button type="button" (click)="runConfirmed()" class="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600">Delete</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Existing questions (SRS field #6) -->
+  @if (showExisting()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" aria-labelledby="existing-title">
+      <div class="flex max-h-[80vh] w-full max-w-lg flex-col rounded-2xl bg-white p-6">
+        <div class="mb-4 flex items-center justify-between">
+          <h2 id="existing-title" class="text-lg font-semibold">Existing Questions</h2>
+          <button type="button" (click)="showExisting.set(false)" aria-label="Close">✕</button>
+        </div>
+        <input type="search" [ngModel]="existingKeyword()" (ngModelChange)="onExistingKeyword($event)" maxlength="100"
+          placeholder="Search questions" aria-label="Search questions"
+          class="mb-4 h-10 w-full rounded-lg bg-[#f6f6f6] px-3 text-sm outline-none">
+
+        <div class="min-h-0 flex-1 overflow-y-auto">
+          @if (existingLoading()) {
+            <p class="py-6 text-center text-sm text-gray-400">Loading...</p>
+          } @else {
+            @for (q of existingPage()?.items ?? []; track q.id) {
+              <label class="mb-3 flex cursor-pointer items-center gap-3 rounded-xl bg-[#f6f6f6] p-4">
+                <input type="checkbox" class="h-4 w-4 accent-[#64bbcb]" [checked]="selectedExisting().has(q.id)" (change)="toggleExisting(q.id)">
+                <span class="min-w-0 flex-1 break-words text-sm">{{ q.text || 'Untitled Question' }}</span>
+              </label>
+            } @empty {
+              <p class="py-6 text-center text-sm text-gray-400">No existing questions available</p>
+            }
+          }
+        </div>
+
+        <div class="mt-4 flex items-center justify-between gap-3 text-xs">
+          <div class="flex items-center gap-2">
+            <button type="button" (click)="existingPageChange(-1)" [disabled]="(existingPage()?.page ?? 0) === 0"
+              class="rounded-full bg-[#f6f6f6] px-3 py-1.5 disabled:opacity-40">Prev</button>
+            <span>{{ (existingPage()?.page ?? 0) + 1 }} / {{ existingPage()?.totalPages || 1 }}</span>
+            <button type="button" (click)="existingPageChange(1)"
+              [disabled]="(existingPage()?.page ?? 0) + 1 >= (existingPage()?.totalPages ?? 1)"
+              class="rounded-full bg-[#f6f6f6] px-3 py-1.5 disabled:opacity-40">Next</button>
+          </div>
+          <button type="button" (click)="addSelectedExisting()" [disabled]="selectedExisting().size === 0"
+            class="rounded-lg bg-[#64bbcb] px-4 py-2 text-sm text-white disabled:opacity-50">Add selected ({{ selectedExisting().size }})</button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

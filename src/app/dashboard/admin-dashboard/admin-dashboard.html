@@ -36,10 +36,11 @@
                 aria-hidden="true"
               ></span>
             </span>
-          } @else if (crumb.link) {
+                    } @else if (crumb.link) {
             <!-- Clickable step -->
             <a
               [routerLink]="crumb.link"
+              [queryParams]="crumb.queryParams"
               class="group relative rounded px-1.5 py-1 text-[13px] font-medium text-[#444] outline-none transition-colors duration-200 hover:text-[#4694A4] focus-visible:text-[#4694A4] focus-visible:ring-2 focus-visible:ring-[#4694A4]/40 motion-reduce:transition-none"
             >
               {{ crumb.label }}

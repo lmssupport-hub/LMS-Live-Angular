@@ -215,13 +215,14 @@
           track activity.id;
           let activityIndex = $index
           ) {
-          <!-- CHANGED: clicking the activity row itself opens it (Ebook / Multimedia / Question Bank).
+          <!-- FIXED: row click / Enter / Space now call openActivity(), which passes the activity
+               (so an existing Question Bank is OPENED, not re-created as a new empty bank).
                Inner buttons stop propagation so they don't trigger this as well. -->
           <div class="flex h-10 cursor-pointer items-center gap-3 rounded-xl bg-white px-5 text-xs outline-none transition hover:bg-[#f7fcfd] focus-visible:ring-2 focus-visible:ring-[#61b7c5]/40"
             role="button" tabindex="0" [attr.aria-label]="'Open ' + activity.title"
-            (click)="(activity.kind === 'Question Bank' ? openQuestionBankList(section.id) : openResourceDialog(activity.kind, section.id, activity))"
-            (keydown.enter)="$event.target === $event.currentTarget && (activity.kind === 'Question Bank' ? openQuestionBankList(section.id) : openResourceDialog(activity.kind, section.id, activity))"
-            (keydown.space)="$event.target === $event.currentTarget && $event.preventDefault(); $event.target === $event.currentTarget && (activity.kind === 'Question Bank' ? openQuestionBankList(section.id) : openResourceDialog(activity.kind, section.id, activity))"
+            (click)="openActivity(section.id, activity)"
+            (keydown.enter)="$event.target === $event.currentTarget && openActivity(section.id, activity)"
+            (keydown.space)="$event.target === $event.currentTarget && $event.preventDefault(); $event.target === $event.currentTarget && openActivity(section.id, activity)"
             [class]="
                       activityDropTarget()?.sectionId === section.id &&
                       activityDropTarget()?.index === activityIndex &&
@@ -238,7 +239,7 @@
             <button type="button"
               class="grid size-7 place-items-center rounded-full bg-[#61b7c5] text-white transition hover:bg-[#489daa]"
               [attr.aria-label]="'Edit ' + activity.title"
-              (click)="$event.stopPropagation(); openResourceDialog(activity.kind, section.id, activity)" title="Edit activity">
+              (click)="$event.stopPropagation(); openActivity(section.id, activity)" title="Edit activity">
               <svg viewBox="0 0 24 24" class="size-3.5 fill-none stroke-current" stroke-width="2" aria-hidden="true">
                 <path d="m4 20 4.5-1 10-10a2.1 2.1 0 0 0-3-3l-10 10L4 20Z" stroke-linecap="round"
                   stroke-linejoin="round" />

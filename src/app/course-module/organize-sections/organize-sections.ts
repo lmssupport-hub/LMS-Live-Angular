@@ -65,7 +65,7 @@ export class OrganizeSections implements OnInit, OnDestroy {
   readonly editCourseRequested = output<void>();
 
   private readonly sectionService = inject(SectionManagementService);
-  
+
   private readonly multimediaService = inject(MultimediaManagementService);
   private readonly questionBankService = inject(QuestionBankService);
   private readonly destroyRef = inject(DestroyRef);
@@ -589,6 +589,19 @@ export class OrganizeSections implements OnInit, OnDestroy {
 
   activitiesForSection(sectionId: number): SectionActivity[] {
     return this.activitiesBySection().get(sectionId) ?? this.noActivities;
+  }
+
+  /**
+   * FIXED: single entry point for row click / Enter / Space / pencil icon on an EXISTING activity.
+   * It always passes `activity`, so an existing Question Bank is opened (goToBank) and
+   * never re-created as a new empty bank.
+   */
+  openActivity(sectionId: number, activity: SectionActivity): void {
+    if (activity.kind === 'Question Bank') {
+      this.openQuestionBankList(sectionId, activity);
+    } else {
+      this.openResourceDialog(activity.kind, sectionId, activity);
+    }
   }
 
   /** Add Activity -> Multimedia opens the upload dialog; the pencil icon on a row opens it in edit mode. */

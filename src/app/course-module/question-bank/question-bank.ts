@@ -58,10 +58,9 @@ interface ConfirmState {
   action: () => void;
 }
 
-/** manual = Save button, auto = quiet auto save, retry = second attempt after a concurrent-edit conflict. */
-type SaveMode = 'manual' | 'auto' | 'retry';
+/** manual = Save button, retry = second attempt after a concurrent-edit conflict. */
+type SaveMode = 'manual' | 'retry';
 
-const AUTO_SAVE_DELAY_MS = 3000;
 const SESSION_REDIRECT_DELAY_MS = 2500;
 /** Popup (toast) auto-dismiss times. */
 const TOAST_SUCCESS_MS = 3000;
@@ -104,6 +103,11 @@ export class QuestionBankComponent implements OnInit {
   readonly scoringOpenId = signal<string | null>(null);
   /** Question whose "more actions" dropdown is open. */
   readonly menuOpenId = signal<string | null>(null);
+  /**
+   * NEW: section whose "Section points" panel is shown (picked from the Scoring dropdown).
+   * UI-only: the backend ScoringType stays 'basic' | 'advanced'.
+   */
+  readonly sectionPointsId = signal<string | null>(null);
 
   readonly loading = signal(false);
   readonly saving = signal(false);
@@ -134,6 +138,34 @@ export class QuestionBankComponent implements OnInit {
   );
   readonly canExport = computed(() => !!this.activeSection()?.questions.some(q => q.id !== null));
 
+  /** NEW: bumped on every edit so the memoized section totals recompute (question objects are mutated in place). */
+  private readonly revision = signal(0);
+
+  /**
+   * NEW: total score shown on each section row (left panel, next to the move icons):
+   *  - Section points mode -> the section score (e.g. 10)
+   *  - Basic / Advanced    -> sum of the questions' maximum scores (e.g. Q1 5 + Q2 10 = 15)
+   * Key = section.clientId.
+   */
+  readonly sectionTotals = computed<ReadonlyMap<string, number>>(() => {
+    this.revision(); // dependency: re-run after in-place edits
+    const activeId = this.activeSectionId();
+    const pointsId = this.sectionPointsId();
+    const totals = new Map<string, number>();
+
+    for (const s of this.sections()) {
+      // Same rule as showSectionPointsIfSet(): the active section follows the Scoring dropdown,
+      // every other section counts as "section points" when it carries a score / feedback.
+      const sectionLevel =
+        s.clientId === pointsId || (s.clientId !== activeId && (s.score !== null || !!s.feedback));
+      totals.set(
+        s.clientId,
+        sectionLevel ? (s.score ?? 0) : s.questions.reduce((sum, q) => sum + this.questionMaxScore(q), 0),
+      );
+    }
+    return totals;
+  });
+
   private courseId = 0;
   /** course + organize section + bank. null until the route params are valid. */
   private scope: BankScope | null = null;
@@ -141,7 +173,6 @@ export class QuestionBankComponent implements OnInit {
   private clipboard: QuestionVm | null = null;
   private sectionClipboard: SectionVm | null = null;
   private draftTimer: ReturnType<typeof setTimeout> | null = null;
-  private autoSaveTimer: ReturnType<typeof setTimeout> | null = null;
   /** bumped on every edit, so an edit made while a save is running is never marked as saved */
   private editVersion = 0;
   private readonly keyword$ = new Subject<string>();
@@ -152,7 +183,6 @@ export class QuestionBankComponent implements OnInit {
     // Never lose the last <400 ms of typing when the user navigates away.
     this.destroyRef.onDestroy(() => {
       if (this.draftTimer) clearTimeout(this.draftTimer);
-      if (this.autoSaveTimer) clearTimeout(this.autoSaveTimer);
       this.flushDraft();
     });
 
@@ -221,11 +251,90 @@ export class QuestionBankComponent implements OnInit {
   @HostListener('document:keydown.escape')
   closeMenu(): void {
     if (this.menuOpenId()) this.menuOpenId.set(null);
+    if (this.pillDropdown()) this.pillDropdown.set(null); // NEW
+  }
+
+  /** Score inputs: a number input's max="100" doesn't stop typing, so clamp on every keystroke. */
+  limitScore(event: Event): void {
+    const el = event.target as HTMLInputElement;
+    const digits = el.value.replace(/\D/g, '');
+    el.value = digits === '' ? '' : String(Math.min(LIMITS.maxScore, Number(digits)));
+  }
+
+  /** Block characters a number input accepts but a score must not have. */
+  blockNonDigit(event: KeyboardEvent): void {
+    if (['e', 'E', '+', '-', '.', ','].includes(event.key)) event.preventDefault();
   }
 
   toggleMenu(id: string, event: Event): void {
     event.stopPropagation(); // don't let the document click handler close it straight away
+    this.pillDropdown.set(null); // NEW
     this.menuOpenId.update(current => (current === id ? null : id));
+  }
+
+  // ───── NEW: Question type / Scoring dropdowns (filter-style animated dropdown) ─────
+  /** Key of the open dropdown: 'type-<clientId>' or 'scoring-<clientId>'. */
+  readonly pillDropdown = signal<string | null>(null);
+  /** Dropdowns opened at least once: only these get the "closing" animation (so nothing flashes on page load). */
+  private readonly pillDropdownUsed = signal<string[]>([]);
+
+  isPillDropdownUsed(key: string): boolean {
+    return this.pillDropdownUsed().includes(key);
+  }
+
+  togglePillDropdown(key: string): void {
+    this.menuOpenId.set(null);
+    this.pillDropdownUsed.update(keys => (keys.includes(key) ? keys : [...keys, key]));
+    this.pillDropdown.update(current => (current === key ? null : key));
+  }
+
+  questionTypeLabel(type: QuestionType): string {
+    return this.typeOptions.find(t => t.value === type)?.label ?? '';
+  }
+
+  pickQuestionType(question: QuestionVm, type: QuestionType): void {
+    this.pillDropdown.set(null);
+    this.changeQuestionType(question, type);
+  }
+
+  /** Short Text has no per-option points, so "Advanced" is not offered for it. */
+  scoringChoices(question: QuestionVm): ReadonlyArray<{ label: string; value: ScoringType | 'section' }> {
+    return question.type === 'short'
+      ? [
+          { label: 'Basic', value: 'basic' },
+          { label: 'Section points', value: 'section' },
+        ]
+      : [
+          { label: 'Basic', value: 'basic' },
+          { label: 'Advanced', value: 'advanced' },
+          { label: 'Section points', value: 'section' },
+        ];
+  }
+
+  scoringLabel(section: SectionVm, question: QuestionVm): string {
+    if (this.sectionPointsId() === section.clientId) return 'Section points';
+    return question.scoringType === 'advanced' ? 'Advanced' : 'Basic';
+  }
+
+  /**
+   * NEW: highest score one question can give, based on its own scoring type (used for the section total).
+   *  - hidden question           -> 0 (not delivered to learners)
+   *  - Basic / Short Text        -> correctScore
+   *  - Advanced, Multiple Answer -> sum of the correct options' points
+   *  - Advanced, Single Answer   -> highest option points
+   */
+  private questionMaxScore(q: QuestionVm): number {
+    if (q.hidden) return 0;
+    const n = (v: number): number => (Number.isFinite(v) ? v : 0);
+
+    if (q.type === 'short' || q.scoringType !== 'advanced') return n(q.correctScore);
+    if (q.type === 'multiple') return q.options.reduce((sum, o) => sum + (o.correct ? n(o.points) : 0), 0);
+    return q.options.reduce((max, o) => Math.max(max, n(o.points)), 0);
+  }
+
+  pickScoring(section: SectionVm, question: QuestionVm, choice: ScoringType | 'section'): void {
+    this.pillDropdown.set(null);
+    this.changeScoringChoice(section, question, choice);
   }
 
   // ───────────────────────── load ─────────────────────────
@@ -251,6 +360,7 @@ export class QuestionBankComponent implements OnInit {
     this.sections.set(sections);
     this.baselineSectionIds = sections.map(s => s.id).filter(isNumber);
     this.activeSectionId.set(sections[0]?.clientId ?? null);
+    this.showSectionPointsIfSet(); // NEW
     this.dirty.set(false);
   }
 
@@ -262,6 +372,7 @@ export class QuestionBankComponent implements OnInit {
     this.baselineSectionIds = draft.baselineSectionIds;
     this.selectedType.set(draft.selectedType);
     this.activeSectionId.set(draft.sections[0]?.clientId ?? null);
+    this.showSectionPointsIfSet(); // NEW
     this.dirty.set(true);
     this.banner.set({ kind: 'info', text: 'Your unsaved changes were restored.' });
   }
@@ -273,27 +384,20 @@ export class QuestionBankComponent implements OnInit {
   }
 
   // ───────────────────────── dirty / draft ─────────────────────────
-  markDirty(question?: QuestionVm, autoSave = true): void {
+  markDirty(question?: QuestionVm): void {
     if (question) question.dirty = true;
     this.dirty.set(true);
     this.editVersion++;
+    this.revision.update(v => v + 1); // NEW: refresh the section totals
     if (this.draftTimer) clearTimeout(this.draftTimer);
     this.draftTimer = setTimeout(() => this.flushDraft(), 400);
-    if (autoSave) this.scheduleAutoSave();
-  }
-
-  /** SRS field #7: question sections have "Auto Save". Saves quietly once the user stops editing. */
-  private scheduleAutoSave(): void {
-    if (this.autoSaveTimer) clearTimeout(this.autoSaveTimer);
-    this.autoSaveTimer = setTimeout(() => {
-      if (!this.dirty() || this.redirecting()) return;
-      if (this.busy()) this.scheduleAutoSave();
-      else this.runSave(undefined, 'auto');
-    }, AUTO_SAVE_DELAY_MS);
   }
 
   private flushDraft(): void {
     if (!this.dirty() || !this.scope) return;
+    // Draft only after a section is added (nothing to recover before that).
+    // Exception: the user deleted every saved section, that pending delete is still worth keeping.
+    if (this.sections().length === 0 && this.baselineSectionIds.length === 0) return;
     this.service.saveDraft(this.scope, {
       selectedType: this.selectedType(),
       baselineSectionIds: this.baselineSectionIds,
@@ -309,7 +413,7 @@ export class QuestionBankComponent implements OnInit {
   /** Top radio = type used for NEW questions. Existing questions keep their own type. */
   setDefaultType(type: Exclude<SelectedType, null>): void {
     this.selectedType.set(type);
-    this.markDirty(undefined, false); // only a UI choice: nothing to auto save
+    this.markDirty(); // only a UI choice, kept in the draft
   }
 
   changeQuestionType(question: QuestionVm, type: QuestionType): void {
@@ -339,6 +443,26 @@ export class QuestionBankComponent implements OnInit {
     this.markDirty(question);
   }
 
+  /**
+   * NEW: Scoring dropdown in the question action pill.
+   * 'basic' / 'advanced' -> real question scoring (hides the Section points panel of this section).
+   * 'section'            -> UI-only: shows the Section points panel at the bottom.
+   */
+  changeScoringChoice(section: SectionVm, question: QuestionVm, choice: ScoringType | 'section'): void {
+    if (choice === 'section') {
+      this.sectionPointsId.set(section.clientId);
+      return;
+    }
+    if (this.sectionPointsId() === section.clientId) this.sectionPointsId.set(null);
+    this.changeScoring(question, choice);
+  }
+
+  /** NEW: show the panel again for sections that already have a score / feedback saved. */
+  private showSectionPointsIfSet(): void {
+    const s = this.activeSection();
+    this.sectionPointsId.set(s && (s.score !== null || s.feedback) ? s.clientId : null);
+  }
+
   /** Expand / collapse the scoring + feedback block of one question. */
   toggleScoring(id: string): void {
     this.scoringOpenId.update(current => (current === id ? null : id));
@@ -358,6 +482,7 @@ export class QuestionBankComponent implements OnInit {
 
   selectSection(id: string): void {
     this.activeSectionId.set(id);
+    this.showSectionPointsIfSet(); // NEW
   }
 
   editSection(id: string): void {
@@ -405,7 +530,10 @@ export class QuestionBankComponent implements OnInit {
   private deleteSection(clientId: string): void {
     const remaining = this.sections().filter(s => s.clientId !== clientId);
     this.sections.set(remaining);
-    if (this.activeSectionId() === clientId) this.activeSectionId.set(remaining[0]?.clientId ?? null);
+    if (this.activeSectionId() === clientId) {
+      this.activeSectionId.set(remaining[0]?.clientId ?? null);
+      this.showSectionPointsIfSet(); // NEW
+    }
     this.markDirty();
   }
 
@@ -618,7 +746,6 @@ export class QuestionBankComponent implements OnInit {
 
     const issue = validateSections(this.sections());
     if (issue) {
-      if (mode === 'auto') return; // unfinished work: stay quiet, the draft keeps it safe
       this.showIssue(issue);
       return;
     }
@@ -657,7 +784,6 @@ export class QuestionBankComponent implements OnInit {
   }
 
   private savedBanner(mode: SaveMode): Banner {
-    if (mode === 'auto') return { kind: 'info', text: MESSAGES.autoSaved };
     if (mode === 'retry') return { kind: 'info', text: MESSAGES.conflictResolved };
     return { kind: 'success', text: MESSAGES.saved };
   }
@@ -698,6 +824,7 @@ export class QuestionBankComponent implements OnInit {
       );
     } else if (/score|feedback/i.test(issue.message)) {
       // Section-level problem -> the "Section points" panel at the bottom.
+      this.sectionPointsId.set(issue.sectionClientId); // NEW: make sure the panel is visible
       setTimeout(() => document.getElementById('section-score')?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
     }
   }
@@ -863,7 +990,6 @@ export class QuestionBankComponent implements OnInit {
   }
 
   discardChanges(): void {
-    if (this.autoSaveTimer) clearTimeout(this.autoSaveTimer);
     if (this.draftTimer) clearTimeout(this.draftTimer);
     if (this.scope) this.service.clearDraft(this.scope);
     this.dirty.set(false);
@@ -900,7 +1026,6 @@ export class QuestionBankComponent implements OnInit {
       // SRS edge case 4: show the message on this page, then redirect to Login.
       if (this.redirecting()) return;
       if (this.draftTimer) clearTimeout(this.draftTimer);
-      if (this.autoSaveTimer) clearTimeout(this.autoSaveTimer);
       this.flushDraft(); // keep work for after re-login
       this.redirecting.set(true);
       this.banner.set({ kind: 'error', text: ui.message });

@@ -69,219 +69,22 @@
         <p class="py-16 text-center text-sm text-gray-400">Loading...</p>
       } @else {
         <div class="grid grid-cols-1 gap-5 lg:grid-cols-2" [attr.inert]="saving() ? '' : null">
-          <!-- Question editor -->
-          <section class="min-h-[515px] rounded-2xl bg-[#f6f6f6] px-4 py-4">
-            <div class="mb-[26px] flex items-center justify-between gap-2">
-              <input type="text" [maxlength]="limits.sectionNameChars" aria-label="Section name"
-                [ngModel]="activeSection()?.name ?? ''"
-                (ngModelChange)="activeSection() && renameSection(activeSection()!, $event)"
-                [disabled]="!activeSection()" placeholder="Section name"
-                class="min-w-0 flex-1 bg-transparent text-sm font-semibold outline-none">
-              <button type="button" (click)="addSection()"
-                class="h-8 shrink-0 rounded-full bg-white px-4 text-xs hover:bg-[#e9f6f8]">+ Add Section</button>
-            </div>
 
-            @if (activeSection(); as section) {
-              @for (question of section.questions; track question.clientId; let qi = $index) {
-                <article class="group relative mb-8 scroll-mt-4 rounded-2xl last-of-type:mb-[19px]" [id]="'q-' + question.clientId"
-                  [class.ring-2]="highlightId() === question.clientId"
-                  [class.ring-red-400]="highlightId() === question.clientId">
-
-                  <!-- label row: label on the left, floating action pill on the right (in normal flow, so it can never overlap "Question N") -->
-                  <div class="mb-4 flex min-h-[32px] items-center justify-between gap-3">
-                    <div class="flex min-w-0 items-center gap-2">
-                      <span class="text-sm">Question {{ qi + 1 }}</span>
-                      @if (question.hidden) {
-                        <span class="rounded-full bg-white px-2 py-0.5 text-[11px] text-[#8a8a8a]">Hidden</span>
-                      }
-                    </div>
-
-                    <!-- Action pill: slides up + fades in on hover / focus (always visible on touch or while its menu is open) -->
-                    <div class="relative flex shrink-0 items-center gap-0.5 rounded-full bg-white p-1 text-xs text-[#505050] shadow-sm ring-1 ring-black/5 transition-all duration-200 ease-out [@media(hover:none)]:translate-y-0 [@media(hover:none)]:opacity-100"
-                      [class]="menuOpenId() === question.clientId
-                        ? 'translate-y-0 opacity-100'
-                        : 'translate-y-1 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:translate-y-0 group-focus-within:opacity-100'">
-
-                      <span class="relative">
-                        <select aria-label="Question type" [ngModel]="question.type"
-                          (ngModelChange)="changeQuestionType(question, $event)"
-                          class="h-7 cursor-pointer appearance-none rounded-full bg-transparent pl-3 pr-7 text-xs outline-none transition-colors hover:bg-[#e9f6f8] focus-visible:ring-2 focus-visible:ring-[#64bbcb]">
-                          @for (t of typeOptions; track t.value) {
-                            <option [value]="t.value">{{ t.label }}</option>
-                          }
-                        </select>
-                        <svg class="pointer-events-none absolute right-2 top-1/2 size-3 -translate-y-1/2 text-[#8a8a8a]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
-                      </span>
-
-                      <button type="button" (click)="toggleScoring(question.clientId)"
-                        [attr.aria-pressed]="scoringOpenId() === question.clientId"
-                        class="h-7 rounded-full px-3 text-xs transition-colors"
-                        [class]="scoringOpenId() === question.clientId ? 'bg-[#64bbcb] text-white' : 'hover:bg-[#e9f6f8] hover:text-[#357f8d]'">Scoring</button>
-
-                      <span class="mx-1 h-4 w-px bg-[#e6e6e6]"></span>
-
-                      <button type="button" (click)="moveQuestion(section, qi, -1)" [disabled]="qi === 0" aria-label="Move question up" title="Move up"
-                        class="grid size-7 place-items-center rounded-full text-[#6b6b6b] transition-colors hover:bg-[#e9f6f8] hover:text-[#357f8d] disabled:pointer-events-none disabled:opacity-30">
-                        <svg class="size-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m18 15-6-6-6 6" /></svg>
-                      </button>
-                      <button type="button" (click)="moveQuestion(section, qi, 1)" [disabled]="qi === section.questions.length - 1" aria-label="Move question down" title="Move down"
-                        class="grid size-7 place-items-center rounded-full text-[#6b6b6b] transition-colors hover:bg-[#e9f6f8] hover:text-[#357f8d] disabled:pointer-events-none disabled:opacity-30">
-                        <svg class="size-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
-                      </button>
-
-                      <button type="button" (click)="toggleMenu(question.clientId, $event)" aria-label="More actions" title="More"
-                        aria-haspopup="menu" [attr.aria-expanded]="menuOpenId() === question.clientId"
-                        class="grid size-7 place-items-center rounded-full text-[#6b6b6b] transition-colors hover:bg-[#e9f6f8] hover:text-[#357f8d] disabled:pointer-events-none disabled:opacity-30"
-                        [class]="menuOpenId() === question.clientId ? 'bg-[#e9f6f8] text-[#357f8d]' : ''">
-                        <svg class="size-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.6" /><circle cx="12" cy="12" r="1.6" /><circle cx="19" cy="12" r="1.6" /></svg>
-                      </button>
-
-                      <!-- dropdown: scale + fade from the top-right corner -->
-                      <div role="menu" aria-label="Question actions" [attr.inert]="menuOpenId() === question.clientId ? null : ''"
-                        class="absolute right-0 top-full z-20 mt-2 w-44 origin-top-right rounded-2xl bg-white p-1.5 shadow-xl ring-1 ring-black/5 transition duration-150 ease-out"
-                        [class]="menuOpenId() === question.clientId ? 'scale-100 opacity-100' : 'pointer-events-none scale-95 opacity-0'">
-                        <button type="button" role="menuitem" (click)="duplicateQuestion(section, question)" class="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs transition-colors hover:bg-[#eef8fa] hover:text-[#357f8d]">
-                          <svg class="size-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>Duplicate
-                        </button>
-                        <button type="button" role="menuitem" (click)="copyQuestion(question)" class="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs transition-colors hover:bg-[#eef8fa] hover:text-[#357f8d]">
-                          <svg class="size-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="2" width="8" height="4" rx="1" /><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" /></svg>Copy
-                        </button>
-                        <button type="button" role="menuitem" (click)="cutQuestion(section, question)" class="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs transition-colors hover:bg-[#eef8fa] hover:text-[#357f8d]">
-                          <svg class="size-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="6" r="3" /><circle cx="6" cy="18" r="3" /><path d="M20 4 8.12 15.88M14.47 14.48 20 20M8.12 8.12 12 12" /></svg>Cut
-                        </button>
-                        <button type="button" role="menuitem" (click)="toggleHidden(question)" class="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs transition-colors hover:bg-[#eef8fa] hover:text-[#357f8d]">
-                          @if (question.hidden) {
-                            <svg class="size-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></svg>Show
-                          } @else {
-                            <svg class="size-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68M6.61 6.61A13.53 13.53 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61M2 2l20 20" /></svg>Hide
-                          }
-                        </button>
-                        <div class="my-1 h-px bg-[#efefef]"></div>
-                        <button type="button" role="menuitem" (click)="requestDeleteQuestion(section, question)"
-                          class="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs text-red-600 transition-colors hover:bg-red-50">
-                          <svg class="size-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>Delete
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  @if (question.hidden) {
-                    <p class="rounded-2xl bg-white p-4 text-sm italic text-gray-400">
-                      Hidden question: {{ question.text ? (question.text.length > 80 ? question.text.slice(0, 80) + '…' : question.text) : 'Untitled' }}
-                    </p>
-                  } @else {
-                    <textarea [(ngModel)]="question.text" (ngModelChange)="markDirty(question)"
-                      [maxlength]="limits.questionChars" rows="1" placeholder="Enter your question" aria-label="Question"
-                      class="mb-3 block min-h-[51px] w-full resize-y rounded-2xl border-0 bg-white px-5 py-3.5 text-sm outline-none focus:ring-1 focus:ring-[#64bbcb]"></textarea>
-
-                    @if (question.type === 'short') {
-                      <p class="mb-1.5 text-sm">Answer</p>
-                      <textarea [(ngModel)]="question.expectedAnswer" (ngModelChange)="markDirty(question)"
-                        [maxlength]="limits.answerChars" rows="3" placeholder="Enter expected short answer" aria-label="Expected answer"
-                        class="block w-full resize-y rounded-2xl bg-white px-5 py-3.5 text-sm outline-none focus:ring-1 focus:ring-[#64bbcb]"></textarea>
-                    } @else {
-                      <p class="mb-1.5 text-sm">Answers</p>
-                      <div>
-                        @for (option of question.options; track option.clientId; let oi = $index; let last = $last) {
-                          <div class="group/opt mb-[13px] flex min-h-[51px] items-center gap-5 rounded-2xl bg-white pl-[22px] pr-5 last:mb-0">
-                            @if (question.type === 'single') {
-                              <input type="radio" [name]="'answer-' + question.clientId" [checked]="option.correct"
-                                (change)="setCorrect(question, oi)" aria-label="Correct answer"
-                                class="size-3 shrink-0 cursor-pointer appearance-none rounded-full border-white bg-[#ececec] checked:border-[3px] checked:bg-[#64bbcb] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#64bbcb]">
-                            } @else {
-                              <input type="checkbox" [checked]="option.correct"
-                                (change)="setCorrect(question, oi)" aria-label="Correct answer"
-                                class="size-3 shrink-0 cursor-pointer appearance-none rounded-[3px] border-white bg-[#ececec] checked:border-[3px] checked:bg-[#64bbcb] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#64bbcb]">
-                            }
-                            <input [(ngModel)]="option.text" (ngModelChange)="markDirty(question)" [maxlength]="limits.optionChars"
-                              [placeholder]="'Option ' + (oi + 1)" [attr.aria-label]="'Option ' + (oi + 1)"
-                              class="min-w-0 flex-1 bg-transparent py-3 text-sm outline-none placeholder:text-[#505050]">
-                            @if (question.scoringType === 'advanced') {
-                              <input type="number" min="0" max="100" step="1" [ngModel]="option.points"
-                                (ngModelChange)="setOptionPoints(question, oi, $event)" placeholder="Points" aria-label="Option points"
-                                class="w-20 rounded-lg bg-[#f6f6f6] p-2 text-xs outline-none">
-                            }
-                            <span class="flex items-center gap-2 opacity-0 transition-opacity focus-within:opacity-100 group-hover/opt:opacity-100 [@media(hover:none)]:opacity-100">
-                              <button type="button" (click)="duplicateOption(question, oi)" aria-label="Duplicate option" class="text-xs hover:text-[#64bbcb]">⧉</button>
-                              <button type="button" (click)="deleteOption(question, oi)" aria-label="Delete option" class="text-xs hover:text-red-500">✕</button>
-                            </span>
-                            @if (last && question.options.length < limits.maxOptions) {
-                              <button type="button" (click)="addOption(question)" aria-label="Add option"
-                                class="shrink-0 text-sm text-[#7a7a7a] hover:text-[#64bbcb]">+ Add</button>
-                            }
-                          </div>
-                        }
-                      </div>
-                    }
-
-                    <!-- per-question scoring + feedback: closed by default (open with the "Scoring" action) -->
-                    @if (scoringOpenId() === question.clientId) {
-                      <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-                        @if (question.type !== 'short') {
-                          <label class="text-xs">Scoring
-                            <select [ngModel]="question.scoringType" (ngModelChange)="changeScoring(question, $event)"
-                              class="mt-1.5 block h-9 w-full rounded-lg bg-white px-3 text-xs outline-none">
-                              <option value="basic">Basic</option>
-                              <option value="advanced">Advanced</option>
-                            </select>
-                          </label>
-                        }
-                        @if (question.scoringType === 'basic') {
-                          <label class="text-xs">Correct score
-                            <input type="number" min="0" max="100" step="1" [ngModel]="question.correctScore"
-                              (ngModelChange)="setScore(question, 'correctScore', $event)" placeholder="Enter Score"
-                              class="mt-1.5 block h-9 w-full rounded-lg bg-white px-3 text-xs outline-none placeholder:text-[#b5b5b5]">
-                          </label>
-                          <label class="text-xs">Incorrect score
-                            <input type="number" min="0" max="100" step="1" [ngModel]="question.incorrectScore"
-                              (ngModelChange)="setScore(question, 'incorrectScore', $event)" placeholder="Enter Score"
-                              class="mt-1.5 block h-9 w-full rounded-lg bg-white px-3 text-xs outline-none placeholder:text-[#b5b5b5]">
-                          </label>
-                        }
-                      </div>
-                      <div class="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
-                        <label class="text-xs">Correct feedback
-                          <textarea [(ngModel)]="question.correctFeedback" (ngModelChange)="markDirty(question)"
-                            [maxlength]="limits.feedbackChars" rows="2" placeholder="Enter the Text"
-                            class="mt-1.5 block w-full resize-y rounded-lg bg-white px-3 py-2.5 text-xs outline-none placeholder:text-[#b5b5b5] focus:ring-1 focus:ring-[#64bbcb]"></textarea>
-                        </label>
-                        <label class="text-xs">Incorrect feedback
-                          <textarea [(ngModel)]="question.incorrectFeedback" (ngModelChange)="markDirty(question)"
-                            [maxlength]="limits.feedbackChars" rows="2" placeholder="Enter the Text"
-                            class="mt-1.5 block w-full resize-y rounded-lg bg-white px-3 py-2.5 text-xs outline-none placeholder:text-[#b5b5b5] focus:ring-1 focus:ring-[#64bbcb]"></textarea>
-                        </label>
-                      </div>
-                    }
-                  }
-                </article>
-              }
-
-              <div class="flex justify-center gap-3">
-                <button type="button" (click)="addQuestion()" [disabled]="section.questions.length >= limits.maxQuestionsPerSection"
-                  class="h-8 rounded-full bg-white px-6 text-xs hover:bg-[#e9f6f8] disabled:opacity-50">+ Add Question</button>
-                @if (hasClipboard()) {
-                  <button type="button" (click)="pasteQuestion()" class="h-8 rounded-full bg-white px-6 text-xs hover:bg-[#e9f6f8]">Paste</button>
-                }
-              </div>
-            } @else {
-              <div class="flex min-h-[380px] flex-col items-center justify-center gap-4 text-center">
-                <p class="text-sm text-gray-400">No sections created yet</p>
-                <button type="button" (click)="addSection()" class="h-8 rounded-full bg-white px-6 text-xs hover:bg-[#e9f6f8]">+ Add Section</button>
-              </div>
-            }
-          </section>
-
-          <!-- Organize sections -->
+          <!-- LEFT: Question sections -->
           <section class="min-h-[515px] rounded-2xl bg-[#f6f6f6] px-4 pb-4 pt-[21px]">
             <div class="mb-[23px] flex items-start justify-between gap-2">
               <div>
-                <h2 class="mb-[5px] text-sm font-semibold">Organize Section</h2>
+                <h2 class="mb-[5px] text-sm font-semibold">Question Section</h2>
                 <p class="text-sm">You can rearrange the sections</p>
               </div>
-              @if (hasSectionClipboard()) {
-                <button type="button" (click)="pasteSection()"
-                  class="h-8 shrink-0 rounded-full bg-white px-4 text-xs hover:bg-[#e9f6f8]">Paste Section</button>
-              }
+              <div class="flex shrink-0 items-center gap-2">
+                  @if (hasSectionClipboard()) {
+                    <button type="button" (click)="pasteSection()"
+                      class="h-8 shrink-0 rounded-full bg-white px-4 text-xs hover:bg-[#e9f6f8]">Paste Section</button>
+                  }
+                    <button type="button" (click)="addSection()"
+                      class="h-8 shrink-0 rounded-full bg-white px-4 text-xs hover:bg-[#e9f6f8]">+ Add Section</button>
+                  </div>
             </div>
 
             <div cdkDropList (cdkDropListDropped)="dropSection($event)" class="space-y-5">
@@ -299,6 +102,12 @@
                       <span class="block truncate">{{ section.name }}</span>
                     }
                   </div>
+
+                                    <!-- total score: always visible, sits right before the move / copy icons -->
+                  <span class="shrink-0 whitespace-nowrap rounded-full bg-[#e9f6f8] px-2.5 py-0.5 text-xs font-medium text-[#357f8d]"
+                    [attr.title]="'Total score: ' + (sectionTotals().get(section.clientId) ?? 0)">
+                    {{ sectionTotals().get(section.clientId) ?? 0 }} pts
+                  </span>
 
                   <!-- reorder / duplicate: hidden until hover or keyboard focus (always visible on touch) -->
                   <span class="flex items-center gap-1 opacity-0 transition-opacity focus-within:opacity-100 group-hover/sec:opacity-100 [@media(hover:none)]:opacity-100">
@@ -335,17 +144,302 @@
               }
             </div>
           </section>
+
+          <!-- RIGHT: Question editor -->
+          <section class="min-h-[515px] rounded-2xl bg-[#f6f6f6] px-4 py-4">
+            <div class="mb-[26px] flex items-center justify-between gap-2">
+              <input type="text" [maxlength]="limits.sectionNameChars" aria-label="Section name"
+                [ngModel]="activeSection()?.name ?? ''"
+                (ngModelChange)="activeSection() && renameSection(activeSection()!, $event)"
+                [disabled]="!activeSection()" placeholder="Section name"
+                class="min-w-0 flex-1 bg-transparent text-sm font-semibold outline-none">
+            </div>
+
+            @if (activeSection(); as section) {
+              @for (question of section.questions; track question.clientId; let qi = $index) {
+                <article class="group relative mb-8 scroll-mt-4 rounded-2xl last-of-type:mb-[19px]" [id]="'q-' + question.clientId"
+                  [class.ring-2]="highlightId() === question.clientId"
+                  [class.ring-red-400]="highlightId() === question.clientId">
+
+                  <!-- label row: label on the left, floating action pill on the right (in normal flow, so it can never overlap "Question N") -->
+                  <div class="relative z-20 mb-4 flex min-h-[32px] items-center justify-between gap-3" [class.mt-5]="qi === 0">
+                    <div class="flex min-w-0 items-center gap-2">
+                      <span class="text-sm">Question {{ qi + 1 }}</span>
+                      @if (question.hidden) {
+                        <span class="rounded-full bg-white px-2 py-0.5 text-[11px] text-[#8a8a8a]">Hidden</span>
+                      }
+                    </div>
+
+                    <!-- Action pill: slides up + fades in on hover / focus (always visible on touch or while its menu is open) -->
+                    <div class="relative flex shrink-0 items-center gap-2 text-xs text-[#505050]">
+
+                      <!-- Left group (type, scoring, up/down): slides left while the 3-dot ring is open so the circles never cover it -->
+                      <div class="flex items-center gap-2 transition-transform duration-300 ease-out"
+                        [style.transform]="menuOpenId() === question.clientId ? 'translateX(-56px)' : 'translateX(0)'">
+
+                      <!-- Question type dropdown (same animation as the course Filter dropdown) -->
+                      @let typeKey = 'type-' + question.clientId;
+                      <div class="relative z-30 h-7 w-32" (click)="$event.stopPropagation()">
+                        <div class="dd-clip dd-sm"
+                          [class.dd-open]="pillDropdown() === typeKey"
+                          [class.dd-closing]="isPillDropdownUsed(typeKey) && pillDropdown() !== typeKey"
+                          [attr.inert]="pillDropdown() === typeKey ? null : ''"
+                          [attr.aria-hidden]="pillDropdown() !== typeKey"
+                          role="menu" aria-label="Question type">
+                          <div class="dd-panel">
+                            <div class="dd-spacer" aria-hidden="true"></div>
+                            @for (t of typeOptions; track t.value; let i = $index) {
+                              <button type="button" role="menuitem" class="dd-item"
+                                [style.--i]="i" [style.--r]="typeOptions.length - 1 - i"
+                                [class.font-semibold]="question.type === t.value"
+                                (click)="pickQuestionType(question, t.value)">{{ t.label }}</button>
+                            }
+                          </div>
+                        </div>
+                        <button type="button" aria-haspopup="menu" aria-label="Question type"
+                          [attr.aria-expanded]="pillDropdown() === typeKey"
+                          class="relative z-10 flex h-7 w-full cursor-pointer items-center justify-between gap-2 rounded-full border-0 bg-white px-3 text-xs text-[#505050] outline-none transition hover:bg-[#e9f6f8] focus-visible:ring-2 focus-visible:ring-[#64bbcb]"
+                          [class]="pillDropdown() === typeKey ? 'shadow-[0_8px_10px_-4px_rgba(0,0,0,.35)]' : 'shadow-sm hover:shadow-md'"
+                          (click)="togglePillDropdown(typeKey)">
+                          <span class="truncate">{{ questionTypeLabel(question.type) }}</span>
+                          <svg class="size-3 shrink-0 text-[#8a8a8a]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+                        </button>
+                      </div>
+
+                      <!-- Scoring dropdown (same animation as the course Filter dropdown) -->
+                      @let scoringKey = 'scoring-' + question.clientId;
+                      @let scoringItems = scoringChoices(question);
+                      <div class="relative z-30 h-7 w-[7.5rem]" (click)="$event.stopPropagation()">
+                        <div class="dd-clip dd-sm"
+                          [class.dd-open]="pillDropdown() === scoringKey"
+                          [class.dd-closing]="isPillDropdownUsed(scoringKey) && pillDropdown() !== scoringKey"
+                          [attr.inert]="pillDropdown() === scoringKey ? null : ''"
+                          [attr.aria-hidden]="pillDropdown() !== scoringKey"
+                          role="menu" aria-label="Scoring type">
+                          <div class="dd-panel">
+                            <div class="dd-spacer" aria-hidden="true"></div>
+                            @for (s of scoringItems; track s.value; let i = $index) {
+                              <button type="button" role="menuitem" class="dd-item"
+                                [style.--i]="i" [style.--r]="scoringItems.length - 1 - i"
+                                [class.font-semibold]="scoringLabel(section, question) === s.label"
+                                (click)="pickScoring(section, question, s.value)">{{ s.label }}</button>
+                            }
+                          </div>
+                        </div>
+                        <button type="button" aria-haspopup="menu" aria-label="Scoring type"
+                          [attr.aria-expanded]="pillDropdown() === scoringKey"
+                          class="relative z-10 flex h-7 w-full cursor-pointer items-center justify-between gap-2 rounded-full border-0 bg-white px-3 text-xs text-[#505050] outline-none transition hover:bg-[#e9f6f8] focus-visible:ring-2 focus-visible:ring-[#64bbcb]"
+                          [class]="pillDropdown() === scoringKey ? 'shadow-[0_8px_10px_-4px_rgba(0,0,0,.35)]' : 'shadow-sm hover:shadow-md'"
+                          (click)="togglePillDropdown(scoringKey)">
+                          <span class="truncate">{{ scoringLabel(section, question) }}</span>
+                          <svg class="size-3 shrink-0 text-[#8a8a8a]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+                        </button>
+                      </div>
+
+                      <!-- up / down: their own small white pill -->
+                      <div class="flex h-7 items-center rounded-full bg-white shadow-sm">
+
+                      <button type="button" (click)="moveQuestion(section, qi, -1)" [disabled]="qi === 0" aria-label="Move question up" title="Move up"
+                        class="grid size-7 place-items-center rounded-full text-[#6b6b6b] transition-colors hover:bg-[#e9f6f8] hover:text-[#357f8d] disabled:pointer-events-none disabled:opacity-30">
+                        <svg class="size-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m18 15-6-6-6 6" /></svg>
+                      </button>
+                      <button type="button" (click)="moveQuestion(section, qi, 1)" [disabled]="qi === section.questions.length - 1" aria-label="Move question down" title="Move down"
+                        class="grid size-7 place-items-center rounded-full text-[#6b6b6b] transition-colors hover:bg-[#e9f6f8] hover:text-[#357f8d] disabled:pointer-events-none disabled:opacity-30">
+                        <svg class="size-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+                      </button>
+
+                      </div>
+
+                      </div><!-- /left group -->
+
+                      <!-- 3-dot + circle actions (arc, opens down-left like the course list). No hover-expand label. -->
+                      <div class="relative size-7 shrink-0" [class.z-40]="menuOpenId() === question.clientId">
+                        <button type="button" (click)="toggleMenu(question.clientId, $event)" aria-label="More actions" title="More"
+                          aria-haspopup="menu" [attr.aria-expanded]="menuOpenId() === question.clientId"
+                          class="relative z-10 grid size-7 cursor-pointer place-items-center rounded-full bg-[#61b7c5] text-white shadow-sm outline-none transition hover:bg-[#459aa7] focus-visible:ring-2 focus-visible:ring-[#64bbcb]">
+                          <svg class="size-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.6" /><circle cx="12" cy="12" r="1.6" /><circle cx="19" cy="12" r="1.6" /></svg>
+                        </button>
+
+                        <!-- Duplicate -->
+                        <button type="button" role="menuitem" title="Duplicate" aria-label="Duplicate question"
+                          (click)="duplicateQuestion(section, question)"
+                          class="absolute left-0 top-0 z-[5] grid size-7 cursor-pointer place-items-center rounded-full bg-[#61b7c5] text-white shadow-md transition-all duration-300 ease-out hover:bg-[#459aa7]"
+                          [class.opacity-0]="menuOpenId() !== question.clientId"
+                          [class.pointer-events-none]="menuOpenId() !== question.clientId"
+                          [style.transform]="menuOpenId() === question.clientId ? 'translate(0px, -42px)' : 'translate(0, 0) scale(0.5)'"
+                          [attr.tabindex]="menuOpenId() === question.clientId ? 0 : -1">
+                          <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+                        </button>
+
+                        <!-- Copy -->
+                        <button type="button" role="menuitem" title="Copy" aria-label="Copy question"
+                          (click)="copyQuestion(question)"
+                          class="absolute left-0 top-0 z-[4] grid size-7 cursor-pointer place-items-center rounded-full bg-[#61b7c5] text-white shadow-md transition-all duration-300 ease-out hover:bg-[#459aa7]"
+                          [class.opacity-0]="menuOpenId() !== question.clientId"
+                          [class.pointer-events-none]="menuOpenId() !== question.clientId"
+                          [style.transform]="menuOpenId() === question.clientId ? 'translate(-30px, -30px)' : 'translate(0, 0) scale(0.5)'"
+                          [attr.tabindex]="menuOpenId() === question.clientId ? 0 : -1">
+                          <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="2" width="8" height="4" rx="1" /><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" /></svg>
+                        </button>
+
+                        <!-- Cut -->
+                        <button type="button" role="menuitem" title="Cut" aria-label="Cut question"
+                          (click)="cutQuestion(section, question)"
+                          class="absolute left-0 top-0 z-[3] grid size-7 cursor-pointer place-items-center rounded-full bg-[#61b7c5] text-white shadow-md transition-all duration-300 ease-out hover:bg-[#459aa7]"
+                          [class.opacity-0]="menuOpenId() !== question.clientId"
+                          [class.pointer-events-none]="menuOpenId() !== question.clientId"
+                          [style.transform]="menuOpenId() === question.clientId ? 'translate(-42px, 0px)' : 'translate(0, 0) scale(0.5)'"
+                          [attr.tabindex]="menuOpenId() === question.clientId ? 0 : -1">
+                          <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="6" r="3" /><circle cx="6" cy="18" r="3" /><path d="M20 4 8.12 15.88M14.47 14.48 20 20M8.12 8.12 12 12" /></svg>
+                        </button>
+
+                        <!-- Hide / Show -->
+                        <button type="button" role="menuitem" [attr.title]="question.hidden ? 'Show' : 'Hide'" [attr.aria-label]="question.hidden ? 'Show question' : 'Hide question'"
+                          (click)="toggleHidden(question)"
+                          class="absolute left-0 top-0 z-[2] grid size-7 cursor-pointer place-items-center rounded-full bg-[#61b7c5] text-white shadow-md transition-all duration-300 ease-out hover:bg-[#459aa7]"
+                          [class.opacity-0]="menuOpenId() !== question.clientId"
+                          [class.pointer-events-none]="menuOpenId() !== question.clientId"
+                          [style.transform]="menuOpenId() === question.clientId ? 'translate(-30px, 30px)' : 'translate(0, 0) scale(0.5)'"
+                          [attr.tabindex]="menuOpenId() === question.clientId ? 0 : -1">
+                          @if (question.hidden) {
+                            <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></svg>
+                          } @else {
+                            <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68M6.61 6.61A13.53 13.53 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61M2 2l20 20" /></svg>
+                          }
+                        </button>
+
+                        <!-- Delete -->
+                        <button type="button" role="menuitem" title="Delete" aria-label="Delete question"
+                          (click)="requestDeleteQuestion(section, question)"
+                          class="absolute left-0 top-0 z-[1] grid size-7 cursor-pointer place-items-center rounded-full bg-[#61b7c5] text-white shadow-md transition-all duration-300 ease-out hover:bg-red-500"
+                          [class.opacity-0]="menuOpenId() !== question.clientId"
+                          [class.pointer-events-none]="menuOpenId() !== question.clientId"
+                          [style.transform]="menuOpenId() === question.clientId ? 'translate(0px, 42px)' : 'translate(0, 0) scale(0.5)'"
+                          [attr.tabindex]="menuOpenId() === question.clientId ? 0 : -1">
+                          <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  @if (question.hidden) {
+                    <p class="rounded-2xl bg-white p-4 text-sm italic text-gray-400">
+                      Hidden question: {{ question.text ? (question.text.length > 80 ? question.text.slice(0, 80) + '…' : question.text) : 'Untitled' }}
+                    </p>
+                  } @else {
+                    <div class="mb-3 rounded-2xl bg-white focus-within:ring-1 focus-within:ring-[#64bbcb]">
+                      <textarea [(ngModel)]="question.text" (ngModelChange)="markDirty(question)"
+                        [maxlength]="limits.questionChars" rows="1" placeholder="Enter your question" aria-label="Question"
+                        class="block min-h-[51px] w-full resize-y rounded-t-2xl border-0 bg-transparent px-5 pb-1 pt-3.5 text-sm outline-none"></textarea>
+                      <p class="px-5 pb-2 text-right text-[11px] text-[#8a8a8a]">Maximum character {{ (question.text || '').length }}/{{ limits.questionChars }}</p>
+                    </div>
+
+                    @if (question.type === 'short') {
+                      <p class="mb-1.5 text-sm">Answer</p>
+                      <textarea [(ngModel)]="question.expectedAnswer" (ngModelChange)="markDirty(question)"
+                        [maxlength]="limits.answerChars" rows="3" placeholder="Enter expected short answer" aria-label="Expected answer"
+                        class="block w-full resize-y rounded-2xl bg-white px-5 py-3.5 text-sm outline-none focus:ring-1 focus:ring-[#64bbcb]"></textarea>
+                    } @else {
+                      <p class="mb-1.5 text-sm">Answers</p>
+                      <div>
+                        @for (option of question.options; track option.clientId; let oi = $index; let last = $last) {
+                          <div class="group/opt mb-[13px] flex min-h-[51px] items-center gap-5 rounded-2xl bg-white pl-[22px] pr-5 last:mb-0">
+                            @if (question.type === 'single') {
+                              <input type="radio" [name]="'answer-' + question.clientId" [checked]="option.correct"
+                                (change)="setCorrect(question, oi)" aria-label="Correct answer"
+                                class="size-3 shrink-0 cursor-pointer appearance-none rounded-full border-white bg-[#ececec] checked:border-[3px] checked:bg-[#64bbcb] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#64bbcb]">
+                            } @else {
+                              <input type="checkbox" [checked]="option.correct"
+                                (change)="setCorrect(question, oi)" aria-label="Correct answer"
+                                class="size-3 shrink-0 cursor-pointer appearance-none rounded-[3px] border-white bg-[#ececec] checked:border-[3px] checked:bg-[#64bbcb] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#64bbcb]">
+                            }
+                            <input [(ngModel)]="option.text" (ngModelChange)="markDirty(question)" [maxlength]="limits.optionChars"
+                              [placeholder]="'Option ' + (oi + 1)" [attr.aria-label]="'Option ' + (oi + 1)"
+                              class="min-w-0 flex-1 bg-transparent py-3 text-sm outline-none placeholder:text-[#505050]">
+                            <span class="shrink-0 text-[11px] text-[#8a8a8a]" [attr.title]="'Maximum ' + limits.optionChars + ' characters'">{{ (option.text || '').length }}/{{ limits.optionChars }}</span>
+                            @if (question.scoringType === 'advanced' && sectionPointsId() !== section.clientId) {
+                              <input type="number" min="0" max="100" step="1" [ngModel]="option.points"
+                                (ngModelChange)="setOptionPoints(question, oi, $event)" (keydown)="blockNonDigit($event)" (input)="limitScore($event)" placeholder="Points" aria-label="Option points"
+                                class="w-20 rounded-lg bg-[#f6f6f6] p-2 text-xs outline-none">
+                            }
+                            <span class="flex items-center gap-2 opacity-0 transition-opacity focus-within:opacity-100 group-hover/opt:opacity-100 [@media(hover:none)]:opacity-100">
+                              <button type="button" (click)="duplicateOption(question, oi)" aria-label="Duplicate option" class="text-xs hover:text-[#64bbcb]">⧉</button>
+                              <button type="button" (click)="deleteOption(question, oi)" aria-label="Delete option" class="text-xs hover:text-red-500">✕</button>
+                            </span>
+                            @if (last && question.options.length < limits.maxOptions) {
+                              <button type="button" (click)="addOption(question)" aria-label="Add option"
+                                class="shrink-0 text-sm text-[#7a7a7a] hover:text-[#64bbcb]">+ Add</button>
+                            }
+                          </div>
+                        }
+                      </div>
+                    }
+
+                    <!-- scoring fields: always shown, driven by the Scoring dropdown in the action pill -->
+                    <div class="mt-4">
+                      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        @if (sectionPointsId() === section.clientId) {
+                          <p class="text-xs text-[#7a7a7a] sm:col-span-2">Scored at section level: set the points in the Section points panel below.</p>
+                        } @else if (question.scoringType === 'basic') {
+                          <label class="text-xs">Correct score
+                            <input type="number" min="0" max="100" step="1" [ngModel]="question.correctScore"
+                              (ngModelChange)="setScore(question, 'correctScore', $event)" (keydown)="blockNonDigit($event)" (input)="limitScore($event)" placeholder="Enter Score"
+                              class="mt-1.5 block h-9 w-full rounded-lg bg-white px-3 text-xs outline-none placeholder:text-[#b5b5b5]">
+                          </label>
+                          <label class="text-xs">Incorrect score
+                            <input type="number" min="0" max="100" step="1" [ngModel]="question.incorrectScore"
+                              (ngModelChange)="setScore(question, 'incorrectScore', $event)" (keydown)="blockNonDigit($event)" (input)="limitScore($event)" placeholder="Enter Score"
+                              class="mt-1.5 block h-9 w-full rounded-lg bg-white px-3 text-xs outline-none placeholder:text-[#b5b5b5]">
+                          </label>
+                        } @else {
+                          <p class="text-xs text-[#7a7a7a] sm:col-span-2">Advanced scoring: enter the points for each answer option above.</p>
+                        }
+                      </div>
+                      <div class="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
+                        <label class="text-xs">Correct feedback
+                          <textarea [(ngModel)]="question.correctFeedback" (ngModelChange)="markDirty(question)"
+                            [maxlength]="limits.feedbackChars" rows="2" placeholder="Enter the Text"
+                            class="mt-1.5 block w-full resize-y rounded-lg bg-white px-3 py-2.5 text-xs outline-none placeholder:text-[#b5b5b5] focus:ring-1 focus:ring-[#64bbcb]"></textarea>
+                          <span class="mt-1 block text-right text-[11px] text-[#8a8a8a]">Maximum character {{ (question.correctFeedback || '').length }}/{{ limits.feedbackChars }}</span>
+                        </label>
+                        <label class="text-xs">Incorrect feedback
+                          <textarea [(ngModel)]="question.incorrectFeedback" (ngModelChange)="markDirty(question)"
+                            [maxlength]="limits.feedbackChars" rows="2" placeholder="Enter the Text"
+                            class="mt-1.5 block w-full resize-y rounded-lg bg-white px-3 py-2.5 text-xs outline-none placeholder:text-[#b5b5b5] focus:ring-1 focus:ring-[#64bbcb]"></textarea>
+                          <span class="mt-1 block text-right text-[11px] text-[#8a8a8a]">Maximum character {{ (question.incorrectFeedback || '').length }}/{{ limits.feedbackChars }}</span>
+                        </label>
+                      </div>
+                    </div>
+                  }
+                </article>
+              }
+
+              <div class="flex justify-center gap-3">
+                <button type="button" (click)="addQuestion()" [disabled]="section.questions.length >= limits.maxQuestionsPerSection"
+                  class="h-8 rounded-full bg-white px-6 text-xs hover:bg-[#e9f6f8] disabled:opacity-50">+ Add Question</button>
+                @if (hasClipboard()) {
+                  <button type="button" (click)="pasteQuestion()" class="h-8 rounded-full bg-white px-6 text-xs hover:bg-[#e9f6f8]">Paste</button>
+                }
+              </div>
+            } @else {
+              <div class="flex min-h-[380px] flex-col items-center justify-center gap-4 text-center">
+                <p class="text-sm text-gray-400">No sections created yet</p>
+                <button type="button" (click)="addSection()" class="h-8 rounded-full bg-white px-6 text-xs hover:bg-[#e9f6f8]">+ Add Section</button>
+              </div>
+            }
+          </section>
         </div>
 
         <!-- Section points (design: bottom panel) -->
         @if (activeSection(); as section) {
+          @if (sectionPointsId() === section.clientId) {
           <section class="mt-5 rounded-2xl bg-[#f6f6f6] px-[15px] pb-3.5 pt-4">
             <h2 class="text-sm">{{ section.name }} points</h2>
             <div class="mt-2 grid grid-cols-1 gap-x-5 gap-y-3 md:grid-cols-[195px_1fr]">
               <div class="text-sm">
                 <label for="section-score">Score</label>
                 <input id="section-score" type="number" min="0" max="100" step="1" placeholder="Enter Score"
-                  [ngModel]="sectionScore(section)" (ngModelChange)="setSectionScore(section, $event)"
+                  [ngModel]="sectionScore(section)" (ngModelChange)="setSectionScore(section, $event)" (keydown)="blockNonDigit($event)" (input)="limitScore($event)"
                   class="mt-2.5 block h-9 w-full rounded-lg bg-white px-3.5 text-xs outline-none placeholder:text-[#b5b5b5] focus:ring-1 focus:ring-[#64bbcb]">
               </div>
               <div class="text-sm">
@@ -353,9 +447,11 @@
                 <input id="section-feedback" type="text" placeholder="Enter the Text" [maxlength]="limits.feedbackChars"
                   [ngModel]="sectionFeedback(section)" (ngModelChange)="setSectionFeedback(section, $event)"
                   class="mt-2.5 block h-9 w-full rounded-lg bg-white px-3.5 text-xs outline-none placeholder:text-[#b5b5b5] focus:ring-1 focus:ring-[#64bbcb]">
+                <span class="mt-1 block text-right text-[11px] text-[#8a8a8a]">Maximum character {{ (sectionFeedback(section) || '').length }}/{{ limits.feedbackChars }}</span>
               </div>
             </div>
           </section>
+          }
         }
       }
       </div>

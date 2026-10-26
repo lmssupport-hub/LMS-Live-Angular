@@ -1,12 +1,13 @@
-<div class="relative w-full px-4 pb-7 font-sans text-[#4b4b4b] sm:px-6 lg:px-10">
-  <header class="relative flex min-h-14 w-full flex-wrap items-center justify-between gap-4 py-3">
+<!-- CHANGED: root is a flex column with a fitted height (fitHeight) so only the sections list scrolls -->
+<div class="relative flex w-full flex-col px-4 pb-7 font-sans text-[#4b4b4b] sm:px-6 lg:px-10"
+  [style.height.px]="fitHeight()">
+  <header class="relative flex min-h-14 w-full shrink-0 flex-wrap items-center justify-between gap-4 py-3">
     <div class="flex items-center gap-8 text-xs">
       <button type="button" class="flex items-center gap-1 text-neutral-600 disabled:opacity-50"
         [disabled]="sectionsSaving()" (click)="back()">
         <span aria-hidden="true">‹</span> Back
       </button>
     </div>
-    <!-- CHANGED: "Edit course details" link removed from here; it is now the "Edit course" button on the banner -->
     <div class="mb-3 flex min-h-5 items-center justify-between text-[10px]">
       <span class="text-neutral-400">{{
         sectionSaveMessage() || 'Changes save automatically'
@@ -19,18 +20,20 @@
     {{ resourceSuccessMessage() }}
   </div>
   }
-  <main class="relative mb-5 min-h-[65vh] w-full rounded-2xl bg-white p-5 shadow-sm sm:p-6">
-    <div class="relative">
+  <!-- CHANGED: main fills the remaining height (flex-1, min-h-0) instead of min-h-[65vh] -->
+  <main class="relative mb-5 flex min-h-0 w-full flex-1 flex-col rounded-2xl bg-white p-5 shadow-sm sm:p-6">
+    <!-- CHANGED: shrink-0 -> banner stays fixed, never scrolls -->
+    <div class="relative shrink-0">
       <section class="relative h-44 rounded-xl bg-gradient-to-br from-neutral-700 to-neutral-950 sm:h-48"
         aria-label="Course preview">
-        <!-- Banner image with bottom-right curved cutout -->
+        <!-- Banner image -->
         <div class="absolute inset-0 overflow-hidden rounded-xl">
           @if (cardThumbnail()) {
           <img [src]="cardThumbnail()" [alt]="course.name + ' thumbnail'" class="h-full w-full object-cover" />
           }
           <div class="absolute inset-0 bg-gradient-to-r from-black/70 via-black/35 to-black/50"></div>
         </div>
-        <!-- Course title + details (CHANGED: always visible, no longer tied to the preview button) -->
+        <!-- Course title + details -->
         <div class="absolute inset-x-7 bottom-5 max-w-[70%] text-white">
           <p class="text-sm font-medium">
             {{ course.name }}
@@ -44,11 +47,11 @@
             <span>{{ course.instructorName }}</span>
           </div>
         </div>
-        <!-- CHANGED: Preview button is now always "Show Preview" and does nothing for now.
-             Later: add (click)="openPreviewPage()" to navigate to the separate preview page. -->
-        <button type="button" data-no-teal-hover
-          class="absolute right-2 top-2 z-10 flex h-9 w-[124px] shrink-0 items-center justify-center gap-2 overflow-hidden rounded-lg border-0 bg-white px-3 text-[10px] text-[#555] shadow-sm outline-none transition hover:bg-neutral-100 focus-visible:ring-2 focus-visible:ring-[#61b7c5]/40">
-          <span class="text-[#61b7c5]" aria-hidden="true">▶</span>
+        <!-- CHANGED: Show Preview now opens the course preview page -->
+        <button type="button" data-no-teal-hover (click)="openPreviewPage()" [disabled]="previewOpening()"
+          class="group/btn absolute right-2 top-2 z-10 flex h-9 w-[124px] shrink-0 items-center justify-center gap-2 overflow-hidden rounded-lg border-0 bg-white px-3 text-[10px] text-[#555] shadow-sm outline-none transition hover:bg-neutral-100 focus-visible:ring-2 focus-visible:ring-[#61b7c5]/40">
+          <span class="inline-block text-[#61b7c5] transition-transform duration-500 ease-linear group-hover/btn:rotate-[360deg] motion-reduce:transition-none"
+            [style.transform]="previewOpening() ? 'rotate(360deg)' : null" aria-hidden="true">▶</span>
           <span class="whitespace-nowrap">Show Preview</span>
         </button>
 
@@ -56,13 +59,10 @@
              All curve geometry is in px so it never drifts with root font-size. -->
         <div class="absolute bottom-0 right-0 z-20 bg-white pl-1.5 pt-1.5"
           style="border-top-left-radius: 10px;">
-          <!-- curve above the notch (banner right edge -> notch top).
-               Transparent rounded corner + white box-shadow = anti-aliased inverse curve. -->
           <span class="pointer-events-none absolute" aria-hidden="true"
             style="right: 0; top: -10px; width: 10px; height: 10px;
                    border-bottom-right-radius: 10px;
                    box-shadow: 5px 5px 0 5px #fff;"></span>
-          <!-- curve left of the notch (banner bottom edge -> notch left side) -->
           <span class="pointer-events-none absolute" aria-hidden="true"
             style="left: -10px; bottom: 0; width: 10px; height: 10px;
                    border-bottom-right-radius: 10px;
@@ -86,7 +86,7 @@
     </div>
 
     @if (sectionsError()) {
-    <div class="mt-4 rounded-lg bg-red-50 p-3 text-center text-xs text-red-700" role="alert">
+    <div class="mt-4 shrink-0 rounded-lg bg-red-50 p-3 text-center text-xs text-red-700" role="alert">
       {{ sectionsError() }}
       @if (sectionsRetryAvailable()) {
       <button type="button" class="ml-2 font-semibold underline" (click)="retrySectionsRequest()">
@@ -96,13 +96,13 @@
     </div>
     }
     @if (sectionsLoading()) {
-    <div class="mt-5 space-y-4">
+    <div class="mt-5 shrink-0 space-y-4">
       @for (item of [1, 2, 3]; track item) {
       <div class="h-14 animate-pulse rounded-xl bg-neutral-100"></div>
       }
     </div>
     } @else if (!sections().length) {
-    <div class="mt-5 grid min-h-64 place-content-center rounded-xl bg-[#fafafa] px-5 text-center">
+    <div class="mt-5 grid min-h-64 shrink-0 place-content-center rounded-xl bg-[#fafafa] px-5 text-center">
       <div class="mx-auto grid size-12 place-items-center rounded-full bg-[#e7f5f7] text-xl text-[#61b7c5]">
         ＋
       </div>
@@ -116,9 +116,12 @@
       </button>
     </div>
     } @else {
-    <div class="mt-5 space-y-4">
+    <!-- CHANGED: ONLY this area scrolls. px-2 / pt-2 / pb-4 keep the drag-over ring and the
+         "+" button under each section from being clipped. -->
+    <div class="-mx-2 mt-3 min-h-0 flex-1 overflow-y-auto px-2 pb-4 pt-2">
+    <div class="space-y-4">
       @for (section of sections(); track section.id) {
-      <!-- CHANGED: expanded section now gets a faint teal ring (drag-over ring still wins) -->
+      <!-- expanded section gets a faint teal ring (drag-over ring still wins) -->
       <article class="relative rounded-xl bg-[#f8f8f8] p-2.5 transition" [class]="
               dragOverSectionId() === section.id && draggedSectionId() !== section.id
                 ? 'ring-2 ring-[#61b7c5] ring-offset-2'
@@ -134,11 +137,7 @@
               [attr.data-section-order]="section.id">{{ section.sectionOrder.toString().padStart(2, '0') }}</output>
           </div>
 
-          <!-- CHANGED: clearer expand/collapse affordance.
-               - whole toggle area has hover feedback + pointer cursor + tooltip
-               - activity count pill shows the row has content
-               - chevron sits in a visible teal circle and rotates when open
-               - aria-controls links the button to the panel below -->
+          <!-- expand / collapse toggle -->
           <button type="button" data-no-teal-hover
             class="group flex min-w-0 flex-1 cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1 text-left text-xs text-neutral-700 outline-none transition-colors hover:bg-white/70 focus-visible:ring-2 focus-visible:ring-[#61b7c5]/40 motion-reduce:transition-none"
             (click)="toggleSection(section.id)"
@@ -161,9 +160,7 @@
             </span>
           </button>
 
-          <!-- Edit / Delete icons + drag handle
-               NOTE: the two SVG paths below were rewritten with clean Material-style paths
-               (the pasted originals were corrupted). -->
+          <!-- Edit / Delete icons + drag handle -->
           <button type="button"
             class="grid size-7 shrink-0 place-items-center rounded-full bg-[#61b7c5] text-white transition hover:bg-[#489daa] disabled:opacity-50"
             [disabled]="sectionsSaving()" [attr.aria-label]="'Edit ' + section.name" (click)="openEditSection(section)"
@@ -208,16 +205,13 @@
         </div>
         }
         @if (expandedSectionId() === section.id) {
-        <!-- CHANGED: id added so the toggle button's aria-controls points at this panel -->
         <div [id]="'section-panel-' + section.id" class="mt-2 space-y-2 px-2 pb-1">
           @for (
           activity of activitiesForSection(section.id);
           track activity.id;
           let activityIndex = $index
           ) {
-          <!-- FIXED: row click / Enter / Space now call openActivity(), which passes the activity
-               (so an existing Question Bank is OPENED, not re-created as a new empty bank).
-               Inner buttons stop propagation so they don't trigger this as well. -->
+          <!-- row click / Enter / Space call openActivity(); inner buttons stop propagation -->
           <div class="flex h-10 cursor-pointer items-center gap-3 rounded-xl bg-white px-5 text-xs outline-none transition hover:bg-[#f7fcfd] focus-visible:ring-2 focus-visible:ring-[#61b7c5]/40"
             role="button" tabindex="0" [attr.aria-label]="'Open ' + activity.title"
             (click)="openActivity(section.id, activity)"
@@ -246,7 +240,7 @@
                 <path d="m14 7 3 3" stroke-linecap="round" />
               </svg>
             </button>
-            <!-- CHANGED: delete now asks for confirmation first -->
+            <!-- delete asks for confirmation first -->
             <button type="button"
               class="grid size-7 place-items-center rounded-full bg-[#61b7c5] text-white transition hover:bg-red-500"
               [attr.aria-label]="'Delete ' + activity.title" (click)="$event.stopPropagation(); requestRemoveActivity(section.id, activity)"
@@ -306,7 +300,7 @@
               </div>
             </div>
 
-            <!-- Add Activity button (same toggle logic as before + marks the menu as used) -->
+            <!-- Add Activity button -->
             <button type="button" data-no-teal-hover
               class="relative z-30 h-12 w-full rounded-xl border-2 border-dashed border-[#61b7c5] bg-white text-xs text-neutral-600 outline-none transition-colors hover:bg-[#f7fcfd] focus-visible:ring-2 focus-visible:ring-[#61b7c5]/40 focus-visible:ring-offset-2"
               [style.box-shadow]="activityMenuSectionId() === section.id ? '0 -8px 10px -4px rgba(0,0,0,.25)' : null"
@@ -325,18 +319,26 @@
         </div>
         }
 
-        <!-- NEW: "+" centered on this section card's bottom edge -> adds a section right after it.
-                 On the last section it simply adds at the end. -->
+        <!-- "+" centered on this section card's bottom edge -> adds a section right after it.
+             On the last section it simply adds at the end.
+             Same hover effect as the course-list action icons: the pill expands, the icon spins
+             and the "Add Section" label slides out. -->
         <button type="button" data-no-teal-hover
-          class="absolute bottom-0 left-1/2 z-10 grid size-6 -translate-x-1/2 translate-y-1/2 place-items-center rounded-full border border-dashed border-[#61b7c5] bg-white text-[#3e8d99] outline-none transition hover:scale-110 hover:bg-[#eef8fa] focus-visible:ring-2 focus-visible:ring-[#61b7c5]/40 disabled:opacity-50"
+          class="group/btn absolute bottom-0 left-1/2 z-10 flex h-6 -translate-x-1/2 translate-y-1/2 items-center overflow-hidden rounded-full border border-dashed border-[#61b7c5] bg-white px-1 text-[#3e8d99] shadow-sm outline-none transition-all duration-300 ease-out hover:border-solid hover:bg-[#61b7c5] hover:pr-3 hover:text-white hover:shadow-md focus-visible:border-solid focus-visible:bg-[#61b7c5] focus-visible:pr-3 focus-visible:text-white focus-visible:ring-2 focus-visible:ring-[#61b7c5]/40 disabled:opacity-50 motion-reduce:transition-none"
           [disabled]="sectionsSaving()" [attr.aria-label]="'Add section after ' + section.name" title="Add section here"
           (click)="openAddSection(section.id)">
-          <svg viewBox="0 0 24 24" class="size-3.5 fill-none stroke-current" stroke-width="2.4" aria-hidden="true">
-            <path d="M12 5v14M5 12h14" stroke-linecap="round" />
-          </svg>
+          <span class="grid size-3.5 shrink-0 place-items-center transition-transform duration-500 ease-linear group-hover/btn:rotate-[360deg] group-focus-visible/btn:rotate-[360deg] motion-reduce:transition-none">
+            <svg viewBox="0 0 24 24" class="size-3.5 fill-none stroke-current" stroke-width="2.4" aria-hidden="true">
+              <path d="M12 5v14M5 12h14" stroke-linecap="round" />
+            </svg>
+          </span>
+          <span
+            class="max-w-0 overflow-hidden whitespace-nowrap text-[10px] font-semibold opacity-0 transition-all duration-500 ease-out group-hover/btn:ml-1.5 group-hover/btn:max-w-[90px] group-hover/btn:opacity-100 group-focus-visible/btn:ml-1.5 group-focus-visible/btn:max-w-[90px] group-focus-visible/btn:opacity-100 motion-reduce:transition-none"
+          >Add Section</span>
         </button>
       </article>
       }
+    </div>
     </div>
     }
   </main>
@@ -466,7 +468,7 @@
   </div>
   }
 
-  <!-- NEW: delete confirmation for activities (multimedia) -->
+  <!-- delete confirmation for activities (multimedia / question bank) -->
   @if (activityConfirmOpen()) {
   <div class="fixed inset-0 z-[85] grid place-items-center bg-black/50 p-5 backdrop-blur-sm">
     <section class="w-[min(430px,92vw)] rounded-2xl bg-white p-7 shadow-2xl" role="alertdialog" aria-modal="true"

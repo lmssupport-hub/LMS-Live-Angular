@@ -33,6 +33,8 @@ export class AssignPackageModal implements OnChanges {
   private readonly maxSearchResults = 8;
 
   protected emailDropdownOpen = false;
+  /** UI state for the custom "Select package" dropdown. */
+  protected packageDropdownOpen = false;
   protected emailSearchQuery = '';
   protected selectedAdminId: number | null = null;
   protected selectedPackageId: number | null = null;
@@ -50,6 +52,7 @@ export class AssignPackageModal implements OnChanges {
       this.selectedPackageId = this.admin?.packageId ?? null;
       this.emailSearchQuery = '';
       this.emailDropdownOpen = false;
+      this.packageDropdownOpen = false;
     }
   }
 
@@ -67,12 +70,19 @@ export class AssignPackageModal implements OnChanges {
     return this.admins.find((a) => a.id === this.selectedAdminId)?.email ?? null;
   }
 
+  /** Text shown on the package dropdown button, or null when nothing is chosen yet. */
+  protected get selectedPackageLabel(): string | null {
+    const selected = this.packages.find((p) => p.id === this.selectedPackageId);
+    return selected ? `${selected.name} — ${selected.billingCycle}` : null;
+  }
+
   protected get canSubmit(): boolean {
     return !this.submitting && !this.loading && this.selectedPackageId != null && !!this.resolvedEmail;
   }
 
   protected toggleEmailDropdown(): void {
     if (this.admin) return; // row mode: email is fixed, nothing to open
+    this.packageDropdownOpen = false;
     this.emailDropdownOpen = !this.emailDropdownOpen;
     if (this.emailDropdownOpen) this.emailSearchQuery = '';
   }
@@ -80,6 +90,20 @@ export class AssignPackageModal implements OnChanges {
   /** Clicking anywhere else inside the modal closes the combobox without dismissing the whole dialog. */
   protected closeEmailDropdown(): void {
     this.emailDropdownOpen = false;
+  }
+
+  protected togglePackageDropdown(): void {
+    this.emailDropdownOpen = false;
+    this.packageDropdownOpen = !this.packageDropdownOpen;
+  }
+
+  protected closePackageDropdown(): void {
+    this.packageDropdownOpen = false;
+  }
+
+  protected selectPackage(item: PackageRecord): void {
+    this.selectedPackageId = item.id;
+    this.packageDropdownOpen = false;
   }
 
   protected selectAdmin(a: AdminSummary): void {

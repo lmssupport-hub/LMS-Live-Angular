@@ -1,6 +1,8 @@
 import {
+  AfterViewInit,
   Component,
   DestroyRef,
+  ElementRef,
   HostListener,
   Input,
   OnDestroy,
@@ -11,7 +13,6 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-// CHANGED: added `take` (forkJoin / of / catchError are no longer needed)
 import { finalize, take } from 'rxjs/operators';
 import { Router } from '@angular/router';
 import { environment } from '../../../environments/environment';
@@ -21,11 +22,9 @@ import {
   SectionApiError,
   SectionManagementService,
 } from '../../services/Section management.service';
-// NEW: multimedia
 import { MultimediaUpload } from '../pop-modals/multimedia-upload/multimedia-upload';
 import { MultimediaManagementService } from '../../services/multimedia-management.service';
 import { MultimediaResource, MultimediaSaveResult } from '../multimedia.model';
-// NEW: question banks (activity inside an organize section)
 import { QuestionBankService, toUiError } from '../../services/question-bank.service';
 import { ApiBankResponse } from '../question-bank.model';
 
@@ -34,6 +33,9 @@ const MIN_CHARS = 3;
 const MAX_CHARS = 100;
 const GENERIC_ERROR =
   'Unable to complete the requested action due to a server error. Please try again later.';
+
+/** Minimum page height (px) before the page itself is allowed to scroll on very small screens. */
+const MIN_PAGE_HEIGHT = 520;
 
 /** Section Name: emoji (incl. flags, skin tones, joined/variation sequences) are not allowed; other special characters are. */
 const EMOJI_PATTERN = /[\p{Extended_Pictographic}\p{Emoji_Modifier}\p{Regional_Indicator}\u200D\uFE0F\u20E3]/u;
@@ -50,18 +52,19 @@ export interface SectionActivity {
 
 @Component({
   selector: 'app-organize-sections',
-  // CHANGED: added MultimediaUpload
+  // CHANGED: block host so the fitted height (see updateFit) applies to the root element
+  host: { class: 'block' },
   imports: [MultimediaUpload],
   templateUrl: './organize-sections.html',
   styleUrl: './organize-sections.css',
 })
-export class OrganizeSections implements OnInit, OnDestroy {
+export class OrganizeSections implements OnInit, AfterViewInit, OnDestroy {
   /** The course opened from the Course List. */
   @Input({ required: true }) course!: Course;
 
   /** Back button -> parent closes the Organize screen. */
   readonly closed = output<void>();
-  /** "Edit course details" link -> parent opens its edit-course modal. */
+  /** "Edit course" button on the banner -> parent opens its edit-course modal. */
   readonly editCourseRequested = output<void>();
 
   private readonly sectionService = inject(SectionManagementService);
@@ -69,6 +72,7 @@ export class OrganizeSections implements OnInit, OnDestroy {
   private readonly multimediaService = inject(MultimediaManagementService);
   private readonly questionBankService = inject(QuestionBankService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   // ---------- page state ----------
   readonly sections = signal<Section[]>([]);
@@ -77,14 +81,22 @@ export class OrganizeSections implements OnInit, OnDestroy {
   readonly sectionsRetryAvailable = signal(false);
   readonly sectionSaveMessage = signal('');
   readonly resourceSuccessMessage = signal(''); // top-right toast (used for section toasts too)
-  // CHANGED: outlinePreviewVisible removed - "Show Preview" will navigate to a separate page later.
   readonly expandedSectionId = signal<number | null>(null);
   readonly previewingSection = signal<Section | null>(null);
+
+  /**
+   * NEW: height (px) that fits the admin content area, so the header + banner stay fixed
+   * and ONLY the sections list scrolls. null = natural height (before first measure).
+   */
+  readonly fitHeight = signal<number | null>(null);
+
+  /** NEW: true while the Show Preview icon spins, right before navigating to the preview page. */
+  readonly previewOpening = signal(false);
 
   // ---------- add / edit dialog ----------
   readonly sectionDialogOpen = signal(false);
   readonly editingSection = signal<Section | null>(null);
-  /** NEW: when set, the new section is inserted right after this section instead of at the end. */
+  /** When set, the new section is inserted right after this section instead of at the end. */
   private readonly insertAfterSectionId = signal<number | null>(null);
   readonly sectionDraft = signal('');
   readonly sectionError = signal('');
@@ -99,7 +111,7 @@ export class OrganizeSections implements OnInit, OnDestroy {
   readonly confirmMessage = signal('');
   private pendingDelete: Section | null = null;
 
-  // ---------- delete confirmation (activity / multimedia / question bank) - NEW ----------
+  // ---------- delete confirmation (activity / multimedia / question bank) ----------
   readonly activityConfirmOpen = signal(false);
   readonly activityConfirmMessage = signal('');
   private pendingActivityDelete: { sectionId: number; activity: SectionActivity } | null = null;
@@ -130,15 +142,15 @@ export class OrganizeSections implements OnInit, OnDestroy {
     this.activityMenuUsedIds.update(ids => (ids.includes(sectionId) ? ids : [...ids, sectionId]));
   }
 
-  // ---------- multimedia (NEW) ----------
+  // ---------- multimedia ----------
   /** Resources already fetched, keyed by section id. */
   private readonly resourcesBySection = signal<ReadonlyMap<number, MultimediaResource[]>>(new Map());
-  // ---------- question banks (NEW) ----------
+  // ---------- question banks ----------
   /** Question banks already fetched, keyed by ORGANIZE section id. */
   private readonly banksBySection = signal<ReadonlyMap<number, ApiBankResponse[]>>(new Map());
   /** Blocks double clicks on Add Activity -> Question Bank while the bank is being created. */
   private readonly bankCreating = signal(false);
-  /** CHANGED: multimedia rows first, then question banks - shaped for the activity rows in the template. */
+  /** Multimedia rows first, then question banks - shaped for the activity rows in the template. */
   private readonly activitiesBySection = computed(() => {
     const resources = this.resourcesBySection();
     const banks = this.banksBySection();
@@ -176,6 +188,12 @@ export class OrganizeSections implements OnInit, OnDestroy {
     this.loadSections();
   }
 
+  ngAfterViewInit(): void {
+    // wait one tick so the admin layout (sidebar / header) has finished laying out
+    setTimeout(() => this.updateFit());
+    setTimeout(() => this.updateFit(), 200); // second pass once fonts / layout have settled
+  }
+
   ngOnDestroy(): void {
     clearTimeout(this.toastTimer);
   }
@@ -194,6 +212,32 @@ export class OrganizeSections implements OnInit, OnDestroy {
   }
 
   // =====================================================================
+  // layout: fit the admin content area (only the sections list scrolls)
+  // =====================================================================
+
+  @HostListener('window:resize')
+  updateFit(): void {
+    const top = this.host.nativeElement.getBoundingClientRect().top + window.scrollY;
+    const available = window.innerHeight - top - this.ancestorsBottomSpace() - 1;
+    this.fitHeight.set(Math.max(MIN_PAGE_HEIGHT, Math.floor(available)));
+  }
+
+  /** Bottom padding / margin / border of every ancestor, so the page never overflows the viewport. */
+  private ancestorsBottomSpace(): number {
+    let total = 0;
+    let el: HTMLElement | null = this.host.nativeElement.parentElement;
+    while (el) {
+      const cs = getComputedStyle(el);
+      total +=
+        (parseFloat(cs.paddingBottom) || 0) +
+        (parseFloat(cs.marginBottom) || 0) +
+        (parseFloat(cs.borderBottomWidth) || 0);
+      el = el.parentElement;
+    }
+    return total;
+  }
+
+  // =====================================================================
   // header / navigation
   // =====================================================================
 
@@ -202,8 +246,22 @@ export class OrganizeSections implements OnInit, OnDestroy {
     this.closed.emit();
   }
 
-  // CHANGED: toggleOutlinePreview() removed. Later add e.g. openPreviewPage() that navigates
-  // to the separate preview page and wire it to the "Show Preview" button.
+  /** "Show Preview" -> opens the separate course preview page (route: courses/:courseId/preview). */
+  openPreviewPage(): void {
+    if (this.previewOpening()) return; // repeated clicks open only once
+    try {
+      sessionStorage.setItem(`course-preview:${this.course.id}`, JSON.stringify(this.course));
+    } catch {
+      /* storage unavailable */
+    }
+    // let the ▶ icon finish its 360° spin, then open the page (which unrolls itself)
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    this.previewOpening.set(true);
+    setTimeout(
+      () => void this.router.navigate(['/admin-dashboard', 'courses', this.course.id, 'preview']),
+      reduceMotion ? 0 : 450,
+    );
+  }
 
   // =====================================================================
   // course display helpers
@@ -241,7 +299,7 @@ export class OrganizeSections implements OnInit, OnDestroy {
         next: list => {
           this.sections.set(this.sortByOrder(list));
           this.sectionsLoading.set(false);
-          // CHANGED: fetch every section's activities so the count pills are correct on page load / refresh
+          // fetch every section's activities so the count pills are correct on page load / refresh
           this.loadAllResources(this.sections());
         },
         error: (err: unknown) => {
@@ -262,7 +320,7 @@ export class OrganizeSections implements OnInit, OnDestroy {
   // =====================================================================
 
   /**
-   * CHANGED: optional `afterSectionId` - when given (from the "+" between sections),
+   * Optional `afterSectionId` - when given (from the "+" between sections),
    * the new section is placed right after that section; otherwise it goes at the end.
    */
   openAddSection(afterSectionId: number | null = null): void {
@@ -274,7 +332,6 @@ export class OrganizeSections implements OnInit, OnDestroy {
     this.sectionDialogOpen.set(true);
   }
 
-  // CHANGED: was private - now public because the template calls it directly (edit icon)
   openEditSection(section: Section): void {
     this.insertAfterSectionId.set(null);
     this.editingSection.set(section);
@@ -315,7 +372,7 @@ export class OrganizeSections implements OnInit, OnDestroy {
 
     const editing = this.editingSection();
     const name = this.sectionDraft().trim();
-    // NEW: captured before the dialog is reset in the success handler
+    // captured before the dialog is reset in the success handler
     const afterId = this.insertAfterSectionId();
 
     const validationError = this.validateName(name, editing?.id ?? null);
@@ -356,7 +413,7 @@ export class OrganizeSections implements OnInit, OnDestroy {
           this.sections.set(list);
           this.resetSectionDialog(); // NOT closeSectionDialog(): sectionSaving is still true here
 
-          // CHANGED: if it was added from a "+" between sections, move it right after that section
+          // If it was added from a "+" between sections, move it right after that section
           // using the existing reorder API (no backend change needed).
           const afterIndex = afterId === null ? -1 : list.findIndex(s => s.id === afterId);
           if (afterIndex >= 0 && afterIndex < list.length - 2) {
@@ -379,7 +436,7 @@ export class OrganizeSections implements OnInit, OnDestroy {
   // =====================================================================
 
   toggleSection(sectionId: number): void {
-    // CHANGED: the Add Activity menu lives inside the expanded panel, which is destroyed on collapse.
+    // The Add Activity menu lives inside the expanded panel, which is destroyed on collapse.
     // Reset its state so a re-opened panel doesn't render the menu already in its "closing" state
     // (that was the "activity menu appears then closes" flash).
     this.activityMenuSectionId.set(null);
@@ -405,7 +462,7 @@ export class OrganizeSections implements OnInit, OnDestroy {
         this.reorderingSectionId.update(current => (current === section.id ? null : section.id));
         break;
       case 'preview':
-        this.loadResources(section.id); // CHANGED: make sure the preview lists its multimedia
+        this.loadResources(section.id); // make sure the preview lists its multimedia
         this.previewingSection.set(section);
         break;
     }
@@ -419,7 +476,6 @@ export class OrganizeSections implements OnInit, OnDestroy {
   // delete
   // =====================================================================
 
-  // CHANGED: was private - now public because the template calls it directly (delete icon)
   requestRemoveSection(section: Section): void {
     this.pendingDelete = section;
     const activityCount = this.activitiesForSection(section.id).length;
@@ -463,13 +519,13 @@ export class OrganizeSections implements OnInit, OnDestroy {
           this.sections.update(list =>
             list.filter(s => s.id !== target.id).map((s, i) => ({ ...s, sectionOrder: i + 1 })),
           );
-          // CHANGED: drop the deleted section's cached multimedia
+          // drop the deleted section's cached multimedia
           this.resourcesBySection.update(map => {
             const next = new Map(map);
             next.delete(target.id);
             return next;
           });
-          // NEW: ...and its cached question banks (the backend cascades the delete)
+          // ...and its cached question banks (the backend cascades the delete)
           this.banksBySection.update(map => {
             const next = new Map(map);
             next.delete(target.id);
@@ -545,7 +601,7 @@ export class OrganizeSections implements OnInit, OnDestroy {
 
   /**
    * Optimistic update: show the new order immediately, roll back if the API call fails.
-   * CHANGED: optional `successMessage` so "create after a section" can reuse this with its own toast.
+   * Optional `successMessage` so "create after a section" can reuse this with its own toast.
    */
   private persistOrder(next: Section[], successMessage = 'Sections reordered successfully.'): void {
     if (this.listSaving() || next.length < 2) return;
@@ -592,7 +648,7 @@ export class OrganizeSections implements OnInit, OnDestroy {
   }
 
   /**
-   * FIXED: single entry point for row click / Enter / Space / pencil icon on an EXISTING activity.
+   * Single entry point for row click / Enter / Space / pencil icon on an EXISTING activity.
    * It always passes `activity`, so an existing Question Bank is opened (goToBank) and
    * never re-created as a new empty bank.
    */
@@ -607,7 +663,7 @@ export class OrganizeSections implements OnInit, OnDestroy {
   /** Add Activity -> Multimedia opens the upload dialog; the pencil icon on a row opens it in edit mode. */
   openResourceDialog(kind: ActivityKind, sectionId: number, activity?: SectionActivity): void {
     this.activityMenuSectionId.set(null);
-    // NEW: the pencil icon of a Question Bank row opens that bank's editor
+    // the pencil icon of a Question Bank row opens that bank's editor
     if (kind === 'Question Bank') {
       if (activity) this.openQuestionBankList(sectionId, activity);
       return;
@@ -639,7 +695,7 @@ export class OrganizeSections implements OnInit, OnDestroy {
     this.showToast(created ? 'Resource uploaded successfully.' : 'Resource updated successfully.');
   }
 
-  /** NEW: delete icon on an activity row -> open the confirmation popup first. */
+  /** Delete icon on an activity row -> open the confirmation popup first. */
   requestRemoveActivity(sectionId: number, activity: SectionActivity): void {
     this.pendingActivityDelete = { sectionId, activity };
     this.activityConfirmMessage.set(
@@ -650,13 +706,13 @@ export class OrganizeSections implements OnInit, OnDestroy {
     this.activityConfirmOpen.set(true);
   }
 
-  /** NEW: Cancel / Delete activity buttons of the confirmation popup. */
+  /** Cancel / Delete activity buttons of the confirmation popup. */
   answerRemoveActivity(confirmed: boolean): void {
     const target = this.pendingActivityDelete;
     this.pendingActivityDelete = null;
     this.activityConfirmOpen.set(false);
     if (confirmed && target) {
-      // CHANGED: a Question Bank row is deleted through the question-bank API, not the multimedia API
+      // a Question Bank row is deleted through the question-bank API, not the multimedia API
       if (target.activity.kind === 'Question Bank') {
         this.removeBank(target.sectionId, target.activity.id);
       } else {
@@ -683,7 +739,7 @@ export class OrganizeSections implements OnInit, OnDestroy {
       });
   }
 
-  /** NEW: deletes a Question Bank (the backend cascades its question sections, questions and options). */
+  /** Deletes a Question Bank (the backend cascades its question sections, questions and options). */
   private removeBank(sectionId: number, bankId: number): void {
     this.questionBankService
       .deleteBank({ courseId: this.course.id, sectionId, bankId })
@@ -702,17 +758,17 @@ export class OrganizeSections implements OnInit, OnDestroy {
       });
   }
 
-  /** CHANGED: page load / refresh - fetch every section's multimedia + question banks so the count pills are correct. */
+  /** Page load / refresh - fetch every section's multimedia + question banks so the count pills are correct. */
   private loadAllResources(sections: Section[]): void {
     sections.forEach(s => this.loadResources(s.id, true));
   }
 
   /**
-   * CHANGED: `silent` = background load (page load) - failures don't pop an error toast.
+   * `silent` = background load (page load) - failures don't pop an error toast.
    * Expanding / previewing a section still reports errors.
    */
   private loadResources(sectionId: number, silent = false): void {
-    this.loadBanks(sectionId, silent); // NEW
+    this.loadBanks(sectionId, silent);
     this.multimediaService
       .getResources(this.course.id, sectionId)
       .pipe(take(1), takeUntilDestroyed(this.destroyRef))
@@ -724,7 +780,7 @@ export class OrganizeSections implements OnInit, OnDestroy {
       });
   }
 
-  /** NEW: question banks of one organize section. */
+  /** Question banks of one organize section. */
   private loadBanks(sectionId: number, silent: boolean): void {
     this.questionBankService
       .listBanks(this.course.id, sectionId)
@@ -738,7 +794,7 @@ export class OrganizeSections implements OnInit, OnDestroy {
   }
 
   /**
-   * CHANGED: Question Bank activity.
+   * Question Bank activity.
    *  - Add Activity -> Question Bank (no `activity`): creates a new empty bank in THIS organize section
    *    and opens its editor.
    *  - Click / pencil on an existing Question Bank row (`activity` given): opens that bank's editor.

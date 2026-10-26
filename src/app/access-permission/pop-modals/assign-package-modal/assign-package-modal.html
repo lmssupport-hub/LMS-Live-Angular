@@ -1,8 +1,8 @@
 <div class="fixed inset-0 z-50 grid place-items-center bg-black/25 p-5 backdrop-blur-[3px]" (click)="cancelled.emit()">
   <section
     class="w-full max-w-[480px] rounded-[20px] bg-white px-8 py-8 shadow-[0_12px_35px_rgba(0,0,0,.25)]"
-    role="dialog" aria-modal="true" aria-labelledby="update-package-modal-title  "
-    (click)="$event.stopPropagation(); closeEmailDropdown()" 
+    role="dialog" aria-modal="true" aria-labelledby="update-package-modal-title"
+    (click)="$event.stopPropagation(); closeEmailDropdown(); closePackageDropdown()"
   >
     <h2 id="update-package-modal-title" class="text-[22px] font-medium">Update package</h2>
     <p class="mt-1.5 text-xs text-[#606060]">Package upgrading</p>
@@ -75,7 +75,7 @@
         }
       </div>
 
-      <div>
+      <div class="relative">
         <label class="mb-1 block text-xs font-medium text-[#606060]">Select package<span class="text-red-500">*</span></label>
         @if (loading) {
           <!-- Distinct loading state so the modal never flashes a false "no packages" before the initial fetch resolves. -->
@@ -87,18 +87,49 @@
           <div class="rounded-xl bg-[#fff4f4] px-4 py-3 text-xs text-red-600">
             <p>No packages available{{ submitting ? '' : '.' }}</p>
             <button type="button" (click)="retryLoadPackages.emit()"
-                    class="mt-2 rounded-full bg-white px-3 py-1 text-[#61b7c5] underline-offset-2 hover:underline">
+                    class="mt-2 cursor-pointer rounded-full bg-white px-3 py-1 text-[#61b7c5] underline-offset-2 hover:underline">
               Retry loading packages
             </button>
           </div>
         } @else {
-          <select [(ngModel)]="selectedPackageId" aria-label="Select package"
-                  class="h-11 w-full rounded-xl border-0 bg-[#f6f6f6] px-4 text-sm outline-none">
-            <option [ngValue]="null" disabled>Select package</option>
-            @for (item of packages; track item.id) {
-              <option [ngValue]="item.id">{{ item.name }} — {{ item.billingCycle }}</option>
-            }
-          </select>
+          <!-- Package dropdown: same look and behaviour as the Email ID dropdown -->
+          <button
+            type="button"
+            (click)="$event.stopPropagation(); togglePackageDropdown()"
+            [attr.aria-expanded]="packageDropdownOpen"
+            aria-haspopup="listbox"
+            aria-label="Select package"
+            class="flex h-11 w-full cursor-pointer items-center justify-between rounded-xl border-0 bg-[#f6f6f6] px-4 text-left text-sm outline-none">
+            <span class="min-w-0 flex-1 truncate" [class.text-[#9a9a9a]]="!selectedPackageLabel">{{ selectedPackageLabel ?? 'Select package' }}</span>
+            <svg viewBox="0 0 24 24" fill="none" class="ml-2 h-4 w-4 shrink-0 text-[#8a8a8a] transition-transform"
+                 [class.rotate-180]="packageDropdownOpen" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 9l6 6 6-6" />
+            </svg>
+          </button>
+
+          @if (packageDropdownOpen) {
+            <div
+              (click)="$event.stopPropagation()"
+              class="absolute left-0 top-full z-10 mt-1.5 w-full overflow-hidden rounded-xl bg-white shadow-[0_8px_24px_rgba(0,0,0,.15)]">
+              <div class="max-h-[168px] overflow-y-auto py-1" role="listbox">
+                @for (item of packages; track item.id) {
+                  <button
+                    type="button"
+                    role="option"
+                    [attr.aria-selected]="item.id === selectedPackageId"
+                    (click)="selectPackage(item)"
+                    class="flex w-full cursor-pointer items-center gap-2.5 px-4 py-2 text-left text-xs transition hover:bg-[#f6f6f6]"
+                    [class.bg-[#eaf6fb]]="item.id === selectedPackageId"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" class="h-4 w-4 shrink-0 text-[#7ab8c4]" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 8 12 3 3 8l9 5 9-5Z" /><path d="M3 8v8l9 5 9-5V8" /><path d="M12 13v8" />
+                    </svg>
+                    <span class="truncate">{{ item.name }} — {{ item.billingCycle }}</span>
+                  </button>
+                }
+              </div>
+            </div>
+          }
         }
       </div>
     </div>
@@ -107,9 +138,9 @@
 
     <div class="mt-8 flex justify-center gap-6">
       <button type="button" (click)="cancelled.emit()" [disabled]="submitting"
-              class="h-11 w-36 rounded-xl bg-[#f6f6f6] text-sm disabled:opacity-50">Cancel</button>
+              class="h-11 w-36 cursor-pointer rounded-xl bg-[#f6f6f6] text-sm disabled:cursor-not-allowed disabled:opacity-50">Cancel</button>
       <button type="button" (click)="onSubmit()" [disabled]="!canSubmit"
-              class="h-11 w-36 rounded-xl bg-[#f6f6f6] text-sm transition hover:bg-[#61b7c5] hover:text-white disabled:cursor-not-allowed disabled:opacity-50">
+              class="h-11 w-36 cursor-pointer rounded-xl bg-[#f6f6f6] text-sm transition hover:bg-[#61b7c5] hover:text-white disabled:cursor-not-allowed disabled:opacity-50">
         {{ submitting ? 'Updating…' : 'Update' }}
       </button>
     </div>

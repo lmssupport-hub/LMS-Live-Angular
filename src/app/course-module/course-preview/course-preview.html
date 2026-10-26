@@ -1,0 +1,220 @@
+<div class="w-full px-4 pb-7 pt-4 font-sans text-[#4b4b4b] sm:px-6 lg:px-10" [style.height.px]="fitHeight()" [style.--preview-bg]="pageBg()">
+  <div
+    class="mx-auto w-full transition-[max-width] duration-300 motion-reduce:transition-none"
+    [class]="frameWidthClass()"
+  >
+    <section
+      class="pv-unroll relative flex gap-0 rounded-2xl bg-white p-4 shadow-sm"
+      [class]="stacked() ? 'flex-col' : 'flex-col lg:h-full lg:min-h-[560px] lg:flex-row'"
+      aria-label="Course preview"
+    >
+      <!-- ============ Top-right notch with toolbar (gray cut-out, inverse curves in px) ============ -->
+      <div
+        class="absolute -right-1 -top-1 z-20 flex items-center gap-3 rounded-bl-[10px] bg-[var(--preview-bg,#f6f6f6)] pb-2.5 pl-2.5 pr-4 pt-3.5"
+      >
+        <!-- curve left of the notch (card top edge -> notch left side) -->
+        <span
+          class="pointer-events-none absolute"
+          aria-hidden="true"
+          style="left: -10px; top: 4px; width: 10px; height: 10px;
+                 border-top-right-radius: 10px;
+                 box-shadow: 5px -5px 0 5px var(--preview-bg, #f6f6f6);"
+        ></span>
+        <!-- curve under the notch (notch bottom -> card right edge) -->
+        <span
+          class="pointer-events-none absolute"
+          aria-hidden="true"
+          style="right: 4px; top: 100%; width: 10px; height: 10px;
+                 border-top-right-radius: 10px;
+                 box-shadow: 5px -5px 0 5px var(--preview-bg, #f6f6f6);"
+        ></span>
+
+        <!-- Reading mode toggle -->
+        <div class="flex h-[30px] items-center gap-2.5 rounded-full bg-white px-3.5 shadow-sm">
+          <span class="text-[10px] text-neutral-600">Reading mode</span>
+          <button
+            type="button"
+            role="switch"
+            data-no-teal-hover
+            class="relative h-4 w-8 rounded-full bg-neutral-200 outline-none transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-[#61b7c5]/40 motion-reduce:transition-none"
+            [class.!bg-[#d6eef2]]="readingMode()"
+            [attr.aria-checked]="readingMode()"
+            aria-label="Reading mode"
+            (click)="toggleReadingMode()"
+          >
+            <span
+              class="absolute left-0.5 top-0.5 size-3 rounded-full bg-[#61b7c5] transition-transform duration-200 motion-reduce:transition-none"
+              [class.translate-x-4]="readingMode()"
+            ></span>
+          </button>
+        </div>
+
+        <!-- Desktop / Tablet / Mobile view -->
+        <div class="relative">
+          <select
+            class="h-[30px] w-[118px] cursor-pointer appearance-none rounded-full border-0 bg-white pl-3.5 pr-8 text-[10px] text-neutral-600 shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-[#61b7c5]/40"
+            aria-label="Preview size"
+            [value]="viewMode()"
+            (change)="setViewMode($event)"
+          >
+            <option value="desktop">Desktop View</option>
+            <option value="tablet">Tablet View</option>
+            <option value="mobile">Mobile View</option>
+          </select>
+          <svg
+            viewBox="0 0 20 20"
+            class="pointer-events-none absolute right-3 top-1/2 size-3 -translate-y-1/2 fill-none stroke-neutral-600"
+            stroke-width="2"
+            aria-hidden="true"
+          >
+            <path d="m5 8 5 5 5-5" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </div>
+
+        <!-- Fullscreen -->
+        <button
+          type="button"
+          data-no-teal-hover
+          class="grid size-[30px] place-items-center rounded-lg bg-white text-neutral-600 shadow-sm outline-none transition-colors hover:bg-neutral-100 focus-visible:ring-2 focus-visible:ring-[#61b7c5]/40"
+          [attr.aria-label]="isFullscreen() ? 'Exit full screen' : 'Enter full screen'"
+          [attr.title]="isFullscreen() ? 'Exit full screen' : 'Full screen'"
+          (click)="toggleFullscreen()"
+        >
+          <svg viewBox="0 0 24 24" class="size-3.5 fill-none stroke-current" stroke-width="2" aria-hidden="true">
+            @if (isFullscreen()) {
+            <path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" stroke-linecap="round" stroke-linejoin="round" />
+            } @else {
+            <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" stroke-linecap="round" stroke-linejoin="round" />
+            }
+          </svg>
+        </button>
+      </div>
+
+      <!-- ============ Left: course image ============ -->
+      <div
+        class="relative min-h-[280px] overflow-hidden rounded-2xl bg-gradient-to-br from-neutral-700 to-neutral-950"
+        [class]="stacked() ? 'h-64' : 'h-64 lg:h-auto lg:w-1/2 lg:shrink-0'"
+      >
+        @if (thumbnail(); as src) {
+        <img [src]="src" [alt]="(course()?.name ?? 'Course') + ' thumbnail'" class="absolute inset-0 h-full w-full object-cover" />
+        }
+        <div class="absolute inset-0 bg-gradient-to-b from-black/25 to-black/45"></div>
+
+        <button
+          type="button"
+          data-no-teal-hover
+          class="absolute left-3 top-3 z-10 flex h-8 items-center gap-1 rounded-full bg-white/90 px-3 text-[10px] text-neutral-700 shadow-sm outline-none transition hover:bg-white focus-visible:ring-2 focus-visible:ring-[#61b7c5]/40"
+          (click)="back()"
+        >
+          <span aria-hidden="true">‹</span> Back
+        </button>
+      </div>
+
+      <!-- ============ Right: details + modules ============ -->
+      <div
+        class="flex min-h-0 min-w-0 flex-1 flex-col px-2 pb-1"
+        [class]="stacked() ? 'pt-6' : 'pt-6 lg:pl-10 lg:pr-3 lg:pt-14'"
+      >
+        @if (course(); as c) {
+        <h1 class="text-[34px] font-medium leading-tight text-[#4b4b4b]">{{ c.name }}</h1>
+
+        <p
+          class="mt-4 leading-[1.5] text-neutral-800"
+          [class]="readingMode() ? 'text-[12px]' : 'text-[10px]'"
+        >
+          {{ c.description || 'No course description provided.' }}
+        </p>
+
+        <!-- Category / Level / Instructor -->
+        <dl class="mt-6 flex flex-wrap gap-x-8 gap-y-4">
+          <div>
+            <dt class="text-[17px] leading-tight">Category</dt>
+            <dd class="mt-2 text-[9px] text-neutral-600">{{ c.categoryName }}</dd>
+          </div>
+          <div>
+            <dt class="text-[17px] leading-tight">Course Level</dt>
+            <dd class="mt-2 flex items-center gap-1.5 text-[9px] text-neutral-600">
+              {{ levelLabel(c.level) }}
+              <span class="flex items-center gap-[3px]" aria-hidden="true">
+                @for (dot of [0, 1, 2]; track dot) {
+                <span
+                  class="h-[3px] w-[7px] rounded-full"
+                  [class]="dot < levelDots(c.level) ? 'bg-[#5fbf74]' : 'bg-neutral-300'"
+                ></span>
+                }
+              </span>
+            </dd>
+          </div>
+          <div>
+            <dt class="text-[17px] leading-tight">Instructor</dt>
+            <dd class="mt-2 flex items-center gap-1.5 text-[9px] text-neutral-600">
+              <span class="grid size-3.5 place-items-center rounded-full bg-neutral-800 text-[7px] uppercase text-white" aria-hidden="true">
+                {{ instructorInitial() }}
+              </span>
+              {{ c.instructorName }}
+            </dd>
+          </div>
+        </dl>
+
+        <!-- Modules header -->
+        <div class="mt-7 flex items-center justify-between">
+          <h2 class="text-[13px] font-normal text-[#61b7c5]">Let’s Start Learning</h2>
+          <span class="text-[13px] text-neutral-700">Modules - {{ moduleCount() }}</span>
+        </div>
+
+        <!-- Modules list (NO progress icon, as requested) -->
+        @if (error()) {
+        <div class="mt-4 rounded-lg bg-red-50 p-3 text-center text-xs text-red-700" role="alert">
+          {{ error() }}
+          <button type="button" class="ml-2 font-semibold underline" (click)="loadSections()">Retry</button>
+        </div>
+        } @else if (loading()) {
+        <div class="mt-4 space-y-3">
+          @for (item of [1, 2, 3, 4]; track item) {
+          <div class="h-[52px] animate-pulse rounded-xl bg-[#f3f3f3]"></div>
+          }
+        </div>
+        } @else if (!sections().length) {
+        <p class="mt-4 rounded-xl bg-[#f3f3f3] px-5 py-6 text-center text-xs text-neutral-500">
+          No sections have been added to this course yet.
+        </p>
+        } @else {
+        <div class="mt-4 min-h-0 flex-1" [style.container-type]="fitHeight() !== null ? 'size' : null">
+          <ol
+            class="flex flex-col gap-3 pr-1"
+            [class]="fitHeight() !== null ? 'h-full overflow-y-auto' : ''"
+            aria-label="Course modules"
+          >
+            @for (section of sections(); track section.id; let i = $index) {
+            <li
+              class="pv-row flex shrink-0 items-center gap-4 rounded-xl bg-[#f3f3f3] px-2.5 py-1.5"
+              [style.height]="rowHeight()"
+              [style.animation-delay.ms]="250 + (i < 8 ? i : 8) * 60"
+            >
+              <span class="grid aspect-square h-full shrink-0 place-items-center rounded-lg bg-white text-[13px] text-[#4b4b4b]">
+                {{ section.sectionOrder.toString().padStart(2, '0') }}
+              </span>
+              <span class="min-w-0 flex-1 truncate" [class]="readingMode() ? 'text-[14px]' : 'text-[13px]'">
+                {{ section.name }}
+              </span>
+            </li>
+            }
+          </ol>
+        </div>
+        }
+        } @else {
+        <div class="grid flex-1 place-content-center text-center text-sm text-neutral-500">
+          <p>We couldn’t load this course preview.</p>
+          <button
+            type="button"
+            class="mx-auto mt-3 h-9 rounded-lg bg-[#61b7c5] px-5 text-xs font-medium text-white"
+            (click)="back()"
+          >
+            Go back
+          </button>
+        </div>
+        }
+      </div>
+    </section>
+  </div>
+</div>

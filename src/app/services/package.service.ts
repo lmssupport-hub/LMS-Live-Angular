@@ -3,26 +3,33 @@ import { Injectable, computed, signal } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
-export const AVAILABLE_PACKAGE_OPTIONS = ['Basic', 'Standard', 'Premium', 'Existing'] as const;
+/** 'Free' replaced by 'Trial'. */
+export const AVAILABLE_PACKAGE_OPTIONS = ['Trial', 'Basic', 'Standard', 'Premium', 'Existing'] as const;
 export type AvailablePackage = (typeof AVAILABLE_PACKAGE_OPTIONS)[number];
-export const AVAILABLE_PACKAGE_PATTERN = /^(?:Basic|Standard|Premium|Existing)$/;
+export const AVAILABLE_PACKAGE_PATTERN = new RegExp(`^(?:${AVAILABLE_PACKAGE_OPTIONS.join('|')})$`);
+
+/** Trial-only rules. */
+export const TRIAL_PACKAGE: AvailablePackage = 'Trial';
+export const CUSTOM_BILLING_CYCLE = 'Custom';
+export const MAX_TRIAL_DAYS = 365;
+
+export type BillingCycle = 'Monthly' | 'Yearly' | 'Custom';
+
+/** Monthly = 30 days, Yearly = 365 days. Custom (Trial) -> user enters days. */
+export const BILLING_CYCLE_DAYS: Record<'Monthly' | 'Yearly', number> = {
+  Monthly: 30,
+  Yearly: 365,
+};
+
+export function resolveDurationDays(billingCycle: string, entered: number | null): number {
+  if (billingCycle === 'Monthly') return BILLING_CYCLE_DAYS.Monthly;
+  if (billingCycle === 'Yearly') return BILLING_CYCLE_DAYS.Yearly;
+  return entered ?? 0;
+}
 
 export type PermissionAction = 'create' | 'read' | 'update' | 'delete';
 
-/**
- * Features that represent a single yes/no capability rather than a
- * CRUD-shaped permission (e.g. "does this package grant login access at
- * all", not "can it create/read/update/delete access records"). The UI
- * renders these as one switch instead of four, and the toggle helper below
- * keeps all four underlying booleans in lock-step so the data never drifts
- * into an inconsistent state like { create: true, read: false, ... }.
- *
- * Kept as an exported, named set (rather than a hardcoded string scattered
- * across components) so the update modal, the create/permission step, and
- * any future screen all agree on which features are single-toggle without
- * having to know about each other.
- */
-export const SINGLE_TOGGLE_FEATURE_IDS: ReadonlySet<string> = new Set(['AUTH_USER_ACCESS']);
+export const SINGLE_TOGGLE_FEATURE_IDS: ReadonlySet<string> = new Set();
 
 export function isSingleToggleFeature(featureId: string): boolean {
   return SINGLE_TOGGLE_FEATURE_IDS.has(featureId);
@@ -47,7 +54,9 @@ export interface PackageRecord {
   availablePackage: AvailablePackage;
   description: string | null;
   price: number;
-  billingCycle: 'Monthly' | 'Yearly';
+  billingCycle: BillingCycle;
+  /** Days the package is valid: 30 (Monthly), 365 (Yearly) or custom (Trial). */
+  durationDays: number;
   userLimit: number;
   storageLimit: number | null;
   status: 'Active' | 'Inactive';
@@ -56,6 +65,8 @@ export interface PackageRecord {
 }
 
 export type PackagePayload = Omit<PackageRecord, 'id' | 'status' | 'createdAt'>;
+
+
 
 export interface PackagePage {
   content: PackageRecord[];
@@ -72,14 +83,7 @@ export interface PackageQuery {
   size?: number;
 }
 
-/**
- * Matches the backend's PackageDto.FeatureCatalogEntry response shape
- * exactly (categoryId/categoryName + nested features[]). GET
- * /api/packages/features returns this nested shape, NOT a flat
- * featureId/featureName pair — keep this interface in sync with the
- * backend DTO or the Permission page will silently receive undefined
- * feature names.
- */
+
 export interface FeatureCatalogEntry {
   categoryId: string;
   categoryName: string;
@@ -170,31 +174,67 @@ export class PackageService {
 @Injectable({ providedIn: 'root' })
 export class PackageDraftService {
   private readonly _pendingPayload = signal<PackagePayload | null>(null);
+  private readonly _editingPackageId = signal<number | null>(null);
   private readonly _categories = signal<PackagePermissionCategory[]>([]);
 
   readonly pendingPayload = this._pendingPayload.asReadonly();
+  readonly editingPackageId = this._editingPackageId.asReadonly();
   readonly categories = this._categories.asReadonly();
   readonly hasDraft = computed(() => this._pendingPayload() !== null);
 
-  /** Called once, right after GET /api/packages/features resolves. */
+   
   setSeedCategories(categories: PackagePermissionCategory[]): void {
+    const saved = new Map<string, Record<PermissionAction, boolean>>();
+    if (this._editingPackageId() !== null) {
+      for (const category of this._categories()) {
+        for (const feature of category.features) {
+          saved.set(`${category.id}:${feature.id}`, feature.permissions);
+        }
+      }
+    }
+
     this._categories.set(
-      categories.map((category) => ({
+      categories.map((category) => {
+        const features = category.features.map((feature) => {
+          const existing = saved.get(`${category.id}:${feature.id}`);
+          return {
+            ...feature,
+            permissions: existing
+              ? { ...existing }
+              : { create: false, read: false, update: false, delete: false },
+          };
+        });
+        return {
+          ...category,
+          features,
+          enabled: features.some((f) => Object.values(f.permissions).some(Boolean)),
+        };
+      }),
+    );
+  }
+
+  startDraft(payload: PackagePayload): void {
+    this._editingPackageId.set(null);
+    this._pendingPayload.set(payload);
+    this._categories.set([]);
+  }
+
+  startEditDraft(packageId: number, payload: PackagePayload): void {
+    this._editingPackageId.set(packageId);
+    this._pendingPayload.set(payload);
+    this._categories.set(
+      payload.permissions.map((category) => ({
         ...category,
-        enabled: false,
         features: category.features.map((feature) => ({
           ...feature,
-          permissions: { create: false, read: false, update: false, delete: false },
+          permissions: { ...feature.permissions },
         })),
       })),
     );
   }
 
-  startDraft(payload: PackagePayload): void {
-    this._pendingPayload.set(payload);
-  }
-
   clearDraft(): void {
+    this._editingPackageId.set(null);
     this._pendingPayload.set(null);
     this._categories.set([]);
   }
@@ -219,6 +259,24 @@ export class PackageDraftService {
           return { ...feature, permissions: { ...feature.permissions, [action]: !feature.permissions[action] } };
         });
         return { ...category, enabled: features.some((f) => Object.values(f.permissions).some(Boolean)), features };
+      }),
+    );
+  }
+
+  /**
+   * Category header switch: if every permission in the category is already on,
+   * turn all off; otherwise turn all on.
+   */
+  toggleCategory(categoryId: string): void {
+    this._categories.update((categories) =>
+      categories.map((category) => {
+        if (category.id !== categoryId) return category;
+        const next = !category.features.every((f) => Object.values(f.permissions).every(Boolean));
+        const features = category.features.map((f) => ({
+          ...f,
+          permissions: { create: next, read: next, update: next, delete: next },
+        }));
+        return { ...category, enabled: next, features };
       }),
     );
   }

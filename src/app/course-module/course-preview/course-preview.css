@@ -1,0 +1,46 @@
+/* Preview page opening animation: the card "unrolls" from the top like a scroll
+   and tilts flat (rotateX). Rows then fade in one after another.
+   No `forwards` fill, so nothing stays transformed / clipped after the animation. */
+.pv-unroll {
+  transform-origin: 50% 0;
+  animation: pv-unroll 800ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+
+@keyframes pv-unroll {
+  from {
+    opacity: 0;
+    clip-path: inset(0 0 100% 0 round 16px);
+    transform: perspective(1400px) rotateX(-16deg) translateY(-28px);
+  }
+  60% {
+    opacity: 1;
+  }
+  to {
+    opacity: 1;
+    /* negative inset = nothing is clipped at the end (toolbar notch curves sit outside the card) */
+    clip-path: inset(-16px -16px -16px -16px round 16px);
+    transform: perspective(1400px) rotateX(0) translateY(0);
+  }
+}
+
+.pv-row {
+  animation: pv-row 450ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+
+@keyframes pv-row {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) rotateX(-35deg);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) rotateX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pv-unroll,
+  .pv-row {
+    animation: none;
+  }
+}

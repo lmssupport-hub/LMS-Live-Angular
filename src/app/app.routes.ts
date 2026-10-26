@@ -92,6 +92,15 @@ export const routes: Routes = [
   title: 'Enrolled Course List',
 },
 
+{
+        path: 'courses/:courseId/organize',
+        loadComponent: () =>
+          import('./course-module/course-management/course-management').then(
+            (m) => m.CourseManagement,
+          ),
+        title: 'Organize Modules',
+      },
+
       {
   path: 'courses/:courseId/sections/:sectionId/question-banks/:bankId',
   loadComponent: () =>
@@ -100,6 +109,15 @@ export const routes: Routes = [
     ),
   title: 'Create Question Bank',
 },
+
+{
+        path: 'courses/:courseId/preview',
+        loadComponent: () =>
+          import('./course-module/course-preview/course-preview').then(
+            (m) => m.CoursePreview,
+          ),
+        title: 'Course Preview',
+      },
 
     ],
   },

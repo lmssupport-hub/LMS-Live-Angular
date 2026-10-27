@@ -1,0 +1,111 @@
+/* ------------------------------------------------------------------ */
+/* Floating label with curved notch (Create / Edit package modal)      */
+/* Same effect as the Sign Up form, but the notch colour is WHITE      */
+/* because the modal card is white (inputs are #f6f6f6 on top of it).  */
+/* ------------------------------------------------------------------ */
+.pf-label {
+  --label-bg: #fff;    /* must match the modal card background */
+  --notch-r: 4px;      /* bottom curve (notch) */
+  --notch-top-r: 5px;  /* top curve (input corner next to notch) */
+  --notch-top: -3px;   /* label top offset when floated */
+  position: absolute;
+  left: 16px;          /* = px-4 of the inputs */
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 0;
+  font-size: 12px;
+  color: #555;
+  pointer-events: none;
+  white-space: nowrap;
+  transition: all 200ms;
+}
+
+/* Textarea: label sits on the first line instead of the vertical centre */
+.pf-label-area {
+  top: 20px;
+}
+
+/* 2xl screens use bigger inputs (px-5, 13px text) */
+@media (min-width: 1536px) {
+  .pf-label {
+    left: 20px;
+    font-size: 13px;
+  }
+  .pf-label-area {
+    top: 25px;
+  }
+}
+
+/* ---------- Floated state ----------
+   inputs / textarea: focus or has a value
+   custom dropdowns : .pf-floated (value selected or menu open) */
+.pf-input:focus ~ .pf-label,
+.pf-input:not(:placeholder-shown) ~ .pf-label,
+.pf-area:focus ~ .pf-label,
+.pf-area:not(:placeholder-shown) ~ .pf-label,
+.pf-label.pf-floated {
+  left: 8px;
+  top: var(--notch-top);
+  transform: none;
+  padding: 0 10px 3px 8px;   /* text still starts at 16px, aligned with the input text */
+  font-size: 11px;
+  line-height: 1;
+  background: var(--label-bg);
+  border-radius: 0 0 var(--notch-r) var(--notch-r);
+}
+
+@media (min-width: 1536px) {
+  .pf-input:focus ~ .pf-label,
+  .pf-input:not(:placeholder-shown) ~ .pf-label,
+  .pf-area:focus ~ .pf-label,
+  .pf-area:not(:placeholder-shown) ~ .pf-label,
+  .pf-label.pf-floated {
+    left: 12px;
+    padding: 0 10px 3px 8px;  /* text starts at 20px */
+    font-size: 11px;
+  }
+}
+
+/* Inverted corner curves on both sides of the notch */
+.pf-label::before,
+.pf-label::after {
+  content: "";
+  position: absolute;
+  top: calc(var(--notch-top) * -1); /* always = input top edge */
+  width: var(--notch-top-r);
+  height: var(--notch-top-r);
+  display: none;
+}
+
+.pf-input:focus ~ .pf-label::before,
+.pf-input:focus ~ .pf-label::after,
+.pf-input:not(:placeholder-shown) ~ .pf-label::before,
+.pf-input:not(:placeholder-shown) ~ .pf-label::after,
+.pf-area:focus ~ .pf-label::before,
+.pf-area:focus ~ .pf-label::after,
+.pf-area:not(:placeholder-shown) ~ .pf-label::before,
+.pf-area:not(:placeholder-shown) ~ .pf-label::after,
+.pf-label.pf-floated::before,
+.pf-label.pf-floated::after {
+  display: block;
+}
+
+.pf-label::before {
+  left: calc(var(--notch-top-r) * -1);
+  background: radial-gradient(circle at 0 100%, transparent var(--notch-top-r), var(--label-bg) calc(var(--notch-top-r) + 0.5px));
+}
+
+.pf-label::after {
+  right: calc(var(--notch-top-r) * -1);
+  background: radial-gradient(circle at 100% 100%, transparent var(--notch-top-r), var(--label-bg) calc(var(--notch-top-r) + 0.5px));
+}
+
+/* Push typed text down so it doesn't touch the notch curve */
+.pf-input {
+  transition: padding-top 200ms;
+}
+
+.pf-input:focus,
+.pf-input:not(:placeholder-shown) {
+  padding-top: 8px; /* increase for more gap (10px), decrease if text goes too low (6px) */
+}

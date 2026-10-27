@@ -3,19 +3,22 @@ import { Injectable, computed, signal } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
-/** 'Free' replaced by 'Trial'. */
-export const AVAILABLE_PACKAGE_OPTIONS = ['Trial', 'Basic', 'Standard', 'Premium', 'Existing'] as const;
+/** Package type: 'Price' = paid package, 'Free' = free package (replaces the old Available Package dropdown). */
+export const AVAILABLE_PACKAGE_OPTIONS = ['Price', 'Free'] as const;
 export type AvailablePackage = (typeof AVAILABLE_PACKAGE_OPTIONS)[number];
 export const AVAILABLE_PACKAGE_PATTERN = new RegExp(`^(?:${AVAILABLE_PACKAGE_OPTIONS.join('|')})$`);
 
-/** Trial-only rules. */
-export const TRIAL_PACKAGE: AvailablePackage = 'Trial';
+/** Free-only rules. */
+export const FREE_PACKAGE: AvailablePackage = 'Free';
+/** @deprecated Kept only so other files that still import TRIAL_PACKAGE keep compiling. Use FREE_PACKAGE. */
+export const TRIAL_PACKAGE = FREE_PACKAGE;
 export const CUSTOM_BILLING_CYCLE = 'Custom';
 export const MAX_TRIAL_DAYS = 365;
 
 export type BillingCycle = 'Monthly' | 'Yearly' | 'Custom';
+export type PackageStatus = 'Active' | 'Inactive';
 
-/** Monthly = 30 days, Yearly = 365 days. Custom (Trial) -> user enters days. */
+/** Monthly = 30 days, Yearly = 365 days. Custom (Free) -> user enters days. */
 export const BILLING_CYCLE_DAYS: Record<'Monthly' | 'Yearly', number> = {
   Monthly: 30,
   Yearly: 365,
@@ -55,11 +58,15 @@ export interface PackageRecord {
   description: string | null;
   price: number;
   billingCycle: BillingCycle;
-  /** Days the package is valid: 30 (Monthly), 365 (Yearly) or custom (Trial). */
+  /** Days the package is valid: 30 (Monthly), 365 (Yearly) or custom (Free). */
   durationDays: number;
   userLimit: number;
   storageLimit: number | null;
-  status: 'Active' | 'Inactive';
+  /** Free only checkbox: "Auto-assign on signup". */
+  autoAssignOnSignup: boolean;
+  /** Price (paid) checkbox: "Show on website". */
+  showOnWebsite: boolean;
+  status: PackageStatus;
   createdAt: string;
   permissions: PackagePermissionCategory[];
 }
@@ -142,6 +149,11 @@ export class PackageService {
 
   update(id: number, payload: PackagePayload): Observable<PackageRecord> {
     return this.http.put<PackageRecord>(`${this.baseUrl}/${id}`, payload);
+  }
+
+  /** Active <-> Inactive switch. Only the status changes; every other field stays as saved. */
+  updateStatus(id: number, status: PackageStatus): Observable<PackageRecord> {
+    return this.http.patch<PackageRecord>(`${this.baseUrl}/${id}/status`, { status });
   }
 
   delete(id: number): Observable<void> {

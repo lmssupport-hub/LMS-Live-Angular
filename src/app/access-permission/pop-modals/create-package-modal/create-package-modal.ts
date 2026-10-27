@@ -3,15 +3,17 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { buildPackageDetailsForm } from '../forms/package-form';
 import {
   AVAILABLE_PACKAGE_OPTIONS,
+  AvailablePackage,
   BILLING_CYCLE_DAYS,
+  FREE_PACKAGE,
   MAX_TRIAL_DAYS,
   PackagePayload,
   PackageRecord,
-  TRIAL_PACKAGE,
   resolveDurationDays,
 } from '../../../services/package.service';
 
-type PackageDropdown = 'available' | 'billing';
+/** Only the Billing cycle dropdown is left; the package type is now Price / Free buttons. */
+type PackageDropdown = 'billing';
 
 /**
  * One modal for BOTH "Create package" and "Edit package".
@@ -34,7 +36,7 @@ export class CreatePackageModal implements OnInit {
   @Output() readonly cancelled = new EventEmitter<void>();
   @Output() readonly next = new EventEmitter<PackagePayload>();
 
-  protected readonly availablePackageOptions = AVAILABLE_PACKAGE_OPTIONS;
+  protected readonly packageTypeOptions = AVAILABLE_PACKAGE_OPTIONS;
   protected readonly billingCycleOptions = ['Monthly', 'Yearly'] as const;
   protected readonly billingDays = BILLING_CYCLE_DAYS;
   protected readonly maxTrialDays = MAX_TRIAL_DAYS;
@@ -44,21 +46,29 @@ export class CreatePackageModal implements OnInit {
     () => this.editing?.id ?? null,
   );
 
-  /** Which custom dropdown (Available Package / Billing cycle) is currently open. UI state only. */
+  /** Which custom dropdown (Billing cycle) is currently open. UI state only. */
   protected readonly openDropdown = signal<PackageDropdown | null>(null);
+
+  /** Shows the "Discard changes?" confirmation popup. */
+  protected readonly confirmCancelOpen = signal(false);
 
   ngOnInit(): void {
     const item = this.editing;
     if (!item) return;
+    // Old rows used 'Trial' (and Basic/Standard/Premium/Existing). Map them to the new Free / Price types.
+    const legacyType = item.availablePackage as string;
+    const packageType: AvailablePackage = legacyType === 'Free' || legacyType === 'Trial' ? 'Free' : 'Price';
     // durationDays is the LAST control in the form, so its stored value wins over auto-fills.
     this.form.reset({
       name: item.name,
-      availablePackage: item.availablePackage,
+      availablePackage: packageType,
       description: item.description ?? '',
       price: item.price,
       billingCycle: item.billingCycle,
       userLimit: item.userLimit,
       storageLimit: item.storageLimit,
+      autoAssignOnSignup: item.autoAssignOnSignup ?? false,
+      showOnWebsite: item.showOnWebsite ?? false,
       durationDays: item.durationDays ?? null,
     });
   }
@@ -67,16 +77,37 @@ export class CreatePackageModal implements OnInit {
     return this.editing !== null;
   }
 
-  protected isTrial(): boolean {
-    return this.form.controls.availablePackage.value === TRIAL_PACKAGE;
+  protected isFree(): boolean {
+    return this.form.controls.availablePackage.value === FREE_PACKAGE;
+  }
+
+  protected isPrice(): boolean {
+    return this.form.controls.availablePackage.value === 'Price';
+  }
+
+  protected typeButtonClass(option: AvailablePackage): string {
+    const selected = this.form.controls.availablePackage.value === option;
+    return selected
+      ? 'bg-[#4694A4] text-white shadow-sm'
+      : 'bg-transparent text-[#505050] hover:bg-[#eaeaea]';
   }
 
   protected toggleDropdown(name: PackageDropdown): void {
     this.openDropdown.update((current) => (current === name ? null : name));
   }
 
+  /** Picks Price or Free. Re-clicking the already selected type does nothing (keeps typed days/price). */
+  protected chooseType(value: AvailablePackage): void {
+    this.openDropdown.set(null);
+    const control = this.form.controls.availablePackage;
+    if (control.value === value) return;
+    control.setValue(value);
+    control.markAsDirty();
+    control.markAsTouched();
+  }
+
   /** Sets the chosen option on the form control and closes the dropdown. */
-  protected chooseOption(controlName: 'availablePackage' | 'billingCycle', value: string): void {
+  protected chooseOption(controlName: 'billingCycle', value: string): void {
     const control = this.form.controls[controlName];
     control.setValue(value as never);
     control.markAsDirty();
@@ -88,20 +119,40 @@ export class CreatePackageModal implements OnInit {
     return this.form.controls.description.value.length;
   }
 
+  /** Cancel button, close (X) icon and backdrop click all ask for confirmation first. */
+  protected requestCancel(): void {
+    this.openDropdown.set(null);
+    this.confirmCancelOpen.set(true);
+  }
+
+  /** "No, keep editing": close the popup, stay in the form. */
+  protected keepEditing(): void {
+    this.confirmCancelOpen.set(false);
+  }
+
+  /** "Yes, discard": close the popup and the whole modal. */
+  protected confirmDiscard(): void {
+    this.confirmCancelOpen.set(false);
+    this.cancelled.emit();
+  }
+
   protected onSubmit(): void {
     this.form.markAllAsTouched();
     if (this.form.invalid) return;
 
     const value = this.form.getRawValue();
+    const free = value.availablePackage === FREE_PACKAGE;
     this.next.emit({
       name: value.name.trim(),
       availablePackage: value.availablePackage as PackagePayload['availablePackage'],
       description: value.description.trim() || null,
-      price: value.availablePackage === TRIAL_PACKAGE ? 0 : value.price!,
+      price: free ? 0 : value.price!,
       billingCycle: value.billingCycle as PackagePayload['billingCycle'],
       durationDays: resolveDurationDays(value.billingCycle, value.durationDays),
       userLimit: value.userLimit!,
       storageLimit: value.storageLimit,
+      autoAssignOnSignup: free ? value.autoAssignOnSignup : false,
+      showOnWebsite: free ? false : value.showOnWebsite,
       // Edit mode keeps the saved permissions; the permission step lets the user change them.
       permissions: this.editing?.permissions ?? [],
     });
@@ -110,6 +161,7 @@ export class CreatePackageModal implements OnInit {
   reset(): void {
     this.form.reset();
     this.openDropdown.set(null);
+    this.confirmCancelOpen.set(false);
   }
 
   markNameAsDuplicate(): void {

@@ -76,7 +76,6 @@ type SignupField =
   | 'confirmPassword'
   | 'acceptTerms';
 
-// CHANGED: added 'forgot'
 type SectionId = 'signup' | 'login' | 'forgot';
 
 const REQUIRED_MESSAGES: Readonly<Record<SignupField, string>> = {
@@ -92,6 +91,18 @@ const REQUIRED_MESSAGES: Readonly<Record<SignupField, string>> = {
 
 const INVALID_INVITE_MESSAGE =
   'This invite link is invalid or has expired. Please ask your admin to resend it.';
+
+// NEW - allow-listed backend messages for a 403 on login (package-based access).
+// Must match LoginService.NO_PACKAGE_MESSAGE / LOGIN_ACCESS_DENIED_MESSAGE exactly.
+// Any other backend text is NOT echoed (OWASP: avoid information disclosure).
+const NO_PACKAGE_MESSAGE =
+  'No package is assigned to your account. Please contact your administrator.';
+const LOGIN_ACCESS_DENIED_MESSAGE =
+  'Login access is not available for your package. Please contact your administrator.';
+const PACKAGE_LOGIN_MESSAGES: ReadonlySet<string> = new Set([
+  NO_PACKAGE_MESSAGE,
+  LOGIN_ACCESS_DENIED_MESSAGE,
+]);
 
 /* -------------------------------------------------------------------------- */
 /*  Pure helpers / validators (no `this` binding issues, easy to unit test)   */
@@ -144,7 +155,6 @@ const safeServerMessage = (error: HttpErrorResponse, fallback: string): string =
 
 @Component({
   selector: 'app-login-signup',
-  // CHANGED: RouterLink removed - the Forgot Password link is now a scroll button
   imports: [ReactiveFormsModule, NgTemplateOutlet],
   templateUrl: './login-signup.html',
   styleUrl: './login-signup.css',
@@ -524,16 +534,21 @@ export class LoginSignup {
   }
 
   /**
-   * Fixed messages only - never echo backend text on login (OWASP: avoid
-   * information disclosure / account enumeration).
+   * Fixed messages only - never echo arbitrary backend text on login (OWASP:
+   * avoid information disclosure / account enumeration). The only backend
+   * messages passed through are the two allow-listed package-access ones.
    */
   private toLoginMessage(error: HttpErrorResponse): string {
     if (isNetworkOrServerError(error)) return 'Unable to log in. Please try again later.';
     switch (error.status) {
       case 401:
         return 'Invalid Email ID or Password.';
-      case 403:
-        return 'Your account is inactive. Please contact support.';
+      case 403: {
+        const message: unknown = error.error?.message;
+        return typeof message === 'string' && PACKAGE_LOGIN_MESSAGES.has(message)
+          ? message
+          : 'Your account is inactive. Please contact support.';
+      }
       case 429:
         return 'Too many attempts. Please wait a moment and try again.';
       default:

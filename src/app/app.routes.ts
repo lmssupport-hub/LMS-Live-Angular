@@ -51,6 +51,14 @@ export const routes: Routes = [
           ),
         title: 'Configure Permissions',
       },
+      {
+        path: 'package/:id/admins',
+        loadComponent: () =>
+          import('./access-permission/package-admins/package-admins').then(
+            (m) => m.PackageAdmins,
+          ),
+        title: 'Assign Admin',
+      },
     ],
   },
 

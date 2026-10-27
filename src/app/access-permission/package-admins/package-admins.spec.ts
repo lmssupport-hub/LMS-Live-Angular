@@ -1,17 +1,17 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { AssignPackageModal } from './assign-package-modal';
+import { PackageAdmins } from './package-admins';
 
-describe('AssignPackageModal', () => {
-  let component: AssignPackageModal;
-  let fixture: ComponentFixture<AssignPackageModal>;
+describe('PackageAdmins', () => {
+  let component: PackageAdmins;
+  let fixture: ComponentFixture<PackageAdmins>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [AssignPackageModal],
+      imports: [PackageAdmins],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(AssignPackageModal);
+    fixture = TestBed.createComponent(PackageAdmins);
     component = fixture.componentInstance;
     await fixture.whenStable();
   });

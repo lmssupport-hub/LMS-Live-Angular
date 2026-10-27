@@ -48,6 +48,16 @@ export function uniquePackageName(
   };
 }
 
+// Emoji, flags, keycaps and the joiner/variation characters used to build them.
+// Plain digits and normal symbols (#, *, 1) are NOT matched.
+const EMOJI_PATTERN = /[\p{Extended_Pictographic}\p{Emoji_Presentation}\p{Regional_Indicator}\u200D\uFE0F\u20E3]/u;
+
+/** Rejects any value that contains an emoji. */
+export function noEmoji(): ValidatorFn {
+  return (control: AbstractControl<string>): ValidationErrors | null =>
+    EMOJI_PATTERN.test(control.value ?? '') ? { emoji: true } : null;
+}
+
 /**
  * Days are mandatory ONLY when the Available Package is Trial.
  */
@@ -91,6 +101,10 @@ export interface PackageDetailsForm {
   billingCycle: FormControl<string>;
   userLimit: FormControl<number | null>;
   storageLimit: FormControl<number | null>;
+  /** Checkbox shown only when Available Package = Trial. */
+  autoAssignOnSignup: FormControl<boolean>;
+  /** Checkbox shown only when Available Package is NOT Trial. */
+  showOnWebsite: FormControl<boolean>;
   /** KEEP LAST: FormGroup.reset() applies controls in order, so the stored value wins. */
   durationDays: FormControl<number | null>;
 }
@@ -102,9 +116,10 @@ export function buildPackageDetailsForm(
   const form = new FormGroup<PackageDetailsForm>({
     name: new FormControl('', {
       nonNullable: true,
-      validators: [Validators.required, trimmedLength(3, 100), uniquePackageName(packages, excludedId)],
+      validators: [Validators.required, trimmedLength(3, 100), noEmoji(), uniquePackageName(packages, excludedId)],
     }),
-    availablePackage: new FormControl('', {
+    // Default = 'Price' so the Price button is pre-selected in create mode.
+    availablePackage: new FormControl('Price', {
       nonNullable: true,
       validators: [Validators.required, Validators.pattern(AVAILABLE_PACKAGE_PATTERN)],
     }),
@@ -114,6 +129,8 @@ export function buildPackageDetailsForm(
     billingCycle: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
     userLimit: new FormControl<number | null>(null, [Validators.required, Validators.min(1)]),
     storageLimit: new FormControl<number | null>(null, [Validators.min(0)]),
+    autoAssignOnSignup: new FormControl(false, { nonNullable: true }),
+    showOnWebsite: new FormControl(false, { nonNullable: true }),
     durationDays: new FormControl<number | null>(null, [trialDaysValidator()]),
   });
 

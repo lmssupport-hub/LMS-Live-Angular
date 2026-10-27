@@ -2,16 +2,6 @@
 
 @import 'tailwindcss';
 
-@keyframes crumb-underline {
-  from { transform: scaleX(0); }
-  to   { transform: scaleX(1); }
-}
-
-
-/* You can add global styles to this file, and also import other style files */
-
-@import 'tailwindcss';
-
 /* ===== Breadcrumb underline ===== */
 @keyframes crumb-underline {
   from { transform: scaleX(0); }
@@ -29,15 +19,23 @@
   left: 0;
   right: 0;
   overflow: hidden;
+  border-radius: 0 0 20px 20px;
+  /* light shadow so the white panel separates from the white table.
+     drop-shadow on the clip (not box-shadow on the panel) because
+     overflow:hidden would cut off an inner shadow. */
+  filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.14))
+          drop-shadow(0 1px 2px rgba(0, 0, 0, 0.08));
 }
 .dd-clip.dd-open,
 .dd-clip.dd-closing { display: block; }
 
-/* White card (no outer shadow) */
+/* White card */
 .dd-panel {
   background: #fff;
   text-align: center;
   border-radius: 0 0 20px 20px;
+  border: 1px solid #ececec;
+  border-top: 0;
 }
 .dd-spacer { height: 20px; }
 
@@ -121,7 +119,7 @@
   border-bottom: 0;
   border-radius: 14px 14px 0 0;
 }
-.up-spacer { height: 24px; }   /* button-oda paadhi height (h-12 = 48px) */
+.up-spacer { height: 24px; }   /* half the button height (h-12 = 48px) */
 
 .up-item {
   display: block;

@@ -29,6 +29,17 @@ export class PackagePermissionStep implements OnInit {
   protected readonly permissionActions: readonly PermissionAction[] = ['create', 'read', 'update', 'delete'];
   protected readonly isSingleToggleFeature = isSingleToggleFeature;
 
+  /**
+   * Categories that have no Create/Read/Update/Delete meaning (Authentication = just login access).
+   * The UI shows only the category switch for them; their feature rows are hidden.
+   * The hidden feature is still saved (all four flags follow the switch), so the backend is unchanged.
+   */
+  private readonly toggleOnlyCategoryIds: ReadonlySet<string> = new Set(['AUTHENTICATION']);
+
+  protected isToggleOnlyCategory(categoryId: string): boolean {
+    return this.toggleOnlyCategoryIds.has(categoryId);
+  }
+
   protected readonly featuresLoading = signal(true);
   protected readonly featuresLoaded = signal(false);
   protected readonly featuresError = signal('');

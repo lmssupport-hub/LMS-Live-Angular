@@ -15,6 +15,9 @@ import {
 /** Only the Billing cycle dropdown is left; the package type is now Price / Free buttons. */
 type PackageDropdown = 'billing';
 
+/** Number inputs that must accept digits only. */
+type NumberControlName = 'price' | 'userLimit' | 'storageLimit' | 'durationDays';
+
 /**
  * One modal for BOTH "Create package" and "Edit package".
  * Pass [editing]="packageRecord" to open it in edit mode (form is prefilled);
@@ -134,6 +137,36 @@ export class CreatePackageModal implements OnInit {
     if (cleaned !== input.value) {
       input.value = cleaned;
       this.form.controls.name.setValue(cleaned);
+    }
+  }
+
+  // ---- Number-only inputs --------------------------------------------------------------------
+  // <input type="number"> lets the browser accept "e", "E", "+" and "-" (scientific notation).
+  // keydown blocks them while typing; (input) cleans anything that arrives by paste / drop.
+
+  /** Blocks e, E, +, - (and "." / "," for whole-number fields) while typing. */
+  protected blockInvalidNumberKeys(event: KeyboardEvent, allowDecimal = false): void {
+    const blocked = ['e', 'E', '+', '-'];
+    if (!allowDecimal) blocked.push('.', ',');
+    if (blocked.includes(event.key)) {
+      event.preventDefault();
+    }
+  }
+
+  /** Paste / drop safety: keeps digits only (plus one "." for the price field). */
+  protected sanitizeNumberInput(event: Event, controlName: NumberControlName, allowDecimal = false): void {
+    const input = event.target as HTMLInputElement;
+    let cleaned = input.value.replace(allowDecimal ? /[^0-9.]/g : /[^0-9]/g, '');
+    if (allowDecimal) {
+      // keep only the first "."
+      const firstDot = cleaned.indexOf('.');
+      if (firstDot !== -1) {
+        cleaned = cleaned.slice(0, firstDot + 1) + cleaned.slice(firstDot + 1).replace(/\./g, '');
+      }
+    }
+    if (cleaned !== input.value) {
+      input.value = cleaned;
+      this.form.controls[controlName].setValue(cleaned === '' || cleaned === '.' ? null : Number(cleaned));
     }
   }
 

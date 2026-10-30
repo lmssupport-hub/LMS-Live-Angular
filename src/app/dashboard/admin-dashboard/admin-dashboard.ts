@@ -1,9 +1,11 @@
 import { ChangeDetectionStrategy, Component, HostListener, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRouteSnapshot, NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { filter, map, startWith } from 'rxjs/operators';
+import { EMPTY, interval, timer } from 'rxjs';
+import { catchError, filter, map, startWith, switchMap } from 'rxjs/operators';
 
 import { AuthService } from '../../services/auth';
+import { PackageService } from '../../services/package.service';
 
 /** One item of the header breadcrumb. `link: null` = not clickable (current page or plain parent). */
 interface Breadcrumb {
@@ -25,6 +27,7 @@ interface Breadcrumb {
 export class AdminDashboard {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly packagesApi = inject(PackageService);
 
   // ---------- header: identity ----------
   // Single source of truth lives in AuthService (firstName + lastName, falls
@@ -43,6 +46,51 @@ export class AdminDashboard {
     const first = parts[0].charAt(0);
     const last = parts.length > 1 ? parts[parts.length - 1].charAt(0) : '';
     return (first + last).toUpperCase();
+  });
+
+  // ---------- header: package "days left" countdown ----------
+  /** Reads the admin's package expiry now and every 5 minutes (so an unassign / new assign shows without re-login). */
+  private readonly subscription = toSignal(
+    timer(0, 5 * 60_000).pipe(
+      switchMap(() =>
+        this.packagesApi.getMySubscription().pipe(
+          map((s) => ({ s, fetchedAt: Date.now() })),
+          catchError((err) => {
+  console.error('my-subscription failed', err);
+  return EMPTY;
+}),
+        ),
+      ),
+    ),
+    { initialValue: null },
+  );
+
+  /** Ticks every second so the countdown re-renders. */
+  private readonly nowMs = toSignal(
+    interval(1000).pipe(map(() => Date.now()), startWith(Date.now())),
+    { initialValue: Date.now() },
+  );
+
+  /** null = admin has no package (pill hidden). Example: { daysLabel: '05 days', hours: '120:00:00' }. */
+  readonly packageCountdown = computed(() => {
+    const data = this.subscription();
+    const expiresAt = data?.s.expiresAt;
+    if (!data || !expiresAt) return null;
+    const { s, fetchedAt } = data;
+    // expiresAt and serverTime are both server-clock values, so their difference is timezone-safe.
+    const msLeftAtFetch = new Date(expiresAt).getTime() - new Date(s.serverTime).getTime();
+    const msLeft = Math.max(0, msLeftAtFetch - (this.nowMs() - fetchedAt));
+    const totalSeconds = Math.floor(msLeft / 1000);
+    const days = Math.floor(totalSeconds / 86_400);
+    const pad = (n: number): string => String(n).padStart(2, '0');
+    return {
+      expired: msLeft <= 0,
+      expiringSoon: msLeft > 0 && days < 3,
+      packageName: s.packageName,
+      daysLabel: `${pad(days)} ${days === 1 ? 'day' : 'days'}`,
+      // Total hours (can pass 24, e.g. 120:00:00), then minutes and seconds.
+      hours: `${pad(Math.floor(totalSeconds / 3600))}:${pad(Math.floor((totalSeconds % 3600) / 60))}:${pad(totalSeconds % 60)}`,
+    };
   });
 
   // ---------- header: breadcrumb ----------

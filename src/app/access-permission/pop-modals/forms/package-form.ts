@@ -12,6 +12,9 @@ import {
 // Validators
 // ---------------------------------------------------------------------------
 
+/** Package Name: letters only (A-Z, a-z). No numbers, no spaces, no symbols. */
+export const PACKAGE_NAME_PATTERN = /^[A-Za-z]+$/;
+
 export function trimmedLength(min: number, max: number): ValidatorFn {
   return (control: AbstractControl<string>): ValidationErrors | null => {
     const length = (control.value ?? '').trim().length;
@@ -105,6 +108,8 @@ export interface PackageDetailsForm {
   autoAssignOnSignup: FormControl<boolean>;
   /** Checkbox shown only when Available Package is NOT Trial. */
   showOnWebsite: FormControl<boolean>;
+  /** Active / Inactive toggle (true = Active). New packages start Active. */
+  isActive: FormControl<boolean>;
   /** KEEP LAST: FormGroup.reset() applies controls in order, so the stored value wins. */
   durationDays: FormControl<number | null>;
 }
@@ -116,7 +121,14 @@ export function buildPackageDetailsForm(
   const form = new FormGroup<PackageDetailsForm>({
     name: new FormControl('', {
       nonNullable: true,
-      validators: [Validators.required, trimmedLength(3, 100), noEmoji(), uniquePackageName(packages, excludedId)],
+      validators: [
+        Validators.required,
+        trimmedLength(3, 100),
+        noEmoji(),
+        // Letters only: no numbers, no spaces. Error key = 'pattern'.
+        Validators.pattern(PACKAGE_NAME_PATTERN),
+        uniquePackageName(packages, excludedId),
+      ],
     }),
     // Default = 'Price' so the Price button is pre-selected in create mode.
     availablePackage: new FormControl('Price', {
@@ -131,6 +143,7 @@ export function buildPackageDetailsForm(
     storageLimit: new FormControl<number | null>(null, [Validators.min(0)]),
     autoAssignOnSignup: new FormControl(false, { nonNullable: true }),
     showOnWebsite: new FormControl(false, { nonNullable: true }),
+    isActive: new FormControl(true, { nonNullable: true }),
     durationDays: new FormControl<number | null>(null, [trialDaysValidator()]),
   });
 

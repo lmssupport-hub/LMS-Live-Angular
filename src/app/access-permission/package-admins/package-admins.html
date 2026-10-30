@@ -37,12 +37,13 @@
               <p class="px-6 py-6 text-xs text-[#9a9a9a]">No admins assigned to this package yet.</p>
             } @else {
               <table class="w-full table-fixed border-separate border-spacing-0 text-left text-xs">
-                <colgroup><col class="w-[34%]" /><col class="w-[46%]" /><col class="w-[20%]" /></colgroup>
+                <colgroup><col class="w-[24%]" /><col class="w-[30%]" /><col class="w-[22%]" /><col class="w-[24%]" /></colgroup>
                 <thead>
                   <tr>
                     <th class="sticky top-0 z-10 truncate border-b border-[#ededed] bg-white px-6 py-4 font-semibold">Username</th>
                     <th class="sticky top-0 z-10 truncate border-b border-[#ededed] bg-white px-6 py-4 font-semibold">Email</th>
                     <th class="sticky top-0 z-10 truncate border-b border-[#ededed] bg-white px-6 py-4 font-semibold">Status</th>
+                    <th class="sticky top-0 z-10 truncate border-b border-[#ededed] bg-white px-6 py-4 font-semibold">Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -50,7 +51,19 @@
                     <tr class="[&>td]:border-b [&>td]:border-[#f1f1f1]">
                       <td class="truncate px-6 py-4 font-semibold" [title]="a.username">{{ a.username }}</td>
                       <td class="truncate px-6 py-4" [title]="a.email">{{ a.email }}</td>
-                      <td class="truncate px-6 py-4">{{ a.status }}</td>
+                      <td class="px-6 py-4">
+                        <p class="truncate">{{ a.status }}</p>
+                        @if (remainingLabel(a); as left) {
+                          <p class="mt-0.5 truncate text-[10px] font-medium"
+                             [class]="isExpiringSoon(a) ? 'text-red-500' : 'text-[#4694A4]'">{{ left }}</p>
+                        }
+                      </td>
+                      <td class="px-6 py-4">
+                        <button type="button" (click)="unassign(a)" [disabled]="removingId() !== null"
+                                class="h-8 cursor-pointer rounded-full bg-[#f6f6f6] px-4 text-xs transition hover:bg-red-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-50">
+                          {{ removingId() === a.id ? 'Removing…' : 'Unassign' }}
+                        </button>
+                      </td>
                     </tr>
                   }
                 </tbody>
@@ -99,3 +112,24 @@
     }
   </main>
 </div>
+
+<!-- Centered "Unassign?" confirmation popup -->
+@if (confirmTarget(); as target) {
+  <div class="fixed inset-0 z-[60] grid place-items-center bg-black/30 p-4 backdrop-blur-[2px]" (click)="cancelUnassign()">
+    <div class="w-full max-w-[380px] rounded-2xl bg-white px-7 py-6 text-center shadow-[0_12px_35px_rgba(0,0,0,.3)]"
+         role="alertdialog" aria-modal="true" aria-labelledby="unassign-title" aria-describedby="unassign-text"
+         (click)="$event.stopPropagation()">
+      <h3 id="unassign-title" class="text-lg font-semibold text-[#505050]">Unassign package?</h3>
+      <p id="unassign-text" class="mt-2 text-xs text-[#606060]">
+        Remove <span class="font-semibold">{{ pkg()?.name }}</span> from
+        <span class="font-semibold">{{ target.username }}</span>? They will lose access to this package.
+      </p>
+      <div class="mt-5 flex justify-center gap-3">
+        <button type="button" (click)="cancelUnassign()"
+                class="h-10 w-32 cursor-pointer rounded-lg border border-transparent bg-[#f6f6f6] text-xs transition-all duration-300 ease-out hover:border-[#7fb9c7] hover:bg-[#4694A4] hover:text-[#f4fbfc] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#61b7c5]/50">No, cancel</button>
+        <button type="button" (click)="confirmUnassign()"
+                class="h-10 w-32 cursor-pointer rounded-lg border-0 bg-[#ff5a5f] text-xs text-white transition-colors duration-200 hover:bg-[#e8454b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300">Yes, unassign</button>
+      </div>
+    </div>
+  </div>
+}

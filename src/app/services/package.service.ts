@@ -3,6 +3,7 @@ import { Injectable, computed, signal } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
+
 /** Package type: 'Price' = paid package, 'Free' = free package (replaces the old Available Package dropdown). */
 export const AVAILABLE_PACKAGE_OPTIONS = ['Price', 'Free'] as const;
 export type AvailablePackage = (typeof AVAILABLE_PACKAGE_OPTIONS)[number];
@@ -71,7 +72,7 @@ export interface PackageRecord {
   permissions: PackagePermissionCategory[];
 }
 
-export type PackagePayload = Omit<PackageRecord, 'id' | 'status' | 'createdAt'>;
+export type PackagePayload = Omit<PackageRecord, 'id' | 'createdAt'>;
 
 
 
@@ -99,6 +100,23 @@ export interface FeatureCatalogEntry {
     name: string;
     permissions: Record<PermissionAction, boolean>;
   }[];
+}
+
+/** One admin on a package: when it was assigned and when it ends. */
+export interface PackageAdminAssignment {
+  userId: number;
+  assignedAt: string | null;
+  expiresAt: string | null;
+}
+
+/** Logged-in admin's own package countdown (header pill). expiresAt null = no package. */
+export interface MySubscription {
+  packageId: number | null;
+  packageName: string | null;
+  assignedAt: string | null;
+  expiresAt: string | null;
+  /** Server clock when the response was built (same timezone as expiresAt). */
+  serverTime: string;
 }
 
 export interface UserPackageAssignment {
@@ -166,6 +184,21 @@ export class PackageService {
 
   assignToUser(payload: UserPackageAssignment): Observable<void> {
     return this.http.post<void>(`${this.baseUrl}/assign`, payload);
+  }
+
+  /** Assigned / expiry dates of the admins on a package (Super Admin only). */
+  getAssignments(packageId: number): Observable<PackageAdminAssignment[]> {
+    return this.http.get<PackageAdminAssignment[]>(`${this.baseUrl}/${packageId}/admins`);
+  }
+
+  /** The logged-in admin's own package expiry, for the header "days left" pill. */
+  getMySubscription(): Observable<MySubscription> {
+    return this.http.get<MySubscription>(`${this.baseUrl}/my-subscription`);
+  }
+
+  /** Removes the package from one admin (Super Admin only). */
+  unassignFromUser(packageId: number, userId: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/${packageId}/admins/${userId}`);
   }
 }
 

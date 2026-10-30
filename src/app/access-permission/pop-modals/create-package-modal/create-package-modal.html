@@ -17,9 +17,11 @@
 
     <form class="mt-4 2xl:mt-5" [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
       <div class="grid grid-cols-[1.3fr_1fr] gap-4">
-        <!-- Package name -->
+        <!-- Package name (letters only: numbers, spaces and symbols are removed as you type) -->
         <div class="relative">
           <input formControlName="name" minlength="3" maxlength="100" placeholder=" "
+                 autocomplete="off" spellcheck="false"
+                 (input)="onNameInput($event)"
                  [attr.aria-invalid]="form.controls.name.touched && form.controls.name.invalid"
                  class="pf-input h-11 w-full rounded-lg border-0 bg-[#f6f6f6] px-4 pr-16 text-xs outline-none 2xl:h-12 2xl:rounded-xl 2xl:px-5 2xl:pr-16 2xl:text-[13px]" />
           <span class="pf-label" aria-hidden="true">Package Name<span class="text-red-500">*</span></span>
@@ -30,6 +32,8 @@
             <p class="absolute left-1 top-full mt-0.5 text-[9px] text-red-600">Package Name must be between 3 and 100 characters.</p>
           } @else if (form.controls.name.touched && form.controls.name.hasError('emoji')) {
             <p class="absolute left-1 top-full mt-0.5 text-[9px] text-red-600">Package Name cannot contain emojis.</p>
+          } @else if (form.controls.name.touched && form.controls.name.hasError('pattern')) {
+            <p class="absolute left-1 top-full mt-0.5 text-[9px] text-red-600">Package Name must contain only letters (no numbers or spaces).</p>
           } @else if (form.controls.name.touched && form.controls.name.hasError('packageNameExists')) {
             <p class="absolute left-1 top-full mt-0.5 text-[9px] text-red-600">A package with the same name already exists</p>
           }
@@ -68,7 +72,7 @@
         @if (isPrice()) {
           <div>
             <div class="relative">
-              <input formControlName="price" type="number" min="0.01" step="0.01" placeholder=" "
+              <input formControlName="price" type="number" step="0.01" placeholder=" "
                      [attr.aria-invalid]="form.controls.price.touched && form.controls.price.invalid"
                      class="pf-input h-11 w-full rounded-lg border-0 bg-[#f6f6f6] px-4 text-xs outline-none 2xl:h-12 2xl:rounded-xl 2xl:px-5 2xl:text-[13px]" />
               <span class="pf-label" aria-hidden="true">Price<span class="text-red-500">*</span></span>
@@ -168,18 +172,31 @@
           }
         </div>
 
-        <!-- Checkbox: Free -> "Auto-assign on signup" | Price -> "Show on website" -->
-        @if (form.controls.availablePackage.value) {
+        <!-- Row: Free -> "Auto-assign on signup" | Price -> "Show on website"  +  Active / Inactive toggle -->
+        <div class="grid grid-cols-2 gap-3 2xl:gap-4">
           <label class="flex cursor-pointer items-center gap-3 rounded-lg bg-[#f6f6f6] px-4 py-3 text-xs 2xl:rounded-xl 2xl:px-5 2xl:text-[13px]">
             @if (isFree()) {
-              <input type="checkbox" formControlName="autoAssignOnSignup" class="h-4 w-4 cursor-pointer accent-[#61b7c5]" />
-              <span>Auto-assign on signup</span>
+              <input type="checkbox" formControlName="autoAssignOnSignup" class="h-4 w-4 shrink-0 cursor-pointer accent-[#61b7c5]" />
+              <span class="min-w-0 truncate">Auto-assign on signup</span>
             } @else {
-              <input type="checkbox" formControlName="showOnWebsite" class="h-4 w-4 cursor-pointer accent-[#61b7c5]" />
-              <span>Show on website</span>
+              <input type="checkbox" formControlName="showOnWebsite" class="h-4 w-4 shrink-0 cursor-pointer accent-[#61b7c5]" />
+              <span class="min-w-0 truncate">Show on website</span>
             }
           </label>
-        }
+
+          <!-- Package status toggle -->
+          <div class="flex items-center justify-between gap-3 rounded-lg bg-[#f6f6f6] px-4 py-3 text-xs 2xl:rounded-xl 2xl:px-5 2xl:text-[13px]">
+            <span id="package-status-label">{{ form.controls.isActive.value ? 'Active' : 'Inactive' }}</span>
+            <button type="button" role="switch" aria-labelledby="package-status-label"
+                    [attr.aria-checked]="form.controls.isActive.value"
+                    (click)="toggleActive()"
+                    class="relative h-5 w-9 shrink-0 cursor-pointer rounded-full border-0 outline-none transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-[#61b7c5]/50"
+                    [class]="form.controls.isActive.value ? 'bg-[#4694A4]' : 'bg-[#c9c9c9]'">
+              <span class="absolute left-0.5 top-0.5 size-4 rounded-full bg-white shadow transition-transform duration-200"
+                    [class.translate-x-4]="form.controls.isActive.value"></span>
+            </button>
+          </div>
+        </div>
       </div>
 
       <div class="mt-4 flex justify-center gap-4 2xl:mt-5 2xl:gap-5">

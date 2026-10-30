@@ -3,6 +3,8 @@ import { HttpClient, HttpInterceptorFn, HttpParams } from '@angular/common/http'
 import { map, Observable, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { TokenStorageService } from './token-storage.service';
+import { catchError, throwError } from 'rxjs';
+import { Router } from '@angular/router';
 
 export interface AuthUser {
   id: number;
@@ -197,6 +199,20 @@ export class AuthService {
 
 
 export const authInterceptor: HttpInterceptorFn = (request, next) => {
-  const token = inject(TokenStorageService).getToken();
-  return next(token ? request.clone({ setHeaders: { Authorization: `Bearer ${token}` } }) : request);
+  const tokenStorage = inject(TokenStorageService);
+  const router = inject(Router);
+  const token = tokenStorage.getToken();
+  const req = token ? request.clone({ setHeaders: { Authorization: `Bearer ${token}` } }) : request;
+
+  return next(req).pipe(
+    catchError((error) => {
+      // Login/signup request-ku 401 normal (wrong password), so skip pannrom.
+      const isAuthCall = request.url.includes('/api/auth/login') || request.url.includes('/api/auth/signup');
+      if (error?.status === 401 && token && !isAuthCall) {
+        tokenStorage.clear();
+        void router.navigate(['/auth'], { queryParams: { view: 'login' } });
+      }
+      return throwError(() => error);
+    }),
+  );
 };

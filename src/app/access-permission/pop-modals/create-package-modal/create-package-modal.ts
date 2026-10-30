@@ -69,6 +69,7 @@ export class CreatePackageModal implements OnInit {
       storageLimit: item.storageLimit,
       autoAssignOnSignup: item.autoAssignOnSignup ?? false,
       showOnWebsite: item.showOnWebsite ?? false,
+      isActive: item.status !== 'Inactive',
       durationDays: item.durationDays ?? null,
     });
   }
@@ -115,8 +116,25 @@ export class CreatePackageModal implements OnInit {
     this.openDropdown.set(null);
   }
 
+  /** Active / Inactive switch (same toggle in create and edit). */
+  protected toggleActive(): void {
+    const control = this.form.controls.isActive;
+    control.setValue(!control.value);
+    control.markAsDirty();
+  }
+
   protected descriptionCharCount(): number {
     return this.form.controls.description.value.length;
+  }
+
+  /** Package Name: letters only. Strips digits, spaces and symbols as the user types or pastes. */
+  protected onNameInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const cleaned = input.value.replace(/[^A-Za-z]/g, '');
+    if (cleaned !== input.value) {
+      input.value = cleaned;
+      this.form.controls.name.setValue(cleaned);
+    }
   }
 
   /** Cancel button, close (X) icon and backdrop click all ask for confirmation first. */
@@ -137,6 +155,8 @@ export class CreatePackageModal implements OnInit {
   }
 
   protected onSubmit(): void {
+    // Re-run validation first: when Price/Free swaps fields, a hidden control can keep a stale error.
+    Object.values(this.form.controls).forEach((control) => control.updateValueAndValidity({ emitEvent: false }));
     this.form.markAllAsTouched();
     if (this.form.invalid) return;
 
@@ -153,6 +173,7 @@ export class CreatePackageModal implements OnInit {
       storageLimit: value.storageLimit,
       autoAssignOnSignup: free ? value.autoAssignOnSignup : false,
       showOnWebsite: free ? false : value.showOnWebsite,
+      status: value.isActive ? 'Active' : 'Inactive',
       // Edit mode keeps the saved permissions; the permission step lets the user change them.
       permissions: this.editing?.permissions ?? [],
     });

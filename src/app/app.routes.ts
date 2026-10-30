@@ -127,6 +127,15 @@ export const routes: Routes = [
         title: 'Course Preview',
       },
 
+      {
+  path: 'courses/:courseId/sections/:sectionId/content',
+  loadComponent: () =>
+    import('./course-module/course-content-viewer/course-content-viewer').then(
+      (m) => m.CourseContentViewer,
+    ),
+  title: 'Course Content',
+},
+
     ],
   },
 

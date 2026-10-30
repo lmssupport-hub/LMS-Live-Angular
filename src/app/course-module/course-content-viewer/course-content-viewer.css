@@ -1,0 +1,27 @@
+/* Teal scrollbar thumb (matches the Figma: thin, rounded, floating at the card's right edge) */
+.cv-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #5db5c4 transparent;
+}
+
+.cv-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.cv-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.cv-scroll::-webkit-scrollbar-thumb {
+  background: #5db5c4;
+  border-radius: 999px;
+}
+
+.cv-scroll::-webkit-scrollbar-thumb:hover {
+  background: #489daa;
+}
+
+:host ::ng-deep .docx-wrapper {
+  background: transparent;
+  padding: 12px 0;
+}

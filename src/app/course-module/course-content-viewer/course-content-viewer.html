@@ -1,0 +1,301 @@
+<div class="w-full px-4 pb-7 pt-4 font-sans text-[#4b4b4b] sm:px-6 lg:px-10" [style.height.px]="fitHeight()" [style.--preview-bg]="pageBg()">
+  <div
+    class="mx-auto w-full transition-[max-width] duration-300 motion-reduce:transition-none"
+    [class]="frameWidthClass()"
+  >
+    <section
+      class="relative flex flex-col rounded-2xl bg-white shadow-sm"
+      [class]="stacked() ? '' : 'lg:h-full lg:min-h-[560px]'"
+      aria-label="Course content"
+    >
+      <!-- ============ Top-right notch with toolbar (same as Course Preview) ============ -->
+      <div
+        class="absolute -right-1 -top-1 z-20 flex items-center gap-3 rounded-bl-[10px] bg-[var(--preview-bg,#f6f6f6)] pb-2.5 pl-2.5 pr-4 pt-3.5"
+      >
+        <span
+          class="pointer-events-none absolute"
+          aria-hidden="true"
+          style="left: -10px; top: 4px; width: 10px; height: 10px;
+                 border-top-right-radius: 10px;
+                 box-shadow: 5px -5px 0 5px var(--preview-bg, #f6f6f6);"
+        ></span>
+        <span
+          class="pointer-events-none absolute"
+          aria-hidden="true"
+          style="right: 4px; top: 100%; width: 10px; height: 10px;
+                 border-top-right-radius: 10px;
+                 box-shadow: 5px -5px 0 5px var(--preview-bg, #f6f6f6);"
+        ></span>
+
+        <!-- Reading mode -->
+        <div class="flex h-[30px] items-center gap-2.5 rounded-full bg-white px-3.5 shadow-sm">
+          <span class="text-[10px] text-neutral-600">Reading mode</span>
+          <button
+            type="button"
+            role="switch"
+            data-no-teal-hover
+            class="relative h-4 w-8 rounded-full bg-neutral-200 outline-none transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-[#61b7c5]/40 motion-reduce:transition-none"
+            [class.!bg-[#d6eef2]]="readingMode()"
+            [attr.aria-checked]="readingMode()"
+            aria-label="Reading mode"
+            (click)="toggleReadingMode()"
+          >
+            <span
+              class="absolute left-0.5 top-0.5 size-3 rounded-full bg-[#61b7c5] transition-transform duration-200 motion-reduce:transition-none"
+              [class.translate-x-4]="readingMode()"
+            ></span>
+          </button>
+        </div>
+
+        <!-- Desktop / Tablet / Mobile -->
+        <div class="relative">
+          <select
+            class="h-[30px] w-[118px] cursor-pointer appearance-none rounded-full border-0 bg-white pl-3.5 pr-8 text-[10px] text-neutral-600 shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-[#61b7c5]/40"
+            aria-label="Preview size"
+            [value]="viewMode()"
+            (change)="setViewMode($event)"
+          >
+            <option value="desktop">Desktop View</option>
+            <option value="tablet">Tablet View</option>
+            <option value="mobile">Mobile View</option>
+          </select>
+          <svg
+            viewBox="0 0 20 20"
+            class="pointer-events-none absolute right-3 top-1/2 size-3 -translate-y-1/2 fill-none stroke-neutral-600"
+            stroke-width="2"
+            aria-hidden="true"
+          >
+            <path d="m5 8 5 5 5-5" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </div>
+
+        <!-- Fullscreen -->
+        <button
+          type="button"
+          data-no-teal-hover
+          class="grid size-[30px] place-items-center rounded-lg bg-white text-neutral-600 shadow-sm outline-none transition-colors hover:bg-neutral-100 focus-visible:ring-2 focus-visible:ring-[#61b7c5]/40"
+          [attr.aria-label]="isFullscreen() ? 'Exit full screen' : 'Enter full screen'"
+          [attr.title]="isFullscreen() ? 'Exit full screen' : 'Full screen'"
+          (click)="toggleFullscreen()"
+        >
+          <svg viewBox="0 0 24 24" class="size-3.5 fill-none stroke-current" stroke-width="2" aria-hidden="true">
+            @if (isFullscreen()) {
+            <path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" stroke-linecap="round" stroke-linejoin="round" />
+            } @else {
+            <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" stroke-linecap="round" stroke-linejoin="round" />
+            }
+          </svg>
+        </button>
+      </div>
+
+      <!-- ============ Header: section select + tabs ============ -->
+      <header
+        class="flex shrink-0 flex-wrap items-center gap-x-6 gap-y-3 px-8 pb-3 pt-[22px]"
+        [class]="stacked() ? 'pr-8 pt-16' : 'pr-[430px]'"
+      >
+        <!-- Section dropdown -->
+        <div class="relative">
+          <select
+            class="h-[27px] w-[178px] cursor-pointer appearance-none rounded-full border-0 bg-[#f6f6f6] pl-3.5 pr-8 text-[10px] text-[#4b4b4b] outline-none focus-visible:ring-2 focus-visible:ring-[#61b7c5]/40"
+            aria-label="Select section"
+            [value]="selectedSectionId() ?? ''"
+            (change)="onSectionChange($event)"
+          >
+            @for (section of sections(); track section.id) {
+            <option [value]="section.id" [selected]="section.id === selectedSectionId()">{{ sectionLabel(section) }}</option>
+            }
+          </select>
+          <svg
+            viewBox="0 0 20 20"
+            class="pointer-events-none absolute right-3 top-1/2 size-3 -translate-y-1/2 fill-none stroke-neutral-600"
+            stroke-width="2"
+            aria-hidden="true"
+          >
+            <path d="m5 8 5 5 5-5" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </div>
+
+        <!-- Prev / tabs / next -->
+        <nav class="flex min-w-0 flex-1 items-center gap-3" aria-label="Section content">
+          <button
+            type="button"
+            data-no-teal-hover
+            class="grid size-6 shrink-0 place-items-center rounded-full text-white outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[#61b7c5]/40 cursor-pointer disabled:cursor-not-allowed"
+            [class]="canScrollLeft() ? 'bg-[#61b7c5] hover:bg-[#489daa]' : 'bg-[#bfe3ea]'"
+            [disabled]="!canScrollLeft()"
+            aria-label="Scroll tabs left"
+            (click)="scrollTabs(-1)"
+          >
+            <svg viewBox="0 0 20 20" class="size-3 fill-none stroke-current" stroke-width="2.4" aria-hidden="true">
+              <path d="m12 5-5 5 5 5" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </button>
+
+          <div
+            #tabStrip
+            class="flex min-w-0 flex-1 items-center gap-3 overflow-x-auto py-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            role="tablist"
+            (scroll)="updateTabScroll()"
+          >
+            @for (tab of tabs(); track tab.key) {
+            <button
+              type="button"
+              role="tab"
+              data-no-teal-hover
+              class="flex h-6 min-w-[86px] max-w-[160px] shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-full bg-[#f3f3f3] px-4 text-[9px] outline-none transition-colors hover:bg-[#ebebeb] focus-visible:ring-2 focus-visible:ring-[#61b7c5]/40"
+              [class]="activeTabKey() === tab.key ? 'text-[#4b4b4b]' : 'text-neutral-500'"
+              [attr.aria-selected]="activeTabKey() === tab.key"
+              [attr.title]="tab.label"
+              (click)="selectTab(tab.key)"
+            >
+              @if (activeTabKey() === tab.key) {
+              <span class="size-1.5 shrink-0 rounded-full bg-[#61b7c5]" aria-hidden="true"></span>
+              }
+              <span class="truncate">{{ tab.label }}</span>
+            </button>
+            }
+          </div>
+
+          <button
+            type="button"
+            data-no-teal-hover
+            class="grid size-6 shrink-0 place-items-center rounded-full text-white outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[#61b7c5]/40 cursor-pointer disabled:cursor-not-allowed"
+            [class]="canScrollRight() ? 'bg-[#61b7c5] hover:bg-[#489daa]' : 'bg-[#bfe3ea]'"
+            [disabled]="!canScrollRight()"
+            aria-label="Scroll tabs right"
+            (click)="scrollTabs(1)"
+          >
+            <svg viewBox="0 0 20 20" class="size-3 fill-none stroke-current" stroke-width="2.4" aria-hidden="true">
+              <path d="m8 5 5 5-5 5" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </button>
+        </nav>
+      </header>
+
+      <!-- ============ Content (only this area scrolls) ============ -->
+      <div class="cv-scroll min-h-0 flex-1 overflow-y-auto pb-6 pl-8 pr-6 pt-2" [class]="stacked() ? 'max-h-[70vh]' : ''">
+        @if (error()) {
+        <div class="rounded-lg bg-red-50 p-3 text-center text-xs text-red-700" role="alert">
+          {{ error() }}
+          <button type="button" class="ml-2 font-semibold underline" (click)="loadSections()">Retry</button>
+        </div>
+        } @else if (loading()) {
+        <div class="space-y-3">
+          @for (item of [1, 2, 3, 4]; track item) {
+          <div class="h-12 animate-pulse rounded-lg bg-[#f3f3f3]"></div>
+          }
+        </div>
+        } @else if (!tabs().length) {
+        <div class="grid min-h-64 place-content-center text-center">
+          <h1 class="text-[20px] font-medium text-[#4b4b4b]">No content yet</h1>
+          <p class="mt-1 text-[10px] text-neutral-500">Nothing has been added to this section.</p>
+        </div>
+        } @else {
+        @switch (activeTab()?.kind) {
+          @case ('Multimedia') {
+            <h1 class="mb-2 text-[26px] font-medium leading-tight text-[#4b4b4b]">{{ activeTab()?.resource?.name }}</h1>
+            @if (activeTab()?.resource?.description) {
+            <p
+              class="mb-4 text-[#2f2f2f]"
+              [class]="readingMode() ? 'text-[12px] leading-[1.7]' : 'text-[9.5px] leading-[1.45]'"
+            >{{ activeTab()?.resource?.description }}</p>
+            }
+
+            @if (activeMedia(); as media) {
+              @switch (media.kind) {
+                @case ('image') {
+                  <img [src]="media.url" [alt]="activeTab()?.resource?.name" class="mx-auto max-h-[68vh] max-w-full rounded-xl bg-[#f6f6f6] object-contain" />
+                }
+                @case ('video') {
+                  <video [src]="media.url" class="mx-auto max-h-[68vh] w-full rounded-xl bg-black" controls preload="metadata"></video>
+                }
+                @case ('audio') {
+                  <audio [src]="media.url" class="w-full max-w-md" controls preload="metadata"></audio>
+                }
+                @case ('pdf') {
+                  <iframe [src]="media.frameUrl" title="PDF viewer" class="h-[68vh] w-full rounded-xl border-0 bg-[#f6f6f6]"></iframe>
+                  @if (media.url) {
+                  <p class="mt-2 text-[10px] text-neutral-500">
+                    File not loading?
+                    <a class="font-semibold text-[#3e8d99] underline" [href]="media.url" target="_blank" rel="noopener noreferrer">Open file URL in new tab</a>
+                  </p>
+                  }
+                }
+                @case ('docx') {
+                  <div class="relative h-[68vh] w-full">
+                    <div #docxHost class="h-full w-full overflow-auto rounded-xl bg-[#f6f6f6]"></div>
+                    @if (docxLoading()) {
+                    <div
+                      class="absolute inset-0 grid place-content-center justify-items-center gap-3 rounded-xl bg-[#f6f6f6]"
+                      role="status"
+                      aria-live="polite"
+                    >
+                      <span class="size-7 animate-spin rounded-full border-[3px] border-[#bfe3ea] border-t-[#61b7c5] motion-reduce:animate-none" aria-hidden="true"></span>
+                      <span class="text-[11px] text-neutral-600">Loading file…</span>
+                    </div>
+                    }
+                  </div>
+                  @if (media.url) {
+                  <p class="mt-2 text-[10px] text-neutral-500">
+                    File not loading?
+                    <a class="font-semibold text-[#3e8d99] underline" [href]="media.url" target="_blank" rel="noopener noreferrer">Open file URL in new tab</a>
+                  </p>
+                  }
+                }
+                @case ('office') {
+                  <div class="relative h-[68vh] w-full">
+                    <iframe
+                      [src]="media.frameUrl"
+                      title="Document viewer"
+                      class="h-full w-full rounded-xl border-0 bg-[#f6f6f6]"
+                      (load)="onFrameLoaded()"
+                    ></iframe>
+                    @if (frameLoading()) {
+                    <div
+                      class="absolute inset-0 grid place-content-center justify-items-center gap-3 rounded-xl bg-[#f6f6f6]"
+                      role="status"
+                      aria-live="polite"
+                    >
+                      <span class="size-7 animate-spin rounded-full border-[3px] border-[#bfe3ea] border-t-[#61b7c5] motion-reduce:animate-none" aria-hidden="true"></span>
+                      <span class="text-[11px] text-neutral-600">Loading file…</span>
+                    </div>
+                    }
+                  </div>
+                  <p class="mt-2 flex flex-wrap items-center gap-3 text-[10px] text-neutral-500">
+                    File not loading?
+                    <button type="button" class="font-semibold text-[#3e8d99] underline" (click)="toggleOfficeViewer()">
+                      {{ officeViewer() === 'microsoft' ? 'Try Google viewer' : 'Try Microsoft viewer' }}
+                    </button>
+                    @if (media.url) {
+                    <a class="font-semibold text-[#3e8d99] underline" [href]="media.url" target="_blank" rel="noopener noreferrer">Open file URL in new tab</a>
+                    }
+                  </p>
+                }
+                @default {
+                  <div class="grid min-h-48 place-content-center rounded-xl bg-[#f6f6f6] p-8 text-center">
+                    <p class="text-[11px] text-neutral-600">This file type can't be displayed here.</p>
+                    @if (media.url) {
+                    <a
+                      class="mx-auto mt-3 inline-flex h-8 items-center rounded-full bg-[#61b7c5] px-5 text-[10px] font-medium text-white hover:bg-[#489daa]"
+                      [href]="media.url" target="_blank" rel="noopener noreferrer"
+                    >Download {{ activeTab()?.resource?.originalFileName }}</a>
+                    }
+                  </div>
+                }
+              }
+            }
+          }
+          @case ('Question Bank') {
+            <h1 class="mb-2 text-[26px] font-medium leading-tight text-[#4b4b4b]">{{ activeTab()?.label }}</h1>
+            <button
+              type="button"
+              class="h-8 rounded-full bg-[#61b7c5] px-6 text-[10px] font-medium text-white hover:bg-[#489daa]"
+              (click)="openQuiz(activeTab()?.bankId)"
+            >Attempt Quiz</button>
+          }
+        }
+        }
+      </div>
+    </section>
+  </div>
+</div>

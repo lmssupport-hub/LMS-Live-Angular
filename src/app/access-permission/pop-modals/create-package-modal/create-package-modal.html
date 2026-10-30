@@ -184,14 +184,27 @@
           }
         </div>
 
-        <!-- Row: Free -> "Auto-assign on signup" | Price -> "Show on website"  +  Active / Inactive toggle -->
+        <!-- Row: Free -> "Auto-assign on signup" | Price -> "Show on website"  +  Active / Inactive toggle.
+             The checkboxes are custom-drawn (teal box + WHITE tick) because the browser picks a black tick on this light teal. -->
         <div class="grid grid-cols-2 gap-3 2xl:gap-4">
           <label class="flex cursor-pointer items-center gap-3 rounded-lg bg-[#f6f6f6] px-4 py-3 text-xs 2xl:rounded-xl 2xl:px-5 2xl:text-[13px]">
             @if (isFree()) {
-              <input type="checkbox" formControlName="autoAssignOnSignup" class="h-4 w-4 shrink-0 cursor-pointer accent-[#61b7c5]" />
+              <span class="relative grid size-4 shrink-0 place-items-center">
+                <input type="checkbox" formControlName="autoAssignOnSignup"
+                       class="peer size-4 cursor-pointer appearance-none rounded border border-[#9a9a9a] bg-white outline-none transition-colors duration-150 checked:border-[#61b7c5] checked:bg-[#61b7c5] focus-visible:ring-2 focus-visible:ring-[#61b7c5]/50" />
+                <svg viewBox="0 0 16 16" class="pointer-events-none absolute size-3 fill-none stroke-white opacity-0 peer-checked:opacity-100" stroke-width="2.5" aria-hidden="true">
+                  <path d="M3.5 8.5l3 3 6-6.5" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </span>
               <span class="min-w-0 truncate">Auto-assign on signup</span>
             } @else {
-              <input type="checkbox" formControlName="showOnWebsite" class="h-4 w-4 shrink-0 cursor-pointer accent-[#61b7c5]" />
+              <span class="relative grid size-4 shrink-0 place-items-center">
+                <input type="checkbox" formControlName="showOnWebsite"
+                       class="peer size-4 cursor-pointer appearance-none rounded border border-[#9a9a9a] bg-white outline-none transition-colors duration-150 checked:border-[#61b7c5] checked:bg-[#61b7c5] focus-visible:ring-2 focus-visible:ring-[#61b7c5]/50" />
+                <svg viewBox="0 0 16 16" class="pointer-events-none absolute size-3 fill-none stroke-white opacity-0 peer-checked:opacity-100" stroke-width="2.5" aria-hidden="true">
+                  <path d="M3.5 8.5l3 3 6-6.5" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </span>
               <span class="min-w-0 truncate">Show on website</span>
             }
           </label>
@@ -212,8 +225,8 @@
       </div>
 
       <div class="mt-4 flex justify-center gap-4 2xl:mt-5 2xl:gap-5">
-        <button type="button" (click)="requestCancel()"
-                class="h-10 w-36 cursor-pointer rounded-lg border border-transparent bg-[#f6f6f6] text-xs transition-all duration-300 ease-out enabled:hover:border-[#7fb9c7] enabled:hover:bg-[#4694A4] enabled:hover:text-[#f4fbfc] enabled:hover:shadow-[0_8px_18px_-2px_rgba(70,160,180,0.65),0_3px_8px_rgba(120,200,215,0.3)] enabled:focus-visible:border-[#7fb9c7] enabled:focus-visible:bg-[#4694A4] enabled:focus-visible:text-[#f4fbfc] enabled:focus-visible:shadow-[0_8px_18px_-2px_rgba(70,160,180,0.65),0_3px_8px_rgba(120,200,215,0.3)] focus-visible:outline-none 2xl:h-11 2xl:w-40 2xl:rounded-xl 2xl:text-[13px]">Cancel</button>
+        <button type="button" (click)="requestCancel()" data-no-teal-hover
+                class="h-10 w-36 cursor-pointer rounded-lg border border-[#e2e2e2] bg-white text-xs text-neutral-700 transition-colors duration-200 hover:border-transparent hover:bg-[#e2e2e2] focus-visible:border-transparent focus-visible:bg-[#e2e2e2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400/50 2xl:h-11 2xl:w-40 2xl:rounded-xl 2xl:text-[13px]">Cancel</button>
         <button type="submit"
                 class="h-10 w-36 cursor-pointer rounded-lg border border-transparent bg-[#f6f6f6] text-xs transition-all duration-300 ease-out enabled:hover:border-[#7fb9c7] enabled:hover:bg-[#4694A4] enabled:hover:text-[#f4fbfc] enabled:hover:shadow-[0_8px_18px_-2px_rgba(70,160,180,0.65),0_3px_8px_rgba(120,200,215,0.3)] enabled:focus-visible:border-[#7fb9c7] enabled:focus-visible:bg-[#4694A4] enabled:focus-visible:text-[#f4fbfc] enabled:focus-visible:shadow-[0_8px_18px_-2px_rgba(70,160,180,0.65),0_3px_8px_rgba(120,200,215,0.3)] focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 2xl:h-11 2xl:w-40 2xl:rounded-xl 2xl:text-[13px]">Next ›</button>
       </div>

@@ -11,7 +11,7 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { environment } from '../../../environments/environment';
 import { Course } from '../course.model';
 import { Section, SectionManagementService } from '../../services/Section management.service';
@@ -41,6 +41,7 @@ const GENERIC_ERROR = 'Unable to load the course sections. Please try again.';
 export class CoursePreview implements OnInit, AfterViewInit {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly location = inject(Location);
   private readonly sectionService = inject(SectionManagementService);
   private readonly destroyRef = inject(DestroyRef);
@@ -163,6 +164,22 @@ export class CoursePreview implements OnInit, AfterViewInit {
     } catch {
       return null;
     }
+  }
+
+  // ---------- navigation ----------
+
+  /** Clicking a module row opens the content viewer (E-Book / Multimedia / Question Banks) for that section. */
+  openSection(section: Section): void {
+    const course = this.course();
+    if (!course) return;
+    void this.router.navigate([
+      '/admin-dashboard',
+      'courses',
+      course.id,
+      'sections',
+      section.id,
+      'content',
+    ]);
   }
 
   // ---------- display helpers (same logic as Organize) ----------

@@ -896,17 +896,33 @@ export class OrganizeSections implements OnInit, AfterViewInit, OnDestroy {
   }
 
   /**
-   * Moves a multimedia row inside its section (local order only).
-   * Question Bank rows come after the multimedia rows and are not reorderable.
+   * Moves an activity row inside its section (local order only).
+   * Multimedia rows are listed first, then Question Banks, so each kind is reordered within its own group:
+   * dropping a bank on a multimedia row puts it at the top of the banks.
    * TODO: call the backend reorder endpoint here once it exists, otherwise the order resets
    * when the section is collapsed / expanded (loadResources re-fetches the server order).
    */
   private moveActivity(sectionId: number, from: number, to: number): void {
-    const next = [...(this.resourcesBySection().get(sectionId) ?? [])];
-    if (from < 0 || from >= next.length || from === to) return;
-    const [moved] = next.splice(from, 1);
-    next.splice(Math.min(to, next.length), 0, moved);
-    this.resourcesBySection.update(map => new Map(map).set(sectionId, next));
+    const resources = [...(this.resourcesBySection().get(sectionId) ?? [])];
+    const banks = [...(this.banksBySection().get(sectionId) ?? [])];
+
+    // Multimedia row
+    if (from >= 0 && from < resources.length) {
+      if (from === to) return;
+      const [moved] = resources.splice(from, 1);
+      resources.splice(Math.min(to, resources.length), 0, moved);
+      this.resourcesBySection.update(map => new Map(map).set(sectionId, resources));
+      return;
+    }
+
+    // Question Bank row
+    const bankFrom = from - resources.length;
+    if (bankFrom < 0 || bankFrom >= banks.length) return;
+    const bankTo = Math.max(0, Math.min(to - resources.length, banks.length));
+    if (bankFrom === bankTo) return;
+    const [moved] = banks.splice(bankFrom, 1);
+    banks.splice(Math.min(bankTo, banks.length), 0, moved);
+    this.banksBySection.update(map => new Map(map).set(sectionId, banks));
   }
 
   // =====================================================================

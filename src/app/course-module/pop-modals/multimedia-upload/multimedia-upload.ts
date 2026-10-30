@@ -13,6 +13,7 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { Router } from '@angular/router';
+import JSZip from 'jszip';
 import { Observable, Subscription } from 'rxjs';
 import { finalize } from 'rxjs/operators';
 
@@ -61,8 +62,113 @@ const GENERIC_ERROR =
   'Unable to complete the requested action due to a server error. Please try again later.'; // SRS Edge Case #5
 
 /** Resource Name: emoji (incl. flags, skin tones, joined/variation sequences) are not allowed; other special characters are. */
-const EMOJI_PATTERN = /[\p{Extended_Pictographic}\p{Emoji_Modifier}\p{Regional_Indicator}‍️⃣]/u;
+const EMOJI_PATTERN = /[\p{Extended_Pictographic}\p{Emoji_Modifier}\p{Regional_Indicator}\u200D\uFE0F\u20E3]/u;
 const NAME_EMOJI_MESSAGE = 'Emojis are not allowed.';
+
+// ---------------------------------------------------------------------
+// Office image compression (DOCX / PPTX / XLSX) - runs in the browser before upload
+// ---------------------------------------------------------------------
+/** DOCX / PPTX / XLSX are zip files; their images live in these folders. */
+const MEDIA_FOLDERS = ['word/media/', 'ppt/media/', 'xl/media/'] as const;
+const COMPRESSIBLE_EXTENSIONS: ReadonlySet<string> = new Set(['docx', 'pptx', 'xlsx']);
+/** Only images bigger than this are worth re-encoding. */
+const MIN_IMAGE_BYTES = 200 * 1024;
+/** Longest side (px) an embedded image is scaled down to. */
+const MAX_IMAGE_DIMENSION = 1600;
+const JPEG_QUALITY = 0.75;
+/** An image / the whole file is replaced only if the new version is at least 10% smaller. */
+const MIN_SAVING_RATIO = 0.9;
+/** Skip huge files so the browser tab does not run out of memory. */
+const MAX_COMPRESS_INPUT_BYTES = 150 * 1024 * 1024;
+
+function canvasToBlob(canvas: HTMLCanvasElement, type: string, quality?: number): Promise<Blob | null> {
+  return new Promise(resolve => canvas.toBlob(resolve, type, quality));
+}
+
+/**
+ * Re-encodes one embedded image. The file name and format are kept (a .png stays a PNG, a .jpg stays a JPEG)
+ * so the XML relationships and [Content_Types].xml inside the document stay valid.
+ * Returns null when nothing is gained.
+ */
+async function shrinkImage(data: Blob, isPng: boolean): Promise<Blob | null> {
+  const bitmap = await createImageBitmap(data);
+  try {
+    const scale = Math.min(1, MAX_IMAGE_DIMENSION / Math.max(bitmap.width, bitmap.height));
+    // A PNG that does not need scaling would only be re-saved at the same quality - skip it.
+    if (isPng && scale === 1) return null;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+
+    if (!isPng) {
+      ctx.fillStyle = '#ffffff'; // JPEG has no transparency
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+
+    const result = isPng
+      ? await canvasToBlob(canvas, 'image/png')
+      : await canvasToBlob(canvas, 'image/jpeg', JPEG_QUALITY);
+    return result && result.size < data.size * MIN_SAVING_RATIO ? result : null;
+  } finally {
+    bitmap.close();
+  }
+}
+
+/**
+ * Shrinks the large images inside a DOCX / PPTX / XLSX file.
+ * Never throws: if anything goes wrong or the saving is small, the ORIGINAL file is returned unchanged.
+ */
+async function compressOfficeImages(file: File): Promise<File> {
+  try {
+    if (file.size > MAX_COMPRESS_INPUT_BYTES || typeof createImageBitmap !== 'function') return file;
+
+    const zip = await JSZip.loadAsync(file);
+    let changed = false;
+
+    const mediaPaths = Object.keys(zip.files).filter(
+      path => !zip.files[path].dir && MEDIA_FOLDERS.some(folder => path.startsWith(folder)),
+    );
+
+    for (const path of mediaPaths) {
+      const ext = path.slice(path.lastIndexOf('.') + 1).toLowerCase();
+      if (ext !== 'jpg' && ext !== 'jpeg' && ext !== 'png') continue;
+
+      try {
+        const isPng = ext === 'png';
+        const raw = await zip.files[path].async('blob');
+        if (raw.size < MIN_IMAGE_BYTES) continue;
+
+        const original = raw.slice(0, raw.size, isPng ? 'image/png' : 'image/jpeg');
+        const smaller = await shrinkImage(original, isPng);
+        if (!smaller) continue;
+
+        // STORE: images are already compressed, so deflating them again only wastes time.
+        zip.file(path, smaller, { binary: true, compression: 'STORE' });
+        changed = true;
+      } catch {
+        // This one image could not be decoded - leave it as it is and carry on.
+      }
+    }
+
+    if (!changed) return file;
+
+    const blob = await zip.generateAsync({
+      type: 'blob',
+      compression: 'DEFLATE',
+      compressionOptions: { level: 6 },
+      mimeType: file.type || 'application/octet-stream',
+    });
+    if (blob.size >= file.size * MIN_SAVING_RATIO) return file;
+
+    return new File([blob], file.name, { type: file.type, lastModified: file.lastModified });
+  } catch {
+    return file;
+  }
+}
 
 type Field = 'name' | 'type';
 
@@ -422,7 +528,14 @@ export class MultimediaUpload implements OnInit {
         this.fileError.set(issue);
         return;
       }
-      this.acceptFile(picked, ext);
+
+      // DOCX / PPTX / XLSX: shrink the big embedded images before upload (returns the original if nothing is gained).
+      let toAccept = picked;
+      if (COMPRESSIBLE_EXTENSIONS.has(ext)) {
+        toAccept = await compressOfficeImages(picked);
+        if (token !== this.fileCheckToken) return; // a newer pick superseded this one
+      }
+      this.acceptFile(toAccept, ext);
     } catch {
       if (token === this.fileCheckToken) {
         this.discardFile();

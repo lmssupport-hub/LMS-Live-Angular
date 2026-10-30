@@ -162,7 +162,7 @@
           <span class="text-[13px] text-neutral-700">Modules - {{ moduleCount() }}</span>
         </div>
 
-        <!-- Modules list (NO progress icon, as requested) -->
+        <!-- Modules list: each row opens the content viewer for that section -->
         @if (error()) {
         <div class="mt-4 rounded-lg bg-red-50 p-3 text-center text-xs text-red-700" role="alert">
           {{ error() }}
@@ -187,9 +187,14 @@
           >
             @for (section of sections(); track section.id; let i = $index) {
             <li
-              class="pv-row flex shrink-0 items-center gap-4 rounded-xl bg-[#f3f3f3] px-2.5 py-1.5"
+              class="pv-row flex shrink-0 cursor-pointer items-center gap-4 rounded-xl bg-[#f3f3f3] px-2.5 py-1.5 outline-none transition-colors hover:bg-[#eaeaea] focus-visible:ring-2 focus-visible:ring-[#61b7c5]/40 motion-reduce:transition-none"
               [style.height]="rowHeight()"
               [style.animation-delay.ms]="250 + (i < 8 ? i : 8) * 60"
+              role="link"
+              tabindex="0"
+              [attr.aria-label]="'Open ' + section.name"
+              (click)="openSection(section)"
+              (keydown.enter)="openSection(section)"
             >
               <span class="grid aspect-square h-full shrink-0 place-items-center rounded-lg bg-white text-[13px] text-[#4b4b4b]">
                 {{ section.sectionOrder.toString().padStart(2, '0') }}

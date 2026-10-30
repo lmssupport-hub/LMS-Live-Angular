@@ -137,6 +137,25 @@ export class AdminDashboard {
       ];
     }
 
+    // Course Preview (/courses/:courseId/preview) and its content page (/courses/:courseId/sections/:sectionId/content)
+    // Flow: Content Management > Course List > Organize Modules > Course Preview
+    const previewMatch =
+      /^\/admin-dashboard\/courses\/(\d+)\/preview\/?$/.exec(path) ??
+      /^\/admin-dashboard\/courses\/(\d+)\/sections\/\d+\/content\/?$/.exec(path);
+    if (previewMatch) {
+      return [
+        { label: 'Content Management', link: null, plain: true },
+        { label: 'Course List', link: courseList, plain: true },
+        {
+          label: 'Organize Modules',
+          link: courseList,
+          queryParams: { organize: previewMatch[1] },
+          plain: true,
+        },
+        { label: 'Course Preview', link: null, plain: true },
+      ];
+    }
+
     // Question Bank page (any route under /admin-dashboard that contains "question-bank" / "questionbank").
     // Flow: Content Management > Course List > Organize Modules > Question Bank
     if (/^\/admin-dashboard\/.*question-?bank/i.test(path)) {

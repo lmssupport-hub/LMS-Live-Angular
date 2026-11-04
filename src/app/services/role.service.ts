@@ -26,6 +26,11 @@ export interface Category {
   features: Feature[];
 }
 
+/**
+ * Response of GET /api/roles/features.
+ * Only features that the logged-in admin's PACKAGE allows are returned, and
+ * feature.permissions holds the ALLOWED actions (not a selection).
+ */
 export interface FeatureCatalogEntry {
   categoryId: string;
   categoryName: string;
@@ -59,7 +64,10 @@ export interface PermissionRow {
   category: string | null;
   featureId: string;
   name: string;
+  /** What the admin has switched on for this role. */
   values: Permission;
+  /** What the admin's package allows. A switch is usable only when allowed[action] is true. */
+  allowed: Permission;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -95,15 +103,12 @@ export class RoleService {
     return this.http.delete<void>(`${this.baseUrl}/${id}`);
   }
 
+  /** Package-filtered catalog for the logged-in admin (NOT the full system catalog). */
   getFeatureCatalog(): Observable<FeatureCatalogEntry[]> {
-    return this.http.get<FeatureCatalogEntry[]>(`${environment.apiBaseUrl}/api/packages/features`);
+    return this.http.get<FeatureCatalogEntry[]>(`${this.baseUrl}/features`);
   }
 
-  /**
-   * CHANGED: now hits the real /api/invites endpoint (InviteController) and
-   * sends roleId (a Long on the backend) instead of a free-text category
-   * name, matching InviteDto.SendRequest exactly.
-   */
+  /** POST /api/invites - matches InviteDto.SendRequest. */
   invite(payload: { email: string; roleId: number }): Observable<void> {
     return this.http.post<void>(`${environment.apiBaseUrl}/api/invites`, payload);
   }

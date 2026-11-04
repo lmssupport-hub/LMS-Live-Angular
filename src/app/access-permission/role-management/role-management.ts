@@ -2,15 +2,16 @@ import { Component, HostListener, OnInit, computed, inject, signal } from '@angu
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { Router } from '@angular/router';
 import { finalize } from 'rxjs';
- 
+
 import { CreateRoleModal } from '../pop-modals/create-role-modal/create-role-modal';
 import { buildInviteForm, buildRoleForm } from '../pop-modals/forms/role-form';
 import { InvitePeopel } from '../pop-modals/invite-peopel/invite-peopel';
 import { RolePermission } from '../role-permission/role-permission';
- 
+
 import {
   Category,
   FeatureCatalogEntry,
+  Permission,
   PermissionAction,
   PermissionRow,
   Role,
@@ -19,17 +20,17 @@ import {
   getApiErrorMessage,
   getApiFieldErrors,
 } from '../../services/role.service';
- 
+
 type RoleFilterField = 'Role Name' | 'Status';
 type DialogKind = 'invite' | 'role' | null;
- 
+
 const ALLOWED_PERMISSION_CATEGORIES = new Set([
   'Authentication',
   'Content Management',
   'Course Management',
   'Enrollment',
 ]);
- 
+
 @Component({
   selector: 'app-role-management',
   imports: [InvitePeopel, CreateRoleModal, RolePermission],
@@ -40,43 +41,45 @@ export class RoleManagement implements OnInit {
   private readonly roleService = inject(RoleService);
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
- 
+
   readonly actions: PermissionAction[] = ['create', 'read', 'update', 'delete'];
   readonly roleFilterFields: RoleFilterField[] = ['Role Name', 'Status'];
- 
+
   readonly isAdmin = signal(true);
- 
+
   readonly roles = signal<Role[]>([]);
   readonly activeRoles = signal<Role[]>([]);
+  /** Package-filtered catalog of the logged-in admin (what the admin is allowed to hand out). */
   readonly features = signal<FeatureCatalogEntry[]>([]);
+  readonly featuresLoaded = signal(false);
   readonly loading = signal(false);
   readonly loadError = signal<string | null>(null);
- 
+
   readonly query = signal('');
   readonly roleFilterOpen = signal(false);
   readonly roleFilterDropdownUsed = signal(false);
   readonly roleFilterField = signal<RoleFilterField | null>(null);
   readonly roleFilterValue = signal<string | null>(null);
   readonly viewingRoleUsers = signal<Role | null>(null);
- 
+
   readonly dialog = signal<DialogKind>(null);
   readonly permissionStep = signal(false);
   readonly selectedRole = signal<Role | null>(null);
   readonly permissions = signal<PermissionRow[]>([]);
   readonly editingId = signal<number | null>(null);
- 
+
   readonly submitting = signal(false);
   readonly deletingRoleId = signal<number | null>(null);
   readonly actionError = signal<string | null>(null);
   readonly success = signal<string | null>(null);
- 
+
   readonly roleForm: FormGroup = buildRoleForm(this.fb, () =>
     this.roles()
       .filter((role) => role.id !== this.editingId())
       .map((role) => role.name),
   );
   readonly inviteForm: FormGroup = buildInviteForm(this.fb);
- 
+
   readonly filteredRoles = computed(() => {
     const q = this.query().trim().toLowerCase();
     const field = this.roleFilterField();
@@ -99,35 +102,37 @@ export class RoleManagement implements OnInit {
     }
     return [];
   });
- 
+
   private readonly hasSelectedPermission = computed(() =>
     this.permissions().some((row) => this.actions.some((action) => row.values[action])),
   );
- 
+
   private readonly initialPermissions = signal('');
 
-readonly canCreateRole = computed(() => this.hasSelectedPermission() && !this.submitting());
+  readonly canCreateRole = computed(() => this.hasSelectedPermission() && !this.submitting());
 
-readonly canUpdateRole = computed(
-  () =>
-    JSON.stringify(this.permissions()) !== this.initialPermissions() &&
-    !this.submitting()
-);
+  readonly canUpdateRole = computed(
+    () =>
+      this.hasSelectedPermission() &&
+      JSON.stringify(this.permissions()) !== this.initialPermissions() &&
+      !this.submitting(),
+  );
+
   ngOnInit(): void {
     this.loadRoles();
     this.loadActiveRoles();
     this.loadFeatures();
   }
- 
+
   @HostListener('document:click')
   onDocumentClick(): void {
     this.roleFilterOpen.set(false);
   }
- 
+
   manageCourses(): void {
     this.router.navigateByUrl('/courses');
   }
- 
+
   loadRoles(): void {
     this.loading.set(true);
     this.loadError.set(null);
@@ -142,7 +147,7 @@ readonly canUpdateRole = computed(
       },
     });
   }
- 
+
   private loadActiveRoles(): void {
     this.roleService.getActive().subscribe({
       next: (roles) => this.activeRoles.set(roles),
@@ -151,10 +156,15 @@ readonly canUpdateRole = computed(
       },
     });
   }
- 
+
+  /** Loads ONLY the features/actions the logged-in admin's package allows. */
   private loadFeatures(): void {
+    this.featuresLoaded.set(false);
     this.roleService.getFeatureCatalog().subscribe({
-      next: (features) => this.features.set(features),
+      next: (features) => {
+        this.features.set(features);
+        this.featuresLoaded.set(true);
+      },
       error: () => {
         this.actionError.set(
           'Unable to load the permission list. Creating or editing role permissions may not work until this loads.',
@@ -162,7 +172,7 @@ readonly canUpdateRole = computed(
       },
     });
   }
- 
+
   toggleRoleFilter(): void {
     this.roleFilterOpen.update((open) => !open);
     this.roleFilterDropdownUsed.set(true);
@@ -172,18 +182,18 @@ readonly canUpdateRole = computed(
     this.roleFilterField.set(field);
     this.roleFilterValue.set(null);
   }
- 
+
   selectRoleFilterValue(value: string): void {
     this.roleFilterValue.set(value);
     this.roleFilterOpen.set(false);
   }
- 
+
   clearRoleFilter(): void {
     this.roleFilterField.set(null);
     this.roleFilterValue.set(null);
     this.roleFilterOpen.set(false);
   }
- 
+
   openInvite(role?: Role): void {
     this.inviteForm.reset({ email: '', roleId: role?.id ?? null });
     this.actionError.set(null);
@@ -197,7 +207,7 @@ readonly canUpdateRole = computed(
   closeRoleUsers(): void {
     this.viewingRoleUsers.set(null);
   }
- 
+
   openRole(role?: Role): void {
     this.editingId.set(role?.id ?? null);
     this.selectedRole.set(role ?? null);
@@ -215,7 +225,7 @@ readonly canUpdateRole = computed(
     this.dialog.set(null);
     this.actionError.set(null);
   }
- 
+
   sendInvite(): void {
     if (this.inviteForm.invalid) {
       this.inviteForm.markAllAsTouched();
@@ -223,7 +233,6 @@ readonly canUpdateRole = computed(
     }
     this.submitting.set(true);
     this.actionError.set(null);
-    // CHANGED: payload is now { email, roleId } - matches InviteDto.SendRequest.
     const { email, roleId } = this.inviteForm.getRawValue();
     this.roleService.invite({ email, roleId: roleId as number }).subscribe({
       next: () => {
@@ -237,11 +246,11 @@ readonly canUpdateRole = computed(
       },
     });
   }
- 
+
   openRoleDetails(role: Role): void {
     this.openRole(role);
   }
- 
+
   deleteRole(role: Role): void {
     if (!this.isAdmin() || this.deletingRoleId() !== null) return;
     const confirmed = window.confirm(`Delete role "${role.name}"? This cannot be undone.`);
@@ -261,15 +270,15 @@ readonly canUpdateRole = computed(
         },
       });
   }
- 
+
   assignedUserCount(role: Role): number {
     return role.assignedUsers ?? 0;
   }
- 
+
   relativeLastActive(role: Role): string {
     return this.relativeTime(role.updatedAt);
   }
- 
+
   private relativeTime(iso: string): string {
     const then = new Date(iso).getTime();
     if (Number.isNaN(then)) return '—';
@@ -285,7 +294,13 @@ readonly canUpdateRole = computed(
     if (months < 12) return `${months}mo ago`;
     return `${Math.round(months / 12)}y ago`;
   }
- 
+
+  /**
+   * Builds the permission rows from the PACKAGE-FILTERED catalog.
+   * - catalog feature.permissions = what the package allows -> row.allowed
+   * - features with no allowed action are skipped (not shown at all)
+   * - previously saved role values are clipped to what the package still allows
+   */
   private buildPermissionRows(catalog: FeatureCatalogEntry[], existing?: Category[]): PermissionRow[] {
     const savedByFeature = new Map<string, Category['features'][number]>();
     for (const category of existing ?? []) {
@@ -293,13 +308,21 @@ readonly canUpdateRole = computed(
         savedByFeature.set(feature.id, feature);
       }
     }
- 
+
     const rows: PermissionRow[] = [];
     for (const category of catalog) {
       if (!ALLOWED_PERMISSION_CATEGORIES.has(category.categoryName)) continue;
- 
+
       let isFirstInCategory = true;
       for (const feature of category.features) {
+        const allowed: Permission = {
+          create: !!feature.permissions?.create,
+          read: !!feature.permissions?.read,
+          update: !!feature.permissions?.update,
+          delete: !!feature.permissions?.delete,
+        };
+        if (!this.actions.some((action) => allowed[action])) continue;
+
         const saved = savedByFeature.get(feature.id);
         rows.push({
           categoryId: category.categoryId,
@@ -307,11 +330,12 @@ readonly canUpdateRole = computed(
           category: isFirstInCategory ? category.categoryName : null,
           featureId: feature.id,
           name: feature.name,
+          allowed,
           values: {
-            create: saved?.permissions.create ?? false,
-            read: saved?.permissions.read ?? false,
-            update: saved?.permissions.update ?? false,
-            delete: saved?.permissions.delete ?? false,
+            create: !!(saved?.permissions.create && allowed.create),
+            read: !!(saved?.permissions.read && allowed.read),
+            update: !!(saved?.permissions.update && allowed.update),
+            delete: !!(saved?.permissions.delete && allowed.delete),
           },
         });
         isFirstInCategory = false;
@@ -319,16 +343,17 @@ readonly canUpdateRole = computed(
     }
     return rows;
   }
- 
+
   private toRoleCategoryPermissions(rows: PermissionRow[]): Category[] {
     const byCategory = new Map<string, Category>();
     for (const row of rows) {
       if (!ALLOWED_PERMISSION_CATEGORIES.has(row.categoryName)) continue;
-      const permissions = {
-        create: row.values.create,
-        read: row.values.read,
-        update: row.values.update,
-        delete: row.values.delete,
+      // Never send an action the package does not allow (backend re-checks too).
+      const permissions: Permission = {
+        create: row.values.create && row.allowed.create,
+        read: row.values.read && row.allowed.read,
+        update: row.values.update && row.allowed.update,
+        delete: row.values.delete && row.allowed.delete,
       };
       const hasAny = this.actions.some((action) => permissions[action]);
       if (!hasAny) continue;
@@ -345,15 +370,15 @@ readonly canUpdateRole = computed(
     }
     return Array.from(byCategory.values());
   }
- 
-   togglePermission(rowIndex: number, action: PermissionAction): void {
+
+  togglePermission(rowIndex: number, action: PermissionAction): void {
     if (!this.isAdmin()) return;
 
     this.permissions.update((rows) => {
       const next = rows.slice();
       const row = next[rowIndex];
 
-      if (!row || !ALLOWED_PERMISSION_CATEGORIES.has(row.categoryName)) {
+      if (!row || !ALLOWED_PERMISSION_CATEGORIES.has(row.categoryName) || !row.allowed[action]) {
         return rows;
       }
 
@@ -376,22 +401,19 @@ readonly canUpdateRole = computed(
       const categoryRows = rows.filter((row) => row.categoryId === categoryId);
       if (!categoryRows.length) return rows;
 
+      // "All on" only considers the actions the package allows.
       const allOn = categoryRows.every((row) =>
-        this.actions.every((action) => row.values[action]),
+        this.actions.every((action) => !row.allowed[action] || row.values[action]),
       );
 
       return rows.map((row) => {
         if (row.categoryId !== categoryId) return row;
 
-        return {
-          ...row,
-          values: {
-            create: !allOn,
-            read: !allOn,
-            update: !allOn,
-            delete: !allOn,
-          },
-        };
+        const values: Permission = { create: false, read: false, update: false, delete: false };
+        for (const action of this.actions) {
+          values[action] = row.allowed[action] ? !allOn : false;
+        }
+        return { ...row, values };
       });
     });
   }
@@ -406,18 +428,27 @@ readonly canUpdateRole = computed(
       this.actionError.set('The role could not be loaded. Please start again.');
       return;
     }
-    const rows = this.buildPermissionRows(
-  this.features(),
-  editingRole?.permissions
-);
+    if (!this.featuresLoaded()) {
+      this.actionError.set('Permissions are still loading. Please try again in a moment.');
+      this.loadFeatures();
+      return;
+    }
 
-this.permissions.set(rows);
-this.initialPermissions.set(JSON.stringify(rows));
+    const rows = this.buildPermissionRows(this.features(), editingRole?.permissions);
+
+    // Package has nothing enabled (no package / inactive / expired) -> stay on the modal and explain.
+    if (rows.length === 0) {
+      this.actionError.set('No features are enabled in your package. Please contact the app owner.');
+      return;
+    }
+
+    this.permissions.set(rows);
+    this.initialPermissions.set(JSON.stringify(rows));
     this.actionError.set(null);
     this.dialog.set(null);
     this.permissionStep.set(true);
   }
- 
+
   cancelPermissions(): void {
     this.permissionStep.set(false);
     this.selectedRole.set(null);
@@ -434,18 +465,18 @@ this.initialPermissions.set(JSON.stringify(rows));
       this.actionError.set('Role name is missing. Please start again.');
       return;
     }
- 
+
     const request: RoleRequest = {
       name,
       description: id !== null ? this.selectedRole()?.description : undefined,
       permissions: this.toRoleCategoryPermissions(this.permissions()),
     };
- 
+
     this.submitting.set(true);
     this.actionError.set(null);
- 
+
     const save$ = id !== null ? this.roleService.update(id, request) : this.roleService.create(request);
- 
+
     save$.subscribe({
       next: (saved) => {
         this.submitting.set(false);
@@ -467,16 +498,17 @@ this.initialPermissions.set(JSON.stringify(rows));
       },
     });
   }
- 
+
   private upsert(list: Role[], saved: Role): Role[] {
     const exists = list.some((r) => r.id === saved.id);
     return exists ? list.map((r) => (r.id === saved.id ? saved : r)) : [...list, saved];
   }
- 
+
   private flashSuccess(message: string): void {
     this.success.set(message);
     setTimeout(() => this.success.set(null), 3000);
   }
+
   readonly pageSize = 10;
   readonly currentPage = signal(1);
   readonly totalPages = computed(() => Math.max(1, Math.ceil(this.filteredRoles().length / this.pageSize)));
@@ -487,18 +519,16 @@ this.initialPermissions.set(JSON.stringify(rows));
     return roles.slice(startIndex, startIndex + this.pageSize);
   });
   readonly endItem = computed(() => Math.min(this.visiblePage() * this.pageSize, this.filteredRoles().length));
- 
+
   nextPage(): void {
     if (this.visiblePage() < this.totalPages()) {
       this.currentPage.set(this.visiblePage() + 1);
     }
   }
- 
+
   previousPage(): void {
     if (this.visiblePage() > 1) {
       this.currentPage.set(this.visiblePage() - 1);
     }
   }
- 
 }
- 

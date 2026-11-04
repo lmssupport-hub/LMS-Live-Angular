@@ -1,16 +1,14 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
- 
-// ASSUMPTION: adjust this import path to wherever role.service.ts actually
-// lives relative to this component's folder.
+
 import { PermissionAction, PermissionRow, Role } from '../../services/role.service';
- 
+
 export interface PermissionToggleEvent {
   rowIndex: number;
   action: PermissionAction;
   categoryId?: string;
 }
 
- @Component({
+@Component({
   selector: 'app-role-permission',
   imports: [],
   templateUrl: './role-permission.html',
@@ -25,7 +23,7 @@ export class RolePermission {
     'Create Role',
     'Role Permission',
   ]);
- 
+
   readonly role = input<Role | null>(null);
   readonly permissions = input.required<PermissionRow[]>();
   readonly actions = input<PermissionAction[]>(['create', 'read', 'update', 'delete']);
@@ -49,25 +47,31 @@ export class RolePermission {
   readonly cancel = output<void>();
   readonly search = output<string>();
   readonly navigateBreadcrumb = output<number>();
- 
+
+  /** True when the admin's package allows this action for the row's feature. */
+  isAllowed(row: PermissionRow, action: PermissionAction): boolean {
+    return !!row.allowed?.[action];
+  }
+
   onToggle(rowIndex: number, action: PermissionAction): void {
     if (!this.isAdmin()) return;
+    const row = this.permissions()[rowIndex];
+    if (!row || !this.isAllowed(row, action)) return;
     this.togglePermission.emit({ rowIndex, action });
   }
 
-onToggleCategory(categoryId: string): void {
-  if (!this.isAdmin()) return;
-  this.toggleCategory.emit(categoryId);
-}
+  onToggleCategory(categoryId: string): void {
+    if (!this.isAdmin()) return;
+    this.toggleCategory.emit(categoryId);
+  }
 
-isCategoryOn(categoryId: string): boolean {
-  const categoryRows = this.permissions().filter((row) => row.categoryId === categoryId);
-  if (!categoryRows.length) return false;
+  /** Category switch is ON when every action the package allows in this category is ON. */
+  isCategoryOn(categoryId: string): boolean {
+    const categoryRows = this.permissions().filter((row) => row.categoryId === categoryId);
+    if (!categoryRows.length) return false;
 
-  return categoryRows.every((row) =>
-    this.actions().every((action) => row.values[action]),
-  );
+    return categoryRows.every((row) =>
+      this.actions().every((action) => !this.isAllowed(row, action) || row.values[action]),
+    );
+  }
 }
-
-}
- 

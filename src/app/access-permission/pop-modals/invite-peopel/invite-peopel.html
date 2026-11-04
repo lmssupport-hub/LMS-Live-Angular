@@ -14,7 +14,7 @@
       type="button"
       (click)="cancelled.emit()"
       [disabled]="submitting()"
-      class="absolute right-0 top-0 grid h-11 w-11 place-items-center rounded-tr-2xl rounded-bl-2xl bg-[#F7635B] text-white shadow-md transition hover:bg-[#e5544c] disabled:opacity-50"
+      class="absolute right-0 top-0 grid h-11 w-11 cursor-pointer place-items-center rounded-tr-2xl rounded-bl-2xl bg-[#F7635B] text-white shadow-md transition hover:bg-[#e5544c] disabled:cursor-not-allowed disabled:opacity-50"
       aria-label="Close"
     >
       <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
@@ -69,7 +69,7 @@
       <div class="relative mt-4" (click)="closeRoleDropdown()" (keydown.escape)="closeRoleDropdown()">
         <button
           type="button"
-          class="flex h-14 w-full items-center justify-between rounded-xl bg-[#f5f5f5] px-4 text-left text-xs text-gray-800 outline-none transition focus-visible:ring-2 focus-visible:ring-[#62b9c8]/50"
+          class="flex h-14 w-full cursor-pointer items-center justify-between rounded-xl bg-[#f5f5f5] px-4 text-left text-xs text-gray-800 outline-none transition focus-visible:ring-2 focus-visible:ring-[#62b9c8]/50"
           aria-label="Role"
           aria-haspopup="listbox"
           [attr.aria-expanded]="roleDropdownOpen()"
@@ -103,7 +103,7 @@
               <button
                 type="button"
                 role="option"
-                class="flex min-h-11 w-full items-center px-4 text-left text-xs text-gray-800 transition hover:bg-gray-50 focus-visible:bg-gray-50 focus-visible:outline-none"
+                class="flex min-h-11 w-full cursor-pointer items-center px-4 text-left text-xs text-gray-800 transition hover:bg-gray-50 focus-visible:bg-gray-50 focus-visible:outline-none"
                 [attr.aria-selected]="form().value.roleId === role.id"
                 (click)="selectRole(role.id)"
               >
@@ -128,9 +128,9 @@
       <!-- Actions -->
       <div class="mt-7 flex justify-center gap-4">
         <button
-          (click)="cancelled.emit()"
+          (click)="requestCancel()"
           [disabled]="submitting()"
-          class="h-11 w-32 rounded-full bg-[#f6f6f6] text-xs font-medium text-gray-600 transition hover:bg-[#ececec] disabled:opacity-50"
+          class="h-11 w-32 cursor-pointer rounded-full bg-[#f6f6f6] text-xs font-medium text-gray-600 transition hover:bg-[#ececec] disabled:cursor-not-allowed disabled:opacity-50"
           type="button"
         >
           Cancel
@@ -138,7 +138,7 @@
         <button
           [disabled]="submitting()"
           [class.invite-submit-button-ready]="form().controls['email'].valid"
-          class="h-11 w-32 rounded-full bg-[#f6f6f6] text-xs font-medium text-gray-700 hover:bg-[#41ACC0] hover:text-gray-600 transition disabled:opacity-50"
+          class="h-11 w-32 cursor-pointer rounded-full bg-[#f6f6f6] text-xs font-medium text-gray-700 hover:bg-[#41ACC0] hover:text-gray-600 transition disabled:cursor-not-allowed disabled:opacity-50"
           type="submit"
         >
           {{ submitting() ? 'Sending…' : 'Send Invite' }}
@@ -147,4 +147,37 @@
     </form>
   </section>
 </div>
- 
+
+<!-- Discard confirmation popup -->
+@if (confirmOpen()) {
+  <div class="fixed inset-0 z-[60] grid place-items-center bg-black/50 p-5 backdrop-blur-sm">
+    <section
+      class="w-[min(430px,92vw)] rounded-2xl bg-white p-7 shadow-2xl"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="invite-discard-title"
+      aria-describedby="invite-discard-message"
+    >
+      <h2 id="invite-discard-title" class="text-xl font-semibold text-gray-900">Discard changes?</h2>
+      <p id="invite-discard-message" class="mt-2 text-sm text-neutral-500">
+        Your invite will not be sent and the details you entered will be lost.
+      </p>
+      <div class="mt-6 flex w-full items-center justify-end gap-3">
+        <button
+          type="button"
+          class="cursor-pointer rounded-lg bg-neutral-100 px-4 py-2 text-sm text-neutral-700 transition hover:bg-neutral-200"
+          (click)="keepEditing()"
+        >
+          Keep editing
+        </button>
+        <button
+          type="button"
+          class="cursor-pointer rounded-lg bg-[#ff5d59] px-4 py-2 text-sm text-white transition hover:bg-[#e5544c]"
+          (click)="confirmDiscard()"
+        >
+          Discard changes
+        </button>
+      </div>
+    </section>
+  </div>
+}

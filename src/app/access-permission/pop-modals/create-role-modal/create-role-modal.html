@@ -13,7 +13,7 @@
       type="button"
       (click)="cancelled.emit()"
       [disabled]="submitting()"
-      class="absolute right-0 top-0 grid h-11 w-11 place-items-center rounded-tr-2xl rounded-bl-2xl bg-[#F7635B] text-white shadow-md transition hover:bg-[#e5544c] disabled:opacity-50"
+      class="absolute right-0 top-0 grid h-11 w-11 cursor-pointer place-items-center rounded-tr-2xl rounded-bl-2xl bg-[#F7635B] text-white shadow-md transition hover:bg-[#e5544c] disabled:cursor-not-allowed disabled:opacity-50"
       aria-label="Close"
     >
       <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true" focusable="false">
@@ -71,13 +71,13 @@
       }
       <div class="flex justify-center gap-5 pt-6">
         <button
-          (click)="cancelled.emit()"
-          class="h-11 w-36 rounded-lg bg-[#f6f6f6] text-xs"
+          (click)="requestCancel()"
+          class="h-11 w-36 cursor-pointer rounded-lg bg-[#f6f6f6] text-xs font-medium text-gray-600 transition hover:bg-[#ececec]"
           type="button"
         >
           Cancel</button
         ><button
-          class="h-11 w-36 rounded-lg bg-[#f6f6f6] text-xs transition hover:bg-[#62b9c8] hover:text-white"
+          class="h-11 w-36 cursor-pointer rounded-lg bg-[#f6f6f6] text-xs transition hover:bg-[#62b9c8] hover:text-white"
           type="submit"
         >
           Next ›
@@ -86,5 +86,37 @@
     </form>
   </section>
 </div>
- 
- 
+
+<!-- Discard confirmation popup -->
+@if (confirmOpen()) {
+  <div class="fixed inset-0 z-[60] grid place-items-center bg-black/50 p-5 backdrop-blur-sm">
+    <section
+      class="w-[min(430px,92vw)] rounded-2xl bg-white p-7 shadow-2xl"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="role-discard-title"
+      aria-describedby="role-discard-message"
+    >
+      <h2 id="role-discard-title" class="text-xl font-semibold">Discard changes?</h2>
+      <p id="role-discard-message" class="mt-2 text-sm text-neutral-500">
+        The role will not be saved and the details you entered will be lost.
+      </p>
+      <div class="mt-6 flex w-full items-center justify-end gap-3">
+        <button
+          type="button"
+          class="cursor-pointer rounded-lg bg-neutral-100 px-4 py-2 text-sm text-neutral-700 transition hover:bg-neutral-200"
+          (click)="keepEditing()"
+        >
+          Keep editing
+        </button>
+        <button
+          type="button"
+          class="cursor-pointer rounded-lg bg-[#ff5d59] px-4 py-2 text-sm text-white transition hover:bg-[#e5544c]"
+          (click)="confirmDiscard()"
+        >
+          Discard changes
+        </button>
+      </div>
+    </section>
+  </div>
+}

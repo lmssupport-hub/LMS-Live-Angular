@@ -28,10 +28,7 @@
   <main class="relative z-10 px-4 pb-7 sm:px-6 lg:px-10">
     @if (viewingRoleUsers(); as role) {
     <div class="mb-5 flex items-center gap-4">
-      <button type="button" (click)="closeRoleUsers()"
-        class="h-10 cursor-pointer rounded-full border border-transparent bg-white px-7 text-xs text-[#333] transition-all duration-300 ease-out hover:border-[#7fb9c7] hover:bg-[#4694A4] hover:text-[#f4fbfc] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#61b7c5]/50">
-        ‹ Back
-      </button>
+      
       <div>
         <h1 class="text-xl font-semibold 2xl:text-[25px]">{{ role.name }}</h1>
         <h2 class="mt-1 mb-4 text-sm font-semibold">View {{ role.name }} Details and Information</h2>
@@ -73,7 +70,7 @@
           placeholder="Find by User Name   , Email Address, or Role" aria-label="Find by User Name, Email Address, or Role"
           type="search" />
         @if (query()) {
-        <button type="button" class="ml-1 shrink-0 text-red-500 hover:text-red-600" aria-label="Clear search"
+        <button type="button" class="ml-1 shrink-0 cursor-pointer text-red-500 hover:text-red-600" aria-label="Clear search"
           (click)="findInput.value = ''; query.set('')">
           <svg viewBox="0 0 24 24" class="h-4 w-4 fill-none stroke-current" stroke-width="2.5" stroke-linecap="round">
             <path d="M18 6 6 18M6 6l12 12" />
@@ -97,7 +94,7 @@
             <button
               type="button"
               role="menuitem"
-              class="dd-item"
+              class="dd-item cursor-pointer"
               [style.--i]="0"
               [style.--r]="roleFilterValues().length"
               (click)="clearRoleFilter()"
@@ -106,7 +103,7 @@
             <button
               type="button"
               role="menuitem"
-              class="dd-item"
+              class="dd-item cursor-pointer"
               [style.--i]="i + 1"
               [style.--r]="roleFilterValues().length - i - 1"
               [class.font-semibold]="roleFilterValue() === value"
@@ -122,7 +119,7 @@
             <button
               type="button"
               role="menuitem"
-              class="dd-item"
+              class="dd-item cursor-pointer"
               [style.--i]="i"
               [style.--r]="roleFilterFields.length - 1 - i"
               (click)="selectRoleFilterField(field)"
@@ -132,7 +129,7 @@
           </div>
         </div>
         <button type="button"
-          class="relative z-10 flex h-10 w-[180px] items-center justify-center gap-2 rounded-full border-0 bg-white px-4 text-xs outline-none transition focus-visible:ring-2 focus-visible:ring-[#62b9c8]/40"
+          class="relative z-10 flex h-10 w-[180px] cursor-pointer items-center justify-center gap-2 rounded-full border-0 bg-white px-4 text-xs outline-none transition focus-visible:ring-2 focus-visible:ring-[#62b9c8]/40"
           [class]="roleFilterOpen()
             ? 'shadow-[0_8px_10px_-4px_rgba(0,0,0,.35)]'
             : 'shadow-sm hover:shadow-md'"
@@ -167,7 +164,7 @@
       } @else if (loadError()) {
       <div class="flex min-h-0 flex-1 flex-col items-center justify-center gap-4 text-sm">
         <p class="max-w-md text-center text-red-600">{{ loadError() }}</p>
-        <button type="button" (click)="loadRoles()" class="rounded-full bg-[#62b9c8] px-5 py-2 text-white">
+        <button type="button" (click)="loadRoles()" class="cursor-pointer rounded-full bg-[#62b9c8] px-5 py-2 text-white">
           Try again
         </button>
       </div>
@@ -230,7 +227,7 @@
                     [disabled]="!isAdmin() || deletingRoleId() === role.id"
                     [attr.aria-label]="'Delete ' + role.name"
                     title="Delete"
-                    (click)="deleteRole(role)"
+                    (click)="requestDelete(role)"
                   >
                     <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                       <path stroke-linecap="round" d="M4 7h16M9 7V4h6v3m-8 0 1 13h8l1-13M10 11v5m4-5v5" />
@@ -265,4 +262,18 @@
 <app-create-role-modal [form]="roleForm" [editing]="!!editingId()" [error]="actionError()" (cancelled)="closeDialog()"
   (continued)="nextToPermissions()" />
 }
+}
+
+<!-- Delete confirmation popup -->
+@if (deleteTarget(); as target) {
+  <div class="fixed inset-0 z-[80] grid place-items-center bg-black/50 p-5 backdrop-blur-sm">
+    <section class="w-[min(430px,92vw)] rounded-2xl bg-white p-7 shadow-2xl" role="alertdialog" aria-modal="true" aria-labelledby="delete-role-title" aria-describedby="delete-role-message">
+      <h2 id="delete-role-title" class="text-xl font-semibold">Delete role</h2>
+      <p id="delete-role-message" class="mt-2 text-sm text-neutral-500">Delete role "{{ target.name }}"? This cannot be undone.</p>
+      <div class="mt-6 flex w-full items-center justify-end gap-3">
+        <button type="button" class="cursor-pointer rounded-lg bg-neutral-100 px-4 py-2 text-sm text-neutral-700 transition hover:bg-neutral-200" (click)="cancelDelete()">Cancel</button>
+        <button type="button" class="cursor-pointer rounded-lg bg-[#ff5d59] px-4 py-2 text-sm text-white transition hover:bg-[#e5544c]" (click)="confirmDelete()">Delete role</button>
+      </div>
+    </section>
+  </div>
 }

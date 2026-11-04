@@ -57,7 +57,7 @@
                       [disabled]="!isAdmin()"
                       (click)="onToggleCategory(row.categoryId)"
                       [style.backgroundColor]="isCategoryOn(row.categoryId) ? '#61b7c5' : '#e9e9e9'"
-                      class="relative h-[19px] w-[49.48px] rounded-[35px] focus:outline-none focus:ring-2 focus:ring-[#61b7c5]/30 disabled:cursor-not-allowed disabled:opacity-50"
+                      class="relative h-[19px] w-[49.48px] cursor-pointer rounded-[35px] focus:outline-none focus:ring-2 focus:ring-[#61b7c5]/30 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       <span
                         class="absolute top-1/2 h-[15px] w-[15px] -translate-y-1/2 rounded-full bg-white shadow transition-all duration-200"
@@ -81,7 +81,7 @@
                           [class.opacity-30]="!isAllowed(row, action)"
                           (click)="onToggle(rowIndex, action)"
                           [style.backgroundColor]="row.values[action] ? '#61b7c5' : '#e9e9e9'"
-                          class="relative h-[19px] w-[49.48px] rounded-[35px] focus:outline-none focus:ring-2 focus:ring-[#61b7c5]/30 disabled:cursor-not-allowed disabled:opacity-50"
+                          class="relative h-[19px] w-[49.48px] cursor-pointer rounded-[35px] focus:outline-none focus:ring-2 focus:ring-[#61b7c5]/30 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           <span
                             class="absolute top-1/2 h-[15px] w-[15px] -translate-y-1/2 rounded-full bg-white shadow transition-all duration-200"
@@ -108,7 +108,7 @@
                       [class.opacity-30]="!isAllowed(row, action)"
                       (click)="onToggle(rowIndex, action)"
                       [style.backgroundColor]="row.values[action] ? '#61b7c5' : '#e9e9e9'"
-                      class="relative h-[19px] w-[49.48px] rounded-[35px] focus:outline-none focus:ring-2 focus:ring-[#61b7c5]/30 disabled:cursor-not-allowed disabled:opacity-50"
+                      class="relative h-[19px] w-[49.48px] cursor-pointer rounded-[35px] focus:outline-none focus:ring-2 focus:ring-[#61b7c5]/30 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       <span
                         class="absolute top-1/2 h-[15px] w-[15px] -translate-y-1/2 rounded-full bg-white shadow transition-all duration-200"
@@ -131,9 +131,9 @@
     <div class="mt-6 flex justify-end gap-5 2xl:mt-9 2xl:gap-8">
       <button
         type="button"
-        (click)="cancel.emit()"
+        (click)="requestCancel()"
         [disabled]="submitting()"
-        class="h-10 w-36 cursor-pointer rounded-lg border border-transparent bg-white text-xs transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-50 2xl:h-12 2xl:w-48 2xl:rounded-xl 2xl:text-[14px]"
+        class="h-10 w-36 cursor-pointer rounded-lg border border-transparent bg-white text-xs text-gray-600 transition-all duration-300 hover:bg-[#ececec] disabled:cursor-not-allowed disabled:opacity-50 2xl:h-12 2xl:w-48 2xl:rounded-xl 2xl:text-[14px]"
       >
         Cancel
       </button>
@@ -148,3 +148,37 @@
     </div>
   </main>
 </div>
+
+<!-- Discard confirmation popup -->
+@if (confirmOpen()) {
+  <div class="fixed inset-0 z-[80] grid place-items-center bg-black/50 p-5 backdrop-blur-sm">
+    <section
+      class="w-[min(430px,92vw)] rounded-2xl bg-white p-7 shadow-2xl"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="permission-discard-title"
+      aria-describedby="permission-discard-message"
+    >
+      <h2 id="permission-discard-title" class="text-xl font-semibold">Discard changes?</h2>
+      <p id="permission-discard-message" class="mt-2 text-sm text-neutral-500">
+        The role permissions will not be saved and your changes will be lost.
+      </p>
+      <div class="mt-6 flex w-full items-center justify-end gap-3">
+        <button
+          type="button"
+          class="cursor-pointer rounded-lg bg-neutral-100 px-4 py-2 text-sm text-neutral-700 transition hover:bg-neutral-200"
+          (click)="keepEditing()"
+        >
+          Keep editing
+        </button>
+        <button
+          type="button"
+          class="cursor-pointer rounded-lg bg-[#ff5d59] px-4 py-2 text-sm text-white transition hover:bg-[#e5544c]"
+          (click)="confirmDiscard()"
+        >
+          Discard changes
+        </button>
+      </div>
+    </section>
+  </div>
+}

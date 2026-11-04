@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 
 import { PermissionAction, PermissionRow, Role } from '../../services/role.service';
 
@@ -37,6 +37,9 @@ export class RolePermission {
     this.permissions().filter((row) => Object.values(row.values).some(Boolean)).length,
   );
 
+  /** Discard-confirmation popup shown when the Cancel button is clicked. */
+  protected readonly confirmOpen = signal(false);
+
   isToggleOnlyCategory(categoryName: string): boolean {
     return categoryName === 'Authentication';
   }
@@ -73,5 +76,18 @@ export class RolePermission {
     return categoryRows.every((row) =>
       this.actions().every((action) => !this.isAllowed(row, action) || row.values[action]),
     );
+  }
+
+  protected requestCancel(): void {
+    this.confirmOpen.set(true);
+  }
+
+  protected keepEditing(): void {
+    this.confirmOpen.set(false);
+  }
+
+  protected confirmDiscard(): void {
+    this.confirmOpen.set(false);
+    this.cancel.emit();
   }
 }

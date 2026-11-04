@@ -21,6 +21,9 @@ export class InvitePeopel {
   readonly cancelled = output<void>();
   readonly submitted = output<void>();
   protected readonly roleDropdownOpen = signal(false);
+
+  /** Discard-confirmation popup shown when the Cancel button is clicked. */
+  protected readonly confirmOpen = signal(false);
  
   protected selectedRoleName(): string | null {
     const id = this.form().value.roleId as number | null;
@@ -43,5 +46,17 @@ export class InvitePeopel {
     roleControl.markAsTouched();
     this.closeRoleDropdown();
   }
+
+  protected requestCancel(): void {
+    this.confirmOpen.set(true);
+  }
+
+  protected keepEditing(): void {
+    this.confirmOpen.set(false);
+  }
+
+  protected confirmDiscard(): void {
+    this.confirmOpen.set(false);
+    this.cancelled.emit();
+  }
 }
- 

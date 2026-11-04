@@ -1,5 +1,5 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
@@ -68,6 +68,21 @@ export interface PermissionRow {
   values: Permission;
   /** What the admin's package allows. A switch is usable only when allowed[action] is true. */
   allowed: Permission;
+}
+
+/**
+ * Role Management switches between views inside ONE route (no URL change),
+ * so the header breadcrumb can't read them from the URL. RoleManagement
+ * publishes the current step here and AdminDashboard reads it.
+ *   null         -> role list
+ *   'permission' -> Role Permission screen (create / edit role)
+ *   'assign'     -> assigned users list of a role
+ */
+export type RolePageStep = 'permission' | 'assign' | null;
+
+@Injectable({ providedIn: 'root' })
+export class RolePageState {
+  readonly step = signal<RolePageStep>(null);
 }
 
 @Injectable({ providedIn: 'root' })

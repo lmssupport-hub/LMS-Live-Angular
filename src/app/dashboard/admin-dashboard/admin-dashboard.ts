@@ -6,6 +6,7 @@ import { catchError, filter, map, startWith, switchMap } from 'rxjs/operators';
 
 import { AuthService } from '../../services/auth';
 import { PackageService } from '../../services/package.service';
+import { RolePageState } from '../../services/role.service';
 
 /** One item of the header breadcrumb. `link: null` = not clickable (current page or plain parent). */
 interface Breadcrumb {
@@ -28,6 +29,7 @@ export class AdminDashboard {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly packagesApi = inject(PackageService);
+  private readonly rolePageState = inject(RolePageState);
 
   // ---------- header: identity ----------
   // Single source of truth lives in AuthService (firstName + lastName, falls
@@ -176,6 +178,21 @@ export class AdminDashboard {
         },
         { label: 'Question Bank', link: null, plain: true },
       ];
+    }
+
+    // Role Management (/admin-dashboard/role). Its views share one URL, so the step comes from RolePageState.
+    // Flow: Content Management > Role List
+    //       Content Management > Role List > Permission
+    //       Content Management > Role List > Assign List
+    if (/^\/admin-dashboard\/role\/?$/.test(path)) {
+      const step = this.rolePageState.step();
+      const crumbs: Breadcrumb[] = [
+        { label: 'Content Management', link: null, plain: true },
+        { label: 'Role List', link: null, plain: true },
+      ];
+      if (step === 'permission') crumbs.push({ label: 'Permission', link: null, plain: true });
+      if (step === 'assign') crumbs.push({ label: 'Assign List', link: null, plain: true });
+      return crumbs;
     }
 
 

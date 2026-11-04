@@ -1,4 +1,4 @@
-import { Component, HostListener, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, HostListener, OnInit, computed, effect, inject, signal } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { Router } from '@angular/router';
 import { finalize } from 'rxjs';
@@ -15,6 +15,7 @@ import {
   PermissionAction,
   PermissionRow,
   Role,
+  RolePageState,
   RoleRequest,
   RoleService,
   getApiErrorMessage,
@@ -70,6 +71,8 @@ export class RoleManagement implements OnInit {
 
   readonly submitting = signal(false);
   readonly deletingRoleId = signal<number | null>(null);
+  /** Role waiting for delete confirmation (drives the delete popup). */
+  readonly deleteTarget = signal<Role | null>(null);
   readonly actionError = signal<string | null>(null);
   readonly success = signal<string | null>(null);
 
@@ -117,6 +120,18 @@ export class RoleManagement implements OnInit {
       JSON.stringify(this.permissions()) !== this.initialPermissions() &&
       !this.submitting(),
   );
+
+  private readonly pageState = inject(RolePageState);
+
+  constructor() {
+    // Tell the header breadcrumb which view is showing (these views share one URL).
+    effect(() => {
+      this.pageState.step.set(
+        this.permissionStep() ? 'permission' : this.viewingRoleUsers() ? 'assign' : null,
+      );
+    });
+    inject(DestroyRef).onDestroy(() => this.pageState.step.set(null));
+  }
 
   ngOnInit(): void {
     this.loadRoles();
@@ -251,10 +266,24 @@ export class RoleManagement implements OnInit {
     this.openRole(role);
   }
 
-  deleteRole(role: Role): void {
+  /** Delete icon click: opens the confirmation popup. */
+  requestDelete(role: Role): void {
     if (!this.isAdmin() || this.deletingRoleId() !== null) return;
-    const confirmed = window.confirm(`Delete role "${role.name}"? This cannot be undone.`);
-    if (!confirmed) return;
+    this.deleteTarget.set(role);
+  }
+
+  cancelDelete(): void {
+    this.deleteTarget.set(null);
+  }
+
+  confirmDelete(): void {
+    const role = this.deleteTarget();
+    this.deleteTarget.set(null);
+    if (role) this.deleteRole(role);
+  }
+
+  private deleteRole(role: Role): void {
+    if (!this.isAdmin() || this.deletingRoleId() !== null) return;
     this.deletingRoleId.set(role.id);
     this.roleService
       .delete(role.id)

@@ -1,6 +1,7 @@
 import { Component, HostListener, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { Router } from '@angular/router';
+import { finalize } from 'rxjs';
  
 import { CreateRoleModal } from '../pop-modals/create-role-modal/create-role-modal';
 import { buildInviteForm, buildRoleForm } from '../pop-modals/forms/role-form';
@@ -53,8 +54,10 @@ export class RoleManagement implements OnInit {
  
   readonly query = signal('');
   readonly roleFilterOpen = signal(false);
+  readonly roleFilterDropdownUsed = signal(false);
   readonly roleFilterField = signal<RoleFilterField | null>(null);
   readonly roleFilterValue = signal<string | null>(null);
+  readonly viewingRoleUsers = signal<Role | null>(null);
  
   readonly dialog = signal<DialogKind>(null);
   readonly permissionStep = signal(false);
@@ -63,10 +66,15 @@ export class RoleManagement implements OnInit {
   readonly editingId = signal<number | null>(null);
  
   readonly submitting = signal(false);
+  readonly deletingRoleId = signal<number | null>(null);
   readonly actionError = signal<string | null>(null);
   readonly success = signal<string | null>(null);
  
-  readonly roleForm: FormGroup = buildRoleForm(this.fb, () => this.roles().map((r) => r.name));
+  readonly roleForm: FormGroup = buildRoleForm(this.fb, () =>
+    this.roles()
+      .filter((role) => role.id !== this.editingId())
+      .map((role) => role.name),
+  );
   readonly inviteForm: FormGroup = buildInviteForm(this.fb);
  
   readonly filteredRoles = computed(() => {
@@ -80,7 +88,7 @@ export class RoleManagement implements OnInit {
       return matchesQuery && matchesFilter;
     });
   });
- 
+
   readonly roleFilterValues = computed(() => {
     const field = this.roleFilterField();
     if (field === 'Role Name') {
@@ -96,9 +104,15 @@ export class RoleManagement implements OnInit {
     this.permissions().some((row) => this.actions.some((action) => row.values[action])),
   );
  
-  readonly canCreateRole = computed(() => this.hasSelectedPermission() && !this.submitting());
-  readonly canUpdateRole = computed(() => this.hasSelectedPermission() && !this.submitting());
- 
+  private readonly initialPermissions = signal('');
+
+readonly canCreateRole = computed(() => this.hasSelectedPermission() && !this.submitting());
+
+readonly canUpdateRole = computed(
+  () =>
+    JSON.stringify(this.permissions()) !== this.initialPermissions() &&
+    !this.submitting()
+);
   ngOnInit(): void {
     this.loadRoles();
     this.loadActiveRoles();
@@ -107,9 +121,7 @@ export class RoleManagement implements OnInit {
  
   @HostListener('document:click')
   onDocumentClick(): void {
-    if (this.roleFilterOpen()) {
-      this.roleFilterOpen.set(false);
-    }
+    this.roleFilterOpen.set(false);
   }
  
   manageCourses(): void {
@@ -135,7 +147,7 @@ export class RoleManagement implements OnInit {
     this.roleService.getActive().subscribe({
       next: (roles) => this.activeRoles.set(roles),
       error: () => {
-        /* non-fatal — the "Available Roles" dropdown just stays empty */
+        /* Non-fatal: the invite dialog remains available without role options. */
       },
     });
   }
@@ -153,8 +165,9 @@ export class RoleManagement implements OnInit {
  
   toggleRoleFilter(): void {
     this.roleFilterOpen.update((open) => !open);
+    this.roleFilterDropdownUsed.set(true);
   }
- 
+
   selectRoleFilterField(field: RoleFilterField): void {
     this.roleFilterField.set(field);
     this.roleFilterValue.set(null);
@@ -171,21 +184,34 @@ export class RoleManagement implements OnInit {
     this.roleFilterOpen.set(false);
   }
  
-  openInvite(): void {
-    // CHANGED: reset with roleId (was category) to match buildInviteForm.
-    this.inviteForm.reset({ email: '', roleId: null });
+  openInvite(role?: Role): void {
+    this.inviteForm.reset({ email: '', roleId: role?.id ?? null });
     this.actionError.set(null);
     this.dialog.set('invite');
   }
+
+  openRoleUsers(role: Role): void {
+    this.viewingRoleUsers.set(role);
+  }
+
+  closeRoleUsers(): void {
+    this.viewingRoleUsers.set(null);
+  }
  
-  openRole(): void {
-    this.roleForm.reset({ roleName: '' });
-    this.editingId.set(null);
+  openRole(role?: Role): void {
+    this.editingId.set(role?.id ?? null);
+    this.selectedRole.set(role ?? null);
+    this.roleForm.reset({ roleName: role?.name ?? '' });
     this.actionError.set(null);
     this.dialog.set('role');
   }
- 
+
   closeDialog(): void {
+    if (this.dialog() === 'role') {
+      this.roleForm.reset({ roleName: '' });
+      this.editingId.set(null);
+      this.selectedRole.set(null);
+    }
     this.dialog.set(null);
     this.actionError.set(null);
   }
@@ -197,7 +223,6 @@ export class RoleManagement implements OnInit {
     }
     this.submitting.set(true);
     this.actionError.set(null);
- 
     // CHANGED: payload is now { email, roleId } - matches InviteDto.SendRequest.
     const { email, roleId } = this.inviteForm.getRawValue();
     this.roleService.invite({ email, roleId: roleId as number }).subscribe({
@@ -214,39 +239,27 @@ export class RoleManagement implements OnInit {
   }
  
   openRoleDetails(role: Role): void {
-    this.enterPermissionScreen(role);
-  }
- 
-  selectAvailableRole(value: string): void {
-    if (!value) return;
-    const role = this.activeRoles().find((r) => String(r.id) === value);
-    if (role) {
-      this.enterPermissionScreen(role);
-    }
-  }
- 
-  private enterPermissionScreen(role: Role): void {
-    this.selectedRole.set(role);
-    this.editingId.set(role.id);
-    this.permissions.set(this.buildPermissionRows(this.features(), role.permissions));
-    this.actionError.set(null);
-    this.permissionStep.set(true);
+    this.openRole(role);
   }
  
   deleteRole(role: Role): void {
-    if (!this.isAdmin()) return;
+    if (!this.isAdmin() || this.deletingRoleId() !== null) return;
     const confirmed = window.confirm(`Delete role "${role.name}"? This cannot be undone.`);
     if (!confirmed) return;
-    this.roleService.delete(role.id).subscribe({
-      next: () => {
-        this.roles.update((list) => list.filter((r) => r.id !== role.id));
-        this.activeRoles.update((list) => list.filter((r) => r.id !== role.id));
-        this.flashSuccess(`"${role.name}" was deleted.`);
-      },
-      error: (err) => {
-        this.actionError.set(getApiErrorMessage(err, 'Unable to delete this role.'));
-      },
-    });
+    this.deletingRoleId.set(role.id);
+    this.roleService
+      .delete(role.id)
+      .pipe(finalize(() => this.deletingRoleId.set(null)))
+      .subscribe({
+        next: () => {
+          this.roles.update((list) => list.filter((r) => r.id !== role.id));
+          this.activeRoles.update((list) => list.filter((r) => r.id !== role.id));
+          this.flashSuccess(`"${role.name}" was deleted.`);
+        },
+        error: (err) => {
+          this.actionError.set(getApiErrorMessage(err, 'Unable to delete this role.'));
+        },
+      });
   }
  
   assignedUserCount(role: Role): number {
@@ -288,7 +301,6 @@ export class RoleManagement implements OnInit {
       let isFirstInCategory = true;
       for (const feature of category.features) {
         const saved = savedByFeature.get(feature.id);
-        const isEnrollment = category.categoryName === 'Enrollment';
         rows.push({
           categoryId: category.categoryId,
           categoryName: category.categoryName,
@@ -297,9 +309,9 @@ export class RoleManagement implements OnInit {
           name: feature.name,
           values: {
             create: saved?.permissions.create ?? false,
-            read: isEnrollment ? false : saved?.permissions.read ?? false,
-            update: isEnrollment ? false : saved?.permissions.update ?? false,
-            delete: isEnrollment ? false : saved?.permissions.delete ?? false,
+            read: saved?.permissions.read ?? false,
+            update: saved?.permissions.update ?? false,
+            delete: saved?.permissions.delete ?? false,
           },
         });
         isFirstInCategory = false;
@@ -312,12 +324,11 @@ export class RoleManagement implements OnInit {
     const byCategory = new Map<string, Category>();
     for (const row of rows) {
       if (!ALLOWED_PERMISSION_CATEGORIES.has(row.categoryName)) continue;
-      const isEnrollment = row.categoryName === 'Enrollment';
       const permissions = {
         create: row.values.create,
-        read: isEnrollment ? false : row.values.read,
-        update: isEnrollment ? false : row.values.update,
-        delete: isEnrollment ? false : row.values.delete,
+        read: row.values.read,
+        update: row.values.update,
+        delete: row.values.delete,
       };
       const hasAny = this.actions.some((action) => permissions[action]);
       if (!hasAny) continue;
@@ -335,26 +346,73 @@ export class RoleManagement implements OnInit {
     return Array.from(byCategory.values());
   }
  
-  togglePermission(rowIndex: number, action: PermissionAction): void {
+   togglePermission(rowIndex: number, action: PermissionAction): void {
     if (!this.isAdmin()) return;
+
     this.permissions.update((rows) => {
       const next = rows.slice();
       const row = next[rowIndex];
-      if (!row || !ALLOWED_PERMISSION_CATEGORIES.has(row.categoryName)) return rows;
-      if (row.categoryName === 'Enrollment' && action !== 'create') return rows;
-      next[rowIndex] = { ...row, values: { ...row.values, [action]: !row.values[action] } };
+
+      if (!row || !ALLOWED_PERMISSION_CATEGORIES.has(row.categoryName)) {
+        return rows;
+      }
+
+      next[rowIndex] = {
+        ...row,
+        values: {
+          ...row.values,
+          [action]: !row.values[action],
+        },
+      };
+
       return next;
     });
   }
- 
+
+  toggleCategory(categoryId: string): void {
+    if (!this.isAdmin()) return;
+
+    this.permissions.update((rows) => {
+      const categoryRows = rows.filter((row) => row.categoryId === categoryId);
+      if (!categoryRows.length) return rows;
+
+      const allOn = categoryRows.every((row) =>
+        this.actions.every((action) => row.values[action]),
+      );
+
+      return rows.map((row) => {
+        if (row.categoryId !== categoryId) return row;
+
+        return {
+          ...row,
+          values: {
+            create: !allOn,
+            read: !allOn,
+            update: !allOn,
+            delete: !allOn,
+          },
+        };
+      });
+    });
+  }
+
   nextToPermissions(): void {
     if (this.roleForm.invalid) {
       this.roleForm.markAllAsTouched();
       return;
     }
-    this.selectedRole.set(null);
-    this.editingId.set(null);
-    this.permissions.set(this.buildPermissionRows(this.features()));
+    const editingRole = this.editingId() === null ? null : this.selectedRole();
+    if (this.editingId() !== null && !editingRole) {
+      this.actionError.set('The role could not be loaded. Please start again.');
+      return;
+    }
+    const rows = this.buildPermissionRows(
+  this.features(),
+  editingRole?.permissions
+);
+
+this.permissions.set(rows);
+this.initialPermissions.set(JSON.stringify(rows));
     this.actionError.set(null);
     this.dialog.set(null);
     this.permissionStep.set(true);
@@ -365,12 +423,13 @@ export class RoleManagement implements OnInit {
     this.selectedRole.set(null);
     this.editingId.set(null);
     this.permissions.set([]);
+    this.roleForm.reset({ roleName: '' });
     this.actionError.set(null);
   }
- 
+
   saveRole(): void {
     const id = this.editingId();
-    const name = id !== null ? this.selectedRole()?.name : (this.roleForm.value.roleName as string);
+    const name = String(this.roleForm.getRawValue().roleName ?? '').trim();
     if (!name) {
       this.actionError.set('Role name is missing. Please start again.');
       return;

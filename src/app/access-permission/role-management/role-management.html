@@ -3,7 +3,10 @@
   <app-role-permission [role]="selectedRole()" [permissions]="permissions()" [actions]="actions"
     [isEditing]="editingId() !== null" [isAdmin]="isAdmin()" [submitting]="submitting()"
     [canSave]="editingId() !== null ? canUpdateRole() : canCreateRole()"
-    (togglePermission)="togglePermission($event.rowIndex, $event.action)" (save)="saveRole()"
+    [error]="actionError()"
+    (togglePermission)="togglePermission($event.rowIndex, $event.action)"
+    (toggleCategory)="toggleCategory($event)"
+    (save)="saveRole()"
     (cancel)="cancelPermissions()" />
   } @else {
  
@@ -34,19 +37,44 @@
   </div>
   }
  
-  <main class="relative z-10 px-5 pb-6 pt-2 md:px-[8.5%]">
+  <main class="relative z-10 px-5 pb-10 pt-2 md:px-[4%]">
+    @if (viewingRoleUsers(); as role) {
+    <div class="mb-5 flex items-center gap-4">
+      <button type="button" (click)="closeRoleUsers()"
+        class="h-10 cursor-pointer rounded-full border border-transparent bg-white px-7 text-xs text-[#333] transition-all duration-300 ease-out hover:border-[#7fb9c7] hover:bg-[#4694A4] hover:text-[#f4fbfc] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#61b7c5]/50">
+        ‹ Back
+      </button>
+      <div>
+        <h1 class="text-xl font-semibold 2xl:text-[25px]">{{ role.name }}</h1>
+        <h2 class="mt-1 mb-4 text-sm font-semibold">View {{ role.name }} Details and Information</h2>
+      </div>
+    </div>
+
+    <section class="flex min-h-[520px] flex-col overflow-hidden rounded-2xl bg-white" [attr.aria-label]="'Details for ' + role.name">
+      <div class="min-h-0 flex-1 overflow-y-auto">
+        <table class="w-full table-fixed border-separate border-spacing-0 text-left text-xs">
+          <colgroup><col class="w-[30%]" /><col class="w-[38%]" /><col class="w-[18%]" /><col class="w-[14%]" /></colgroup>
+          <thead>
+            <tr>
+              <th class="sticky top-0 z-10 truncate border-b border-[#ededed] bg-white px-6 py-4 font-semibold">Role Name</th>
+              <th class="sticky top-0 z-10 truncate border-b border-[#ededed] bg-white px-6 py-4 font-semibold">Email Address</th>
+              <th class="sticky top-0 z-10 truncate border-b border-[#ededed] bg-white px-6 py-4 font-semibold">Status</th>
+              <th class="sticky top-0 z-10 truncate border-b border-[#ededed] bg-white px-6 py-4 font-semibold">More Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td colspan="4" class="px-6 py-6 text-xs text-[#9a9a9a]">
+                User details are unavailable because this app does not expose a role-specific user list.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+    } @else {
     <div
-      class="sticky top-16 z-30 -mx-5 flex flex-wrap items-center gap-3 bg-[#f5f5f5] px-5 py-2  md:-mx-[8.5%] md:px-[8.5%]">
-      <label class="flex h-10 w-44  items-center rounded-full bg-white px-4 text-xs">
-        <select aria-label="Available Roles" [disabled]="!isAdmin()"
-          class="w-full bg-transparent outline-none disabled:cursor-not-allowed disabled:opacity-50" value=""
-          (change)="selectAvailableRole($any($event.target).value)">
-          <option>Available Roles</option>
-          @for (role of activeRoles(); track role.id) {
-          <option [value]="role.id">{{ role.name }}</option>
-          }
-        </select>
-      </label>
+      class="sticky top-16 z-30 -mx-5 flex flex-wrap items-center gap-3 bg-[#f5f5f5] px-5 py-2  md:-mx-[4%] md:px-[4%]">
       <label class="flex h-10 w-40 items-center rounded-full bg-white px-3 text-xs">
         <svg viewBox="0 0 24 24" class="mr-2 h-4 w-4 shrink-0 fill-none stroke-[#777]" stroke-width="1.8">
           <circle cx="11" cy="11" r="7" />
@@ -54,7 +82,7 @@
         </svg>
         <input #findInput (input)="query.set(findInput.value)"
           class="w-full min-w-0 bg-transparent outline-none [&::-webkit-search-cancel-button]:hidden"
-          placeholder="Find by User Name, Email Address, or Role" aria-label="Find by User Name, Email Address, or Role"
+          placeholder="Find by User Name   , Email Address, or Role" aria-label="Find by User Name, Email Address, or Role"
           type="search" />
         @if (query()) {
         <button type="button" class="ml-1 shrink-0 text-red-500 hover:text-red-600" aria-label="Clear search"
@@ -65,12 +93,64 @@
         </button>
         }
       </label>
-      <div class="relative z-30" (click)="$event.stopPropagation()">
+      <div class="relative z-30 h-10 w-[180px]" (click)="$event.stopPropagation()">
+        <div
+          class="dd-clip"
+          [class.dd-open]="roleFilterOpen()"
+          [class.dd-closing]="roleFilterDropdownUsed() && !roleFilterOpen()"
+          [attr.inert]="roleFilterOpen() ? null : ''"
+          [attr.aria-hidden]="!roleFilterOpen()"
+          role="menu"
+          aria-label="Filter roles"
+        >
+          <div class="dd-panel">
+            <div class="dd-spacer" aria-hidden="true"></div>
+            @if (roleFilterField()) {
+            <button
+              type="button"
+              role="menuitem"
+              class="dd-item"
+              [style.--i]="0"
+              [style.--r]="roleFilterValues().length"
+              (click)="clearRoleFilter()"
+            >All {{ roleFilterField() }} values</button>
+            @for (value of roleFilterValues(); track value; let i = $index) {
+            <button
+              type="button"
+              role="menuitem"
+              class="dd-item"
+              [style.--i]="i + 1"
+              [style.--r]="roleFilterValues().length - i - 1"
+              [class.font-semibold]="roleFilterValue() === value"
+              (click)="selectRoleFilterValue(value)"
+            >{{ value }}</button>
+            } @empty {
+            <button type="button" role="menuitem" class="dd-item cursor-default text-neutral-400" disabled>
+              No values available
+            </button>
+            }
+            } @else {
+            @for (field of roleFilterFields; track field; let i = $index) {
+            <button
+              type="button"
+              role="menuitem"
+              class="dd-item"
+              [style.--i]="i"
+              [style.--r]="roleFilterFields.length - 1 - i"
+              (click)="selectRoleFilterField(field)"
+            >{{ field }}</button>
+            }
+            }
+          </div>
+        </div>
         <button type="button"
-          class="flex h-10 w-40 items-center justify-center gap-2 rounded-full border-0 bg-white px-4 text-xs shadow-sm outline-none transition hover:shadow-md focus-visible:ring-2 focus-visible:ring-[#62b9c8]/40"
+          class="relative z-10 flex h-10 w-[180px] items-center justify-center gap-2 rounded-full border-0 bg-white px-4 text-xs outline-none transition focus-visible:ring-2 focus-visible:ring-[#62b9c8]/40"
+          [class]="roleFilterOpen()
+            ? 'shadow-[0_8px_10px_-4px_rgba(0,0,0,.35)]'
+            : 'shadow-sm hover:shadow-md'"
           aria-label="Filter roles" aria-haspopup="menu" [attr.aria-expanded]="roleFilterOpen()"
           (click)="toggleRoleFilter()">
-          <span class="max-w-28 truncate">{{
+          <span class="max-w-28 truncate font-medium text-[#555]">{{
             roleFilterValue() || roleFilterField() || 'Filter'
             }}</span>
           <svg viewBox="0 0 24 24" class="h-4 w-4 shrink-0 fill-none stroke-[#666]" stroke-width="2.2"
@@ -78,36 +158,6 @@
             <path d="M4 6h16M7 12h10M10 18h4" stroke-linecap="round" />
           </svg>
         </button>
-        @if (roleFilterOpen()) {
-        <div
-          class="absolute left-0 top-10 max-h-72 w-40 overflow-y-auto rounded-[28px] bg-white py-2 text-center shadow-[0_14px_25px_rgba(0,0,0,.2)] ring-1 ring-black/5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-          role="menu">
-          @if (roleFilterField()) {
-          <button type="button" role="menuitem"
-            class="block h-10 w-full border-b border-neutral-100 px-3 text-[9px] text-[#555] transition last:border-0 hover:bg-[#f6f6f6]"
-            (click)="clearRoleFilter()">
-            All {{ roleFilterField() }} values
-          </button>
-          @for (value of roleFilterValues(); track value) {
-          <button type="button" role="menuitem"
-            class="block h-10 w-full border-b border-neutral-100 px-3 text-[9px] text-[#555] transition last:border-0 hover:bg-[#f6f6f6]"
-            [class.font-semibold]="roleFilterValue() === value" (click)="selectRoleFilterValue(value)">
-            {{ value }}
-          </button>
-          } @empty {
-          <p class="px-3 py-3 text-[9px] text-neutral-400">No values available</p>
-          }
-          } @else {
-          @for (field of roleFilterFields; track field) {
-          <button type="button" role="menuitem"
-            class="block h-10 w-full border-b border-neutral-100 px-3 text-[9px] text-[#555] transition last:border-0 hover:bg-[#f6f6f6]"
-            [attr.data-role-filter-field]="field" (click)="selectRoleFilterField(field)">
-            {{ field }}
-          </button>
-          }
-          }
-        </div>
-        }
       </div>
       <button (click)="openInvite()" [disabled]="!isAdmin()"
         class="ml-auto h-10 cursor-pointer rounded-full border-0 border-transparent bg-white px-7 text-xs text-[#333] transition-all duration-300 ease-out enabled:hover:border-[#7fb9c7] enabled:hover:bg-[#4694A4] enabled:hover:text-[#f4fbfc] enabled:hover:shadow-[0_8px_18px_-2px_rgba(70,160,180,0.65),0_3px_8px_rgba(120,200,215,0.3)] enabled:focus-visible:border-[#7fb9c7] enabled:focus-visible:bg-[#4694A4] enabled:focus-visible:text-[#f4fbfc] enabled:focus-visible:shadow-[0_8px_18px_-2px_rgba(70,160,180,0.65),0_3px_8px_rgba(120,200,215,0.3)] focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
@@ -121,7 +171,7 @@
       </button>
     </div>
  
-    <section class="mt-6 overflow-hidden rounded-2xl bg-white">
+   <section class="mt-6 overflow-hidden rounded-2xl bg-white lg:mx-[calc(40px-4%)]">
       @if (loading()) {
       <div class="grid min-h-[420px] place-items-center text-sm text-[#888]">
         Loading roles…
@@ -152,38 +202,52 @@
                 <div class="flex items-center gap-3">
                   <span
                     class="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-gradient-to-br from-[#62b9c8] to-[#324f65] text-[10px] font-semibold text-white">{{
-                    role.name.charAt(0) }}</span><span>{{ role.name }}</span>
+                    role.name.charAt(0)                                         }}</span><span>{{ role.name }}</span>
                 </div>
               </td>
               <td class="px-4" [attr.data-assigned-users]="role.id">{{ assignedUserCount(role) }}</td>
               <td class="px-4">{{ role.status }}</td>
               <td class="px-4">{{ relativeLastActive(role) }}</td>
               <td class="px-4">
-                <div class="flex items-center gap-5">
- 
-                  <!-- Edit -->
-                  <button (click)="openRoleDetails(role)" [disabled]="!isAdmin()"
-                    class="text-[#666] transition-colors hover:text-[#62b9c8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#62b9c8]/40 disabled:cursor-not-allowed disabled:opacity-50"
-                    type="button" [attr.aria-label]="'Edit ' + role.name">
-                    <svg viewBox="0 0 24 24" class="h-[20px] w-[20px]" fill="none" stroke="currentColor"
-                      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                      <!-- Reference-style pencil -->
-                      <path d="M4 20l4.2-.9L19 8.3a2 2 0 0 0-2.8-2.8L5.4 16.3 4 20Z" />
-                      <path d="M14.7 6.7l2.8 2.8" />
+                <div class="flex items-center gap-2">
+                  <button
+                    type="button"
+                    class="grid size-8 cursor-pointer place-items-center rounded-full border-0 bg-[#61b7c5] text-white shadow-sm outline-none transition hover:bg-[#459aa7] focus-visible:ring-2 focus-visible:ring-[#61b7c5]/50 disabled:cursor-not-allowed disabled:opacity-50"
+                    [disabled]="!isAdmin()"
+                    [attr.aria-label]="'View users assigned to ' + role.name"
+                    title="View users assigned to role"
+                    (click)="openRoleUsers(role)"
+                  >
+                    <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M19 8v6M22 11h-6" />
                     </svg>
                   </button>
- 
-                  <!-- Delete -->
-                  <button (click)="deleteRole(role)" [disabled]="!isAdmin()"
-                    class="text-[#666] transition-colors hover:text-red-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/30 disabled:cursor-not-allowed disabled:opacity-50"
-                    type="button" [attr.aria-label]="'Delete ' + role.name">
-                    <svg viewBox="0 0 24 24" class="h-[20px] w-[20px]" fill="currentColor" aria-hidden="true">
-                      <!-- Reference-style trash -->
-                      <path d="M6.5 7h11l-.7 13H7.2L6.5 7Z" />
-                      <path d="M9 4h6l1 2H8l1-2h1Z" />
+
+                  <button
+                    type="button"
+                    class="grid size-8 cursor-pointer place-items-center rounded-full border-0 bg-[#61b7c5] text-white shadow-sm outline-none transition hover:bg-[#459aa7] focus-visible:ring-2 focus-visible:ring-[#61b7c5]/50 disabled:cursor-not-allowed disabled:opacity-50"
+                    [disabled]="!isAdmin()"
+                    [attr.aria-label]="'Edit ' + role.name"
+                    title="Edit"
+                    (click)="openRoleDetails(role)"
+                  >
+                    <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
                     </svg>
                   </button>
- 
+
+                  <button
+                    type="button"
+                    class="grid size-8 cursor-pointer place-items-center rounded-full border-0 bg-[#61b7c5] text-white shadow-sm outline-none transition hover:bg-red-500 focus-visible:ring-2 focus-visible:ring-red-300 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-[#61b7c5]"
+                    [disabled]="!isAdmin() || deletingRoleId() === role.id"
+                    [attr.aria-label]="'Delete ' + role.name"
+                    title="Delete"
+                    (click)="deleteRole(role)"
+                  >
+                    <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                      <path stroke-linecap="round" d="M4 7h16M9 7V4h6v3m-8 0 1 13h8l1-13M10 11v5m4-5v5" />
+                    </svg>
+                  </button>
                 </div>
               </td>
             </tr>
@@ -246,6 +310,7 @@
  
       </div>
     </div>
+    }
   </main>
   }
 </div>

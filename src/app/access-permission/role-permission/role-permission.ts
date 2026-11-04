@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
  
 // ASSUMPTION: adjust this import path to wherever role.service.ts actually
 // lives relative to this component's folder.
@@ -7,9 +7,10 @@ import { PermissionAction, PermissionRow, Role } from '../../services/role.servi
 export interface PermissionToggleEvent {
   rowIndex: number;
   action: PermissionAction;
+  categoryId?: string;
 }
- 
-@Component({
+
+ @Component({
   selector: 'app-role-permission',
   imports: [],
   templateUrl: './role-permission.html',
@@ -32,8 +33,18 @@ export class RolePermission {
   readonly isAdmin = input(true);
   readonly submitting = input(false);
   readonly canSave = input(false);
- 
+  readonly error = input<string | null>(null);
+
+  readonly selectedCount = computed(() =>
+    this.permissions().filter((row) => Object.values(row.values).some(Boolean)).length,
+  );
+
+  isToggleOnlyCategory(categoryName: string): boolean {
+    return categoryName === 'Authentication';
+  }
+
   readonly togglePermission = output<PermissionToggleEvent>();
+  readonly toggleCategory = output<string>();
   readonly save = output<void>();
   readonly cancel = output<void>();
   readonly search = output<string>();
@@ -43,5 +54,20 @@ export class RolePermission {
     if (!this.isAdmin()) return;
     this.togglePermission.emit({ rowIndex, action });
   }
+
+onToggleCategory(categoryId: string): void {
+  if (!this.isAdmin()) return;
+  this.toggleCategory.emit(categoryId);
+}
+
+isCategoryOn(categoryId: string): boolean {
+  const categoryRows = this.permissions().filter((row) => row.categoryId === categoryId);
+  if (!categoryRows.length) return false;
+
+  return categoryRows.every((row) =>
+    this.actions().every((action) => row.values[action]),
+  );
+}
+
 }
  

@@ -124,6 +124,19 @@ export interface UserPackageAssignment {
   packageId: number;
 }
 
+/**
+ * One day of permanent revenue (GET /api/packages/revenue).
+ * Comes from the package_purchases ledger, so it survives expiry / unassign / delete.
+ */
+export interface RevenuePoint {
+  /** yyyy-MM-dd */
+  date: string;
+  /** Total price of every package assigned on that date. */
+  amount: number;
+  /** How many packages were assigned on that date. */
+  count: number;
+}
+
 // ---------------------------------------------------------------------
 // PackageService — all HTTP communication with /api/packages/**.
 // Stateless: every method is a request/response, nothing is cached or
@@ -199,6 +212,11 @@ export class PackageService {
   /** Removes the package from one admin (Super Admin only). */
   unassignFromUser(packageId: number, userId: number): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/${packageId}/admins/${userId}`);
+  }
+
+  /** Permanent daily revenue for the Super Admin dashboard chart (Super Admin only). */
+  getRevenue(): Observable<RevenuePoint[]> {
+    return this.http.get<RevenuePoint[]>(`${this.baseUrl}/revenue`);
   }
 }
 

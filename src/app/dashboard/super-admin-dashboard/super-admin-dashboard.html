@@ -191,6 +191,23 @@
     <nav
       class="fixed left-0 top-16 z-10 hidden h-[calc(100vh-4rem)] w-[clamp(48px,4.5vw,84px)] flex-col items-center justify-center gap-8 sm:flex"
     >
+
+      <!-- Dashboard Home -->
+      <a
+        routerLink="super-admin-dashboard-home"
+        routerLinkActive="text-white"
+        class="group flex flex-col items-center gap-1 text-white/90 transition hover:text-white"
+        title="Dashboard"
+        aria-label="Dashboard"
+      >
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="m3 10 9-7 9 7v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+          <path d="M9 22V12h6v10"></path>
+        </svg>
+        <span class="text-[10px] leading-tight">Dashboard</span>
+      </a>
+
+
       <!-- Package Management -->
       <a
         routerLink="package"

@@ -1,0 +1,309 @@
+<section class="relative flex h-[calc(100vh-4.5rem)] flex-col px-5 pt-2 md:px-10" aria-labelledby="dashboard-title">
+  <div class="mb-4 flex shrink-0 flex-wrap items-end justify-between gap-4">
+    <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+      <h1 id="dashboard-title" class="text-[28px] font-semibold leading-tight text-[#60b9c9] sm:text-[30px]">
+        Hi {{ headerName() }}
+      </h1>
+      <p class="text-sm text-[#444]">Welcome Back</p>
+    </div>
+
+    <div class="flex flex-wrap items-center justify-end gap-3">
+      <div class="relative z-30 h-10 w-[180px]" (click)="$event.stopPropagation()">
+        <div
+          class="dd-clip"
+          [class.dd-open]="openDropdown()"
+          [class.dd-closing]="ddUsed() && !openDropdown()"
+          [attr.inert]="openDropdown() ? null : ''"
+          [attr.aria-hidden]="!openDropdown()"
+          role="menu"
+        >
+          <div class="dd-panel">
+            <div class="dd-spacer" aria-hidden="true"></div>
+            @for (option of filterOptions; track option; let i = $index) {
+              <button
+                type="button"
+                role="menuitem"
+                class="dd-item"
+                [style.--i]="i"
+                [style.--r]="filterOptions.length - 1 - i"
+                [class.font-semibold]="selectedPeriod() === option"
+                (click)="selectPeriod(option)"
+              >{{ option }}</button>
+            }
+          </div>
+        </div>
+
+        <button
+          type="button"
+          class="relative z-10 flex h-10 w-[180px] cursor-pointer items-center justify-center gap-2 rounded-[20px] border-0 bg-white px-4 text-xs font-medium text-[#555] outline-none transition focus-visible:ring-2 focus-visible:ring-[#62b9c8]/40"
+          [class]="openDropdown()
+            ? 'shadow-[0_8px_10px_-4px_rgba(0,0,0,.35)]'
+            : 'shadow-sm hover:shadow-md'"
+          aria-label="Filter dashboard data"
+          aria-haspopup="menu"
+          [attr.aria-expanded]="openDropdown()"
+          (click)="toggleDropdown(); ddUsed.set(true)"
+        >
+          <span>Filter</span>
+          <svg viewBox="0 0 24 24" class="h-4 w-4 fill-none stroke-[#555]" stroke-width="2.2" aria-hidden="true">
+            <path d="M4 6h16M7 12h10M10 18h4" stroke-linecap="round"></path>
+          </svg>
+        </button>
+      </div>
+
+      @if (selectedPeriod() === 'Custom Date Range') {
+        <div class="flex flex-wrap items-center gap-2" aria-label="Custom date range">
+          <label class="sr-only" for="dashboard-start-date">Start date</label>
+          <input
+            id="dashboard-start-date"
+            type="date"
+            class="h-10 rounded-lg border-0 bg-white px-3 text-xs text-[#555] shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-[#60b9c9]"
+            [value]="customStartDate()"
+            (change)="onStartDateChange($event)"
+          />
+          <span class="text-xs text-neutral-500" aria-hidden="true">to</span>
+          <label class="sr-only" for="dashboard-end-date">End date</label>
+          <input
+            id="dashboard-end-date"
+            type="date"
+            class="h-10 rounded-lg border-0 bg-white px-3 text-xs text-[#555] shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-[#60b9c9]"
+            [value]="customEndDate()"
+            (change)="onEndDateChange($event)"
+          />
+        </div>
+      }
+    </div>
+  </div>
+
+  @if (dateRangeError()) {
+    <p class="mb-3 shrink-0 text-right text-xs text-red-600" role="alert">{{ dateRangeError() }}</p>
+  }
+
+  <!-- Only this area scrolls; the Hi / Filter row above stays fixed -->
+  <div class="flex min-h-0 flex-1 flex-col gap-[14px] overflow-y-auto pb-3">
+  <section class="flex min-h-[230px] flex-1 flex-col rounded-[15px] bg-white px-7 py-4 shadow-[0_1px_3px_rgba(0,0,0,0.02)]" aria-labelledby="revenue-title">
+    <div class="flex items-center justify-between gap-4">
+      <h2 id="revenue-title" class="text-[15px] font-medium text-[#555]">Revenue</h2>
+      <span
+        class="inline-flex items-center gap-2 text-[10px] text-[#555]"
+        [attr.aria-label]="'Revenue ' + formatCurrency(totalPlanValue()) + ', change ' + formatRevenueChange() + ' compared with the previous period'"
+      >
+        <span class="h-2 w-2 rounded-full bg-[#7064cc]" aria-hidden="true"></span>
+        <span>Revenue</span>
+        <span class="font-medium text-[#7064cc]">{{ formatCompactCurrency(totalPlanValue()) }}</span>
+        <span
+          class="font-medium"
+          [class.text-green-600]="(revenueChangePercent() ?? 0) > 0"
+          [class.text-red-600]="(revenueChangePercent() ?? 0) < 0"
+          [class.text-neutral-400]="revenueChangePercent() === null || revenueChangePercent() === 0"
+        >{{ formatRevenueChange() }}</span>
+      </span>
+    </div>
+
+    @if (revenueLoading()) {
+      <div class="grid min-h-[245px] place-items-center text-xs text-neutral-400" role="status">Loading revenue…</div>
+    } @else if (revenueError()) {
+      <div class="flex min-h-[245px] flex-col items-center justify-center gap-3 text-center">
+        <p class="text-xs text-neutral-500" role="alert">{{ revenueError() }}</p>
+        <button type="button" class="rounded-full bg-[#60b9c9] px-4 py-2 text-xs font-medium text-white transition hover:bg-[#4694a4] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4694a4]" (click)="retryRevenue()">Retry</button>
+      </div>
+    } @else {
+      @if (revenuePlans().length) {
+        <section class="mt-3 flex min-h-0 flex-1 flex-col" aria-labelledby="revenue-chart-title">
+          <h3 id="revenue-chart-title" class="sr-only">Revenue chart</h3>
+          <div class="min-h-0 flex-1 overflow-x-auto overflow-y-hidden" role="img" [attr.aria-label]="revenueChart().ariaLabel">
+            <svg
+              class="block h-full min-h-[170px]"
+              [style.width.px]="revenueChart().width"
+              [attr.viewBox]="'0 0 ' + revenueChart().width + ' 270'"
+              preserveAspectRatio="none"
+              aria-hidden="true"
+            >
+              <defs>
+                <linearGradient id="revenue-area-gradient" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0%" stop-color="#62bdcb" stop-opacity="0.42" />
+                  <stop offset="100%" stop-color="#62bdcb" stop-opacity="0.03" />
+                </linearGradient>
+                <clipPath id="revenue-chart-clip">
+                  <rect
+                    x="76"
+                    y="20"
+                    [attr.width]="revenueChart().plotWidth * revenueChartProgress()"
+                    height="200"
+                  />
+                </clipPath>
+              </defs>
+
+              @for (line of revenueChart().gridLines; track line.y) {
+                <line x1="76" [attr.x2]="revenueChart().width - 36" [attr.y1]="line.y" [attr.y2]="line.y" stroke="#e8e8ec" stroke-dasharray="3 5" />
+                <text x="66" [attr.y]="line.y + 3" text-anchor="end" fill="#888" font-size="10">{{ formatCompactCurrency(line.value) }}</text>
+              }
+
+              <g clip-path="url(#revenue-chart-clip)">
+                <path [attr.d]="revenueChart().areaPath" fill="url(#revenue-area-gradient)" />
+                <path
+                  [attr.d]="revenueChart().linePath"
+                  fill="none"
+                  stroke="#62bdcb"
+                  stroke-width="3"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                @for (point of revenueChart().points; track point.name) {
+                  <circle [attr.cx]="point.x" [attr.cy]="point.y" r="4" fill="white" [attr.stroke]="point.color" stroke-width="3" />
+                  <!-- Bigger invisible circle = easy hover target -->
+                  <circle
+                    [attr.cx]="point.x"
+                    [attr.cy]="point.y"
+                    r="14"
+                    fill="transparent"
+                    style="cursor: pointer"
+                    (mouseenter)="hoveredPoint.set(point)"
+                    (mouseleave)="hoveredPoint.set(null)"
+                  />
+                }
+              </g>
+
+              @for (point of revenueChart().points; track point.name) {
+                <text [attr.x]="point.x" y="250" text-anchor="middle" fill="#666" font-size="11">{{ point.label }}</text>
+              }
+
+              <!-- Hover tooltip: date + revenue of that day -->
+              @if (hoveredPoint(); as hp) {
+                <g pointer-events="none">
+                  <line [attr.x1]="hp.x" [attr.x2]="hp.x" [attr.y1]="hp.y" y2="220" stroke="#62bdcb" stroke-dasharray="3 3" />
+                  <g [attr.transform]="'translate(' + tooltipX(hp.x) + ' ' + (hp.y > 60 ? hp.y - 46 : hp.y + 14) + ')'">
+                    <rect width="120" height="36" rx="8" fill="#2f3a3d" />
+                    <text x="60" y="14" text-anchor="middle" fill="#cfd8da" font-size="10">{{ hp.label }}</text>
+                    <text x="60" y="28" text-anchor="middle" fill="white" font-size="12" font-weight="600">{{ formatCurrency(hp.value) }}</text>
+                  </g>
+                </g>
+              }
+            </svg>
+          </div>
+        </section>
+
+      } @else {
+        <div class="grid min-h-[150px] place-items-center text-center">
+          <div>
+            <p class="text-sm font-medium text-[#555]">No packages were assigned during the selected period.</p>
+            <p class="mt-1 text-xs text-neutral-400">Revenue will appear here when an admin gets a package.</p>
+          </div>
+        </div>
+      }
+    }
+  </section>
+
+  <div class="grid shrink-0 grid-cols-1 gap-[18px] md:grid-cols-2 xl:grid-cols-3">
+    <section class="flex h-[clamp(215px,34vh,270px)] flex-col rounded-[12px] bg-white px-[15px] py-4 shadow-[0_1px_3px_rgba(0,0,0,0.02)]" aria-labelledby="admins-title">
+      <div class="mb-1 flex items-start justify-between gap-2">
+        <h2 id="admins-title" class="text-[14px] font-medium text-[#555]">Admins</h2>
+        <div class="space-y-1 pt-0.5 text-[10px] text-[#666]">
+          <p class="flex items-center gap-1.5"><span class="h-1.5 w-1.5 rounded-full bg-[#7064cc]" aria-hidden="true"></span>Active Admins</p>
+          <p class="flex items-center gap-1.5"><span class="h-1.5 w-1.5 rounded-full bg-[#a35cf1]" aria-hidden="true"></span>Inactive Admins</p>
+        </div>
+      </div>
+
+      @if (adminLoading()) {
+        <div class="grid min-h-[205px] place-items-center text-xs text-neutral-400" role="status">Loading admin totals…</div>
+      } @else if (adminError()) {
+        <div class="flex min-h-[205px] flex-col items-center justify-center gap-3 text-center">
+          <p class="text-xs text-neutral-500" role="alert">{{ adminError() }}</p>
+          <button type="button" class="rounded-full bg-[#60b9c9] px-4 py-2 text-xs font-medium text-white transition hover:bg-[#4694a4] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4694a4]" (click)="retryAdminCounts()">Retry</button>
+        </div>
+      } @else {
+        <div class="animate-admin-stat-enter motion-reduce:animate-none flex min-h-0 flex-1 items-center justify-center">
+          <div class="relative aspect-square h-full max-h-[230px] max-w-full shrink-0">
+            <svg class="h-full w-full" viewBox="0 0 220 220" role="img" [attr.aria-label]="'Admins: ' + totalAdminCount() + ' total, ' + activeAdminCount() + ' active, ' + inactiveAdminCount() + ' inactive'">
+              <circle cx="110" cy="110" r="82" fill="none" stroke="#f0eefb" stroke-width="28" />
+              @if (totalAdminCount() !== null && totalAdminCount()! > 0) {
+                <g>
+                  <circle cx="110" cy="110" r="82" fill="none" stroke="#a35cf1" stroke-width="28" stroke-linecap="round" [attr.stroke-dasharray]="inactiveAdminArc()" [attr.stroke-dashoffset]="inactiveAdminArcOffset()" transform="rotate(90 110 110)" />
+                  <circle cx="110" cy="110" r="82" fill="none" stroke="#7064cc" stroke-width="28" stroke-linecap="round" [attr.stroke-dasharray]="activeAdminArc()" transform="rotate(90 110 110)" />
+                  <text [attr.x]="adminArcLabelPosition('Active').x" [attr.y]="adminArcLabelPosition('Active').y" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="12" font-weight="500">{{ activeAdminCount() }}</text>
+                  <text [attr.x]="adminArcLabelPosition('Inactive').x" [attr.y]="adminArcLabelPosition('Inactive').y" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="12" font-weight="500">{{ inactiveAdminCount() }}</text>
+                </g>
+              }
+              <g [attr.transform]="'translate(110 110) scale(' + adminAnimationProgress() + ') translate(-110 -110)'">
+                <circle cx="110" cy="110" r="40" fill="#62bdcb" stroke="white" stroke-width="4" />
+                <text x="110" y="106" text-anchor="middle" fill="white" font-size="17" font-weight="600">
+                  {{ totalAdminCount() ?? '—' }}
+                </text>
+                <text x="110" y="124" text-anchor="middle" fill="white" font-size="9">Admins</text>
+              </g>
+            </svg>
+          </div>
+        </div>
+      }
+    </section>
+
+    <section class="flex h-[clamp(215px,34vh,270px)] flex-col rounded-[15px] bg-white px-7 py-4 shadow-[0_1px_3px_rgba(0,0,0,0.02)]" aria-labelledby="packages-title">
+      <div class="mb-3 flex items-start justify-between gap-2">
+        <h2 id="packages-title" class="text-[15px] font-medium text-[#555]">Packages</h2>
+        <div class="space-y-1 pt-0.5 text-[10px] text-[#666]">
+          <p class="flex items-center gap-1.5"><span class="h-1.5 w-1.5 rounded-full bg-[#7064cc]" aria-hidden="true"></span>Active Packages</p>
+          <p class="flex items-center gap-1.5"><span class="h-1.5 w-1.5 rounded-full bg-[#a35cf1]" aria-hidden="true"></span>Inactive Packages</p>
+        </div>
+      </div>
+
+      @if (packageLoading()) {
+        <div class="grid min-h-[195px] place-items-center text-xs text-neutral-400" role="status">Loading packages…</div>
+      } @else if (packageError()) {
+        <div class="flex min-h-[195px] flex-col items-center justify-center gap-3 text-center">
+          <p class="text-xs text-neutral-500" role="alert">{{ packageError() }}</p>
+          <button type="button" class="rounded-full bg-[#60b9c9] px-4 py-2 text-xs font-medium text-white transition hover:bg-[#4694a4] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4694a4]" (click)="retryPackages()">Retry</button>
+        </div>
+      } @else if (!filteredPackages().length) {
+        <div class="grid min-h-[195px] place-items-center text-center text-xs text-neutral-400">No {{ selectedPeriod().toLowerCase() }} packages are available.</div>
+      } @else {
+        <div class="animate-stat-enter-up motion-reduce:animate-none flex min-h-0 flex-1 items-end justify-center gap-5 pt-1">
+          @for (metric of packageBarMetrics(); track metric.label) {
+            <div class="flex h-full w-[58px] flex-col items-center justify-end gap-2">
+              <div class="flex min-h-0 w-full flex-1 items-end overflow-hidden rounded-full bg-[#f1effb]">
+                <div
+                  class="flex w-full items-end justify-center rounded-full text-center text-white"
+                  [style.height.%]="barHeight(metric.count) * packageAnimationProgress()"
+                  [style.background-color]="metric.color"
+                >
+                  <span class="mb-4 text-xs font-medium">{{ displayedPackageCount(metric.count) }}</span>
+                </div>
+              </div>
+              <span class="text-[10px] text-[#666]">{{ metric.label }}</span>
+            </div>
+          }
+        </div>
+      }
+    </section>
+
+    <section class="flex h-[clamp(215px,34vh,270px)] flex-col rounded-[15px] bg-white px-7 py-4 shadow-[0_1px_3px_rgba(0,0,0,0.02)] md:col-span-2 xl:col-span-1" aria-labelledby="package-admins-title">
+      <div class="mb-3 flex items-center justify-between gap-2">
+        <h2 id="package-admins-title" class="text-[15px] font-medium text-[#555]">Admins by Package</h2>
+      </div>
+      @if (assignmentLoading()) {
+        <div class="grid min-h-[190px] place-items-center text-xs text-neutral-400" role="status">Loading package assignments…</div>
+      } @else if (packageError()) {
+        <div class="grid min-h-[190px] place-items-center text-center text-xs text-neutral-400">Package assignment data is unavailable.</div>
+      } @else if (!filteredPackageAssignments().length && !assignmentError()) {
+        <div class="grid min-h-[190px] place-items-center text-center text-xs text-neutral-400">No admins are assigned to a package.</div>
+      } @else {
+        <div class="grid min-h-0 flex-1 auto-rows-min grid-cols-2 content-start gap-3 overflow-y-auto pr-1 sm:grid-cols-3">
+          @for (item of filteredPackageAssignments(); track item.id) {
+            <div class="flex min-h-[76px] flex-col items-center justify-center rounded-[14px] bg-[#e1f2f4] px-2 py-3 text-center shadow-[0_2px_3px_rgba(0,0,0,0.15)] transition-transform duration-200 hover:-translate-y-0.5">
+              <span class="text-sm font-medium text-[#505b5e]">{{ item.count }}</span>
+              <span class="mt-1 max-w-full truncate text-[11px] text-[#596164]" [title]="item.name">{{ item.name }}</span>
+            </div>
+          }
+        </div>
+        @if (assignmentError()) {
+          <div class="mt-2 flex items-center justify-between gap-2 text-[10px] text-amber-700" role="alert">
+            <span>Some package assignments could not be loaded.</span>
+            <button type="button" class="shrink-0 underline underline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2" (click)="retryAssignments()">Retry</button>
+          </div>
+        }
+      }
+    </section>
+  </div>
+
+  <p class="shrink-0 text-right text-[10px] text-neutral-400">Revenue is counted on the date a package is assigned to an admin. Admin and package cards show current totals.</p>
+  </div>
+</section>

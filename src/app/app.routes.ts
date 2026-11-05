@@ -37,7 +37,19 @@ export const routes: Routes = [
       import('./dashboard/super-admin-dashboard/super-admin-dashboard').then((m) => m.SuperAdminDashboard),
     title: 'Super Admin Dashboard',
     children: [
-      // Super admin only has Package Management, so that's the landing page too.
+
+      // Landing page is now the dashboard home
+        { path: '', redirectTo: 'super-admin-dashboard-home', pathMatch: 'full' },
+        {
+          path: 'super-admin-dashboard-home',
+          loadComponent: () =>
+            import('./dashboard/super-admin-dashboard-home/super-admin-dashboard-home').then(
+              (m) => m.SuperAdminDashboardHome,
+            ),
+          title: 'Dashboard',
+        },
+
+
       { path: '', redirectTo: 'package', pathMatch: 'full' },
       {
         path: 'package',

@@ -119,6 +119,43 @@ export interface MySubscription {
   serverTime: string;
 }
 
+/** Billing form values sent together with the purchase (saved for Manage Details -> Billing Details). */
+export interface BillingInfoPayload {
+  firstName: string;
+  lastName: string;
+  companyName: string;
+  email: string;
+  address: string;
+  city: string;
+  postalCode: string;
+  state: string;
+  country: string;
+  vatNumber?: string;
+}
+
+/** GET /api/packages/my-billing. Every field null = nothing saved yet. */
+export interface MyBilling {
+  billingName: string | null;
+  companyName: string | null;
+  email: string | null;
+  address: string | null;
+  city: string | null;
+  state: string | null;
+  postalCode: string | null;
+  country: string | null;
+  vatNumber: string | null;
+}
+
+/** Body of POST /api/packages/purchase. Card data is only validated by the server, never stored. */
+export interface PackagePurchasePayload {
+  packageId: number;
+  cardNumber: string;
+  expiry: string;
+  cvc: string;
+  otp: string;
+  billing: BillingInfoPayload;
+}
+
 export interface UserPackageAssignment {
   emailId: string;
   packageId: number;
@@ -199,14 +236,24 @@ export class PackageService {
     return this.http.post<void>(`${this.baseUrl}/assign`, payload);
   }
 
+  /** Company admin buys a package for themselves. The server checks the package, price and payment. */
+  purchase(payload: PackagePurchasePayload): Observable<MySubscription> {
+    return this.http.post<MySubscription>(`${this.baseUrl}/purchase`, payload);
+  }
+
   /** Assigned / expiry dates of the admins on a package (Super Admin only). */
   getAssignments(packageId: number): Observable<PackageAdminAssignment[]> {
     return this.http.get<PackageAdminAssignment[]>(`${this.baseUrl}/${packageId}/admins`);
   }
 
-  /** The logged-in admin's own package expiry, for the header "days left" pill. */
+  /** The logged-in admin's own package expiry, for the header "days left" pill and Manage Details. */
   getMySubscription(): Observable<MySubscription> {
     return this.http.get<MySubscription>(`${this.baseUrl}/my-subscription`);
+  }
+
+  /** Billing details the logged-in admin entered when subscribing (Manage Details -> Billing Details). */
+  getMyBilling(): Observable<MyBilling> {
+    return this.http.get<MyBilling>(`${this.baseUrl}/my-billing`);
   }
 
   /** Removes the package from one admin (Super Admin only). */

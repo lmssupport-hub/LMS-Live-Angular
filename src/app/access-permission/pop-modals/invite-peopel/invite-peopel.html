@@ -1,6 +1,11 @@
 <!-- invite-peopel.html -->
+<!--
+  While the "Discard changes?" popup is open, this overlay drops its own dark/blur layer,
+  so two overlays never stack on top of each other (that made the background look blocked).
+-->
 <div
-  class="fixed inset-0 z-50 grid place-items-center bg-black/25 p-5 backdrop-blur-[4px]"
+  class="fixed inset-0 z-50 grid place-items-center p-5"
+  [class]="confirmOpen() ? '' : 'bg-black/25 backdrop-blur-[4px]'"
   (click)="cancelled.emit()"
 >
   <section
@@ -127,6 +132,7 @@
  
       <!-- Actions -->
       <div class="mt-7 flex justify-center gap-4">
+        <!-- Cancel always asks "Discard changes?" first. -->
         <button
           (click)="requestCancel()"
           [disabled]="submitting()"
@@ -150,7 +156,7 @@
 
 <!-- Discard confirmation popup -->
 @if (confirmOpen()) {
-  <div class="fixed inset-0 z-[60] grid place-items-center bg-black/50 p-5 backdrop-blur-sm">
+  <div class="fixed inset-0 z-[60] grid place-items-center bg-black/25 p-5 backdrop-blur-[4px]">
     <section
       class="w-[min(430px,92vw)] rounded-2xl bg-white p-7 shadow-2xl"
       role="alertdialog"

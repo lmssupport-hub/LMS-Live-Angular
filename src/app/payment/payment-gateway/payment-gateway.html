@@ -1,0 +1,719 @@
+<div class="relative w-full font-sans text-[#505050]">
+  <div class="relative z-10 px-4 pb-7 sm:px-6 lg:px-10">
+    <header class="my-2 mb-5">
+      <nav class="hidden" aria-label="Checkout progress">
+        <button
+          type="button"
+          class="rounded px-1 py-1 text-[#73797b] transition hover:text-[#319eaf] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#319eaf]"
+          (click)="goBack()"
+        >
+          Subscription &amp; Billing
+        </button>
+        <span aria-hidden="true">›</span>
+        <span class="font-medium text-[#53585a]" aria-current="step">Payment Method</span>
+      </nav>
+      <div class="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 class="text-base font-semibold text-[#414749] sm:text-lg">Payment Method</h1>
+          <p class="mt-0.5 text-[11px] text-[#73797b]">Choose a payment method to securely complete your billing and payments.</p>
+        </div>
+        @if (selectedPlan(); as plan) {
+          <p class="sr-only">
+            {{ plan.name }} · {{ billingCycle() }}
+          </p>
+        }
+      </div>
+    </header>
+
+    @if (loading()) {
+      <div class="grid min-h-64 place-items-center rounded-2xl bg-white text-sm text-[#687477]" role="status">
+        Loading payment method…
+      </div>
+    } @else if (loadError()) {
+      <section class="rounded-2xl bg-white p-6 text-center shadow-sm" aria-labelledby="payment-load-error">
+        <h2 id="payment-load-error" class="text-base font-semibold text-[#414749]">Checkout is unavailable</h2>
+        <p class="mt-2 text-sm text-[#687477]" role="alert">{{ loadError() }}</p>
+        <button
+          type="button"
+          class="mt-5 min-h-10 rounded-full bg-[#70bec9] px-6 text-sm font-medium text-white transition hover:bg-[#5aaab6] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#28636e]"
+          (click)="goBack()"
+        >
+          Back to Subscription &amp; Billing
+        </button>
+      </section>
+    } @else if (selectedPlan(); as plan) {
+      <div class="grid items-start gap-4 md:grid-cols-[minmax(0,1.35fr)_minmax(280px,1fr)]">
+        <section class="min-w-0 rounded-xl bg-white p-5 sm:p-6" aria-labelledby="payment-methods-title">
+          <h2 id="payment-methods-title" class="text-sm font-semibold text-[#414749] sm:text-base">
+            Select a Payment method
+          </h2>
+          <p id="payment-method-help" class="sr-only">
+            Select how you would like to pay for this plan.
+          </p>
+
+          <fieldset class="mt-5 space-y-4" aria-describedby="payment-method-help">
+            <legend class="sr-only">Payment method</legend>
+            <div class="flex min-h-12 items-center rounded-xl bg-[#f5f5f5] pr-1 transition hover:bg-[#f0f0f0] has-[:checked]:ring-1 has-[:checked]:ring-[#e5e5e5]">
+              <label class="flex min-h-12 flex-1 cursor-pointer items-center gap-3 px-4">
+              <input
+                type="radio"
+                name="payment-method"
+                value="stripe"
+                class="h-3.5 w-3.5 appearance-none rounded-full border-[3px] border-white bg-white shadow-[0_0_0_1px_#d9d9d9] transition checked:bg-[#635bdb] checked:shadow-[0_0_0_1px_#635bdb] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#319eaf]"
+                [checked]="paymentMethod() === 'stripe'"
+                (change)="selectPaymentMethod('stripe')"
+              />
+              <span class="text-lg font-bold tracking-tight text-[#635bdb]">stripe</span>
+              </label>
+              <button type="button" class="grid h-11 w-10 shrink-0 place-items-center rounded-lg text-[#687174] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#319eaf]" aria-label="Toggle Stripe details" [attr.aria-expanded]="expandedPaymentMethod() === 'stripe'" [attr.aria-controls]="expandedPaymentMethod() === 'stripe' ? 'stripe-details' : null" (click)="togglePaymentMethod('stripe')">
+              <svg viewBox="0 0 20 20" class="h-4 w-4 fill-none stroke-current transition-transform" [class.rotate-180]="expandedPaymentMethod() === 'stripe'" aria-hidden="true">
+                <path d="m5 7.5 5 5 5-5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              </button>
+            </div>
+
+            <div class="flex min-h-12 items-center rounded-xl bg-[#f5f5f5] pr-1 transition hover:bg-[#f0f0f0] has-[:checked]:ring-1 has-[:checked]:ring-[#e5e5e5]">
+              <label class="flex min-h-12 flex-1 cursor-pointer items-center gap-3 px-4">
+              <input
+                type="radio"
+                name="payment-method"
+                value="card"
+                class="h-3.5 w-3.5 appearance-none rounded-full border-[3px] border-white bg-white shadow-[0_0_0_1px_#d9d9d9] transition checked:bg-[#61b5c2] checked:shadow-[0_0_0_1px_#61b5c2] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#319eaf]"
+                [checked]="paymentMethod() === 'card'"
+                (change)="selectPaymentMethod('card')"
+              />
+              <span class="text-xs font-medium text-[#444b4d]">Credit Card</span>
+              <span class="ml-auto inline-flex items-center text-[#61b5c2]" aria-hidden="true">
+                <svg viewBox="0 0 24 24" class="h-5 w-5 fill-current">
+                  <path d="M3 5.5A2.5 2.5 0 0 1 5.5 3h13A2.5 2.5 0 0 1 21 5.5v13a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 18.5Zm0 4v2h18v-2Z" />
+                </svg>
+              </span>
+              </label>
+              <button type="button" class="grid h-11 w-10 shrink-0 place-items-center rounded-lg text-[#687174] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#319eaf]" aria-label="Toggle Credit Card details" [attr.aria-expanded]="expandedPaymentMethod() === 'card'" [attr.aria-controls]="expandedPaymentMethod() === 'card' ? 'card-details' : null" (click)="togglePaymentMethod('card')">
+              <svg viewBox="0 0 20 20" class="h-4 w-4 fill-none stroke-current transition-transform" [class.rotate-180]="expandedPaymentMethod() === 'card'" aria-hidden="true">
+                <path d="m5 7.5 5 5 5-5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              </button>
+            </div>
+
+            <div class="flex min-h-12 items-center rounded-xl bg-[#f5f5f5] pr-1 transition hover:bg-[#f0f0f0] has-[:checked]:ring-1 has-[:checked]:ring-[#e5e5e5]">
+              <label class="flex min-h-12 flex-1 cursor-pointer items-center gap-3 px-4">
+              <input
+                type="radio"
+                name="payment-method"
+                value="paypal"
+                class="h-3.5 w-3.5 appearance-none rounded-full border-[3px] border-white bg-white shadow-[0_0_0_1px_#d9d9d9] transition checked:bg-[#61b5c2] checked:shadow-[0_0_0_1px_#61b5c2] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#319eaf]"
+                [checked]="paymentMethod() === 'paypal'"
+                (change)="selectPaymentMethod('paypal')"
+              />
+              <span class="text-xs font-medium text-[#444b4d]">PayPal</span>
+              <span class="grid h-4 w-6 place-items-center rounded-sm bg-[#61b5c2] text-[6px] font-bold text-white" aria-hidden="true">PayPal</span>
+              </label>
+              <button type="button" class="grid h-11 w-10 shrink-0 place-items-center rounded-lg text-[#687174] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#319eaf]" aria-label="Toggle PayPal details" [attr.aria-expanded]="expandedPaymentMethod() === 'paypal'" [attr.aria-controls]="expandedPaymentMethod() === 'paypal' ? 'paypal-details' : null" (click)="togglePaymentMethod('paypal')">
+              <svg viewBox="0 0 20 20" class="h-4 w-4 fill-none stroke-current transition-transform" [class.rotate-180]="expandedPaymentMethod() === 'paypal'" aria-hidden="true">
+                <path d="m5 7.5 5 5 5-5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              </button>
+            </div>
+
+            <div class="flex min-h-12 items-center rounded-xl bg-[#f5f5f5] pr-1 transition hover:bg-[#f0f0f0] has-[:checked]:ring-1 has-[:checked]:ring-[#e5e5e5]">
+              <label class="flex min-h-12 flex-1 cursor-pointer items-center gap-3 px-4">
+              <input
+                type="radio"
+                name="payment-method"
+                value="bank"
+                class="h-3.5 w-3.5 appearance-none rounded-full border-[3px] border-white bg-white shadow-[0_0_0_1px_#d9d9d9] transition checked:bg-[#61b5c2] checked:shadow-[0_0_0_1px_#61b5c2] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#319eaf]"
+                [checked]="paymentMethod() === 'bank'"
+                (change)="selectPaymentMethod('bank')"
+              />
+              <span class="text-xs font-medium text-[#444b4d]">Online Banking</span>
+              </label>
+              <button type="button" class="grid h-11 w-10 shrink-0 place-items-center rounded-lg text-[#687174] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#319eaf]" aria-label="Toggle Online Banking details" [attr.aria-expanded]="expandedPaymentMethod() === 'bank'" [attr.aria-controls]="expandedPaymentMethod() === 'bank' ? 'bank-details' : null" (click)="togglePaymentMethod('bank')">
+              <svg viewBox="0 0 20 20" class="h-4 w-4 fill-none stroke-current transition-transform" [class.rotate-180]="expandedPaymentMethod() === 'bank'" aria-hidden="true">
+                <path d="m5 7.5 5 5 5-5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              </button>
+            </div>
+          </fieldset>
+
+          @if (expandedPaymentMethod() === 'stripe') {
+            <section id="stripe-details" class="mt-3 rounded-xl bg-[#f9f9f9] p-4" aria-labelledby="wallet-title">
+              <h3 id="wallet-title" class="text-xs font-semibold text-[#454b4d]">Digital Wallet</h3>
+              <p class="mt-1 text-[10px] text-[#767d7f]">Choose a wallet to continue with Stripe.</p>
+              <div class="mt-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  aria-label="Google Pay"
+                  class="min-h-9 rounded-lg border border-[#e5e5e5] bg-white px-4 text-xs font-medium text-[#454b4d] transition hover:border-[#75bdc8] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#319eaf]"
+                  (click)="openWallet('Google Pay')"
+                >
+                  <span class="sr-only">Google Pay</span>
+                  <span class="inline-flex items-center gap-2" aria-hidden="true"><span class="text-base font-bold text-[#4285f4]">G</span><span>Pay</span></span>
+                </button>
+                <button
+                  type="button"
+                  aria-label="Apple Pay"
+                  class="min-h-9 rounded-lg border border-[#e5e5e5] bg-white px-4 text-xs font-medium text-[#454b4d] transition hover:border-[#75bdc8] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#319eaf]"
+                  (click)="openWallet('Apple Pay')"
+                >
+                  <span class="sr-only">Apple Pay</span>
+                  <span class="inline-flex items-center gap-2">
+                    <svg viewBox="0 0 24 24" class="h-4 w-4 fill-current" aria-hidden="true">
+                      <path d="M16.7 12.8c0-2.1 1.7-3.1 1.8-3.2-1-1.5-2.6-1.7-3.2-1.7-1.4-.2-2.7.8-3.4.8-.7 0-1.8-.8-3-.8-1.5 0-2.9.9-3.7 2.2-1.6 2.8-.4 6.8 1.1 9 .8 1.1 1.7 2.3 2.9 2.2 1.2 0 1.6-.7 3-.7s1.8.7 3 .7c1.2 0 2-.9 2.8-2.1.9-1.3 1.2-2.6 1.2-2.7-.1 0-2.5-1-2.5-3.7ZM14.5 6.4c.6-.8 1.1-1.9 1-3-.9 0-2 .6-2.6 1.4-.6.7-1.1 1.8-1 2.9 1 0 2-.5 2.6-1.3Z" />
+                    </svg>
+                    <span>Pay</span>
+                  </span>
+                </button>
+              </div>
+            </section>
+          }
+
+          @if (expandedPaymentMethod() === 'card') {
+            <section id="card-details" class="mt-4" [formGroup]="cardForm" aria-labelledby="card-details-title">
+              <h3 id="card-details-title" class="mb-3 text-xs font-semibold text-[#454b4d]">Credit Card Details</h3>
+              <div class="grid gap-3 sm:grid-cols-2">
+                <label class="sm:col-span-2">
+                  <span class="mb-1.5 block text-[10px] font-medium text-[#545b5d]">Card Number <span class="text-red-600" aria-hidden="true">*</span></span>
+                  <input
+                    id="card-number"
+                    type="text"
+                    inputmode="numeric"
+                    autocomplete="cc-number"
+                    required
+                    maxlength="23"
+                    placeholder="1234 5678 9012 3456"
+                    class="gateway-input"
+                    [attr.aria-invalid]="cardForm.controls.number.touched && cardForm.controls.number.invalid"
+                    [attr.aria-describedby]="cardForm.controls.number.touched && cardForm.controls.number.invalid ? 'card-number-error' : null"
+                    (input)="formatCardNumber($event)"
+                    (blur)="cardForm.controls.number.markAsTouched()"
+                  />
+                  @if (cardForm.controls.number.touched && cardForm.controls.number.invalid) {
+                    <span id="card-number-error" class="gateway-error">Enter a card number with 13 to 19 digits.</span>
+                  }
+                </label>
+
+                <label>
+                  <span class="mb-1.5 block text-[10px] font-medium text-[#545b5d]">Expiry Date <span class="text-red-600" aria-hidden="true">*</span></span>
+                  <input
+                    id="card-expiry"
+                    type="text"
+                    inputmode="numeric"
+                    autocomplete="cc-exp"
+                    required
+                    maxlength="5"
+                    placeholder="MM/YY"
+                    class="gateway-input"
+                    [attr.aria-invalid]="cardForm.controls.expiry.touched && cardForm.controls.expiry.invalid"
+                    [attr.aria-describedby]="cardForm.controls.expiry.touched && cardForm.controls.expiry.invalid ? 'card-expiry-error' : null"
+                    (input)="formatExpiry($event)"
+                    (blur)="cardForm.controls.expiry.markAsTouched()"
+                  />
+                  @if (cardForm.controls.expiry.touched && cardForm.controls.expiry.invalid) {
+                    <span id="card-expiry-error" class="gateway-error">
+                      @if (cardForm.controls.expiry.hasError('expired')) {
+                        Card expiry must be in the current or a future month.
+                      } @else {
+                        Enter the expiry date as MM/YY.
+                      }
+                    </span>
+                  }
+                </label>
+
+                <label>
+                  <span class="mb-1.5 block text-[10px] font-medium text-[#545b5d]">CVC <span class="text-red-600" aria-hidden="true">*</span></span>
+                  <input
+                    id="card-cvc"
+                    type="password"
+                    inputmode="numeric"
+                    autocomplete="cc-csc"
+                    required
+                    maxlength="4"
+                    placeholder="CVC"
+                    class="gateway-input"
+                    formControlName="cvc"
+                    [attr.aria-invalid]="cardForm.controls.cvc.touched && cardForm.controls.cvc.invalid"
+                    [attr.aria-describedby]="cardForm.controls.cvc.touched && cardForm.controls.cvc.invalid ? 'card-cvc-error' : null"
+                    (input)="cardForm.controls.cvc.setValue(cardForm.controls.cvc.value.replace(/\D/g, '').slice(0, 4))"
+                  />
+                  @if (cardForm.controls.cvc.touched && cardForm.controls.cvc.invalid) {
+                    <span id="card-cvc-error" class="gateway-error">Enter a 3 or 4 digit CVC.</span>
+                  }
+                </label>
+
+                <label>
+                  <span class="mb-1.5 block text-[10px] font-medium text-[#545b5d]">First Name</span>
+                  <input
+                    type="text"
+                    autocomplete="cc-given-name"
+                    maxlength="50"
+                    class="gateway-input"
+                    formControlName="firstName"
+                  />
+                </label>
+                <label>
+                  <span class="mb-1.5 block text-[10px] font-medium text-[#545b5d]">Last Name</span>
+                  <input
+                    type="text"
+                    autocomplete="cc-family-name"
+                    maxlength="50"
+                    class="gateway-input"
+                    formControlName="lastName"
+                  />
+                </label>
+              </div>
+              <button
+                type="button"
+                class="mt-3 min-h-9 rounded-lg border border-[#68b8c4] px-4 text-[11px] font-medium text-[#347f89] transition hover:bg-[#f1fafb] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#319eaf]"
+                (click)="sendOtp()"
+              >
+                Send OTP
+              </button>
+              @if (otpRequested()) {
+                <div
+                  class="mt-3 grid gap-2 rounded-lg bg-[#f7f7f7] p-3 sm:grid-cols-[1fr_auto] sm:items-end"
+                  [formGroup]="verificationForm"
+                >
+                  <label>
+                    <span class="mb-1.5 block text-[10px] font-medium text-[#545b5d]">Verification Code</span>
+                    <input
+                      type="text"
+                      inputmode="numeric"
+                      maxlength="8"
+                      autocomplete="one-time-code"
+                      required
+                      class="gateway-input"
+                      formControlName="code"
+                      [attr.aria-describedby]="verificationForm.controls.code.touched && verificationForm.controls.code.invalid ? 'verification-code-error' : null"
+                    />
+                    @if (verificationForm.controls.code.touched && verificationForm.controls.code.invalid) {
+                      <span id="verification-code-error" class="gateway-error">Enter a code containing 4 to 8 digits.</span>
+                    }
+                  </label>
+                  <button
+                    type="button"
+                    class="min-h-10 rounded-lg bg-[#70bec9] px-4 text-[11px] font-medium text-white transition hover:bg-[#5aaab6] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#28636e]"
+                    (click)="verifyOtp()"
+                  >
+                    Verify Code
+                  </button>
+                </div>
+              }
+              @if (otpMessage()) {
+                <p class="mt-2 text-[10px] text-[#785c26]" role="status">{{ otpMessage() }}</p>
+              }
+            </section>
+          }
+
+          @if (expandedPaymentMethod() === 'paypal') {
+            <div id="paypal-details" class="mt-4 rounded-xl bg-[#f9f9f9] p-4">
+              <p class="text-[11px] text-[#646b6d]">Continue securely with your PayPal account.</p>
+              <button
+                type="button"
+                class="mt-3 min-h-10 rounded-lg bg-[#1269a5] px-5 text-xs font-semibold text-white transition hover:bg-[#0f5a8e] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1269a5]"
+                (click)="openModal('paypal')"
+              >
+                Continue with PayPal
+              </button>
+            </div>
+          }
+
+          @if (expandedPaymentMethod() === 'bank') {
+            <div id="bank-details" class="mt-4 rounded-xl bg-[#f9f9f9] p-4">
+              <app-online-banking />
+            </div>
+          }
+
+          <section class="mt-6" [formGroup]="billingForm" aria-labelledby="billing-title">
+            <h3 id="billing-title" class="text-sm font-semibold text-[#414749]">Billing &amp; Receipt</h3>
+            <div class="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-6">
+              <label class="sm:col-span-2">
+                <span class="mb-1.5 block text-[10px] font-medium text-[#545b5d]">Country <span class="text-red-600" aria-hidden="true">*</span></span>
+                <select
+                  id="billing-country"
+                  class="gateway-input sm:w-[128px]"
+                  formControlName="country"
+                  required
+                  autocomplete="country-name"
+                  [attr.aria-invalid]="billingForm.controls.country.touched && billingForm.controls.country.invalid"
+                  [attr.aria-describedby]="controlError('country') ? 'billing-country-error' : null"
+                >
+                  <option value="">Select Country</option>
+                  @for (country of countryOptions; track country.code) {
+                    <option [value]="country.code">{{ country.name }}</option>
+                  }
+                </select>
+                @if (controlError('country'); as error) {
+                  <span id="billing-country-error" class="gateway-error">{{ error }}</span>
+                }
+              </label>
+
+              <label class="sm:col-start-1 sm:col-span-3">
+                <span class="mb-1.5 block text-[10px] font-medium text-[#545b5d]">Billing Email <span class="text-red-600" aria-hidden="true">*</span></span>
+                <input
+                  id="billing-email"
+                  type="email"
+                  autocomplete="email"
+                  required
+                  maxlength="100"
+                  placeholder="Billing Email"
+                  class="gateway-input"
+                  formControlName="email"
+                  [attr.aria-invalid]="billingForm.controls.email.touched && billingForm.controls.email.invalid"
+                  [attr.aria-describedby]="controlError('email') ? 'billing-email-error' : null"
+                />
+                @if (controlError('email'); as error) {
+                  <span id="billing-email-error" class="gateway-error">{{ error }}</span>
+                }
+              </label>
+
+              <label class="sm:col-start-1 sm:col-span-2">
+                <span class="sr-only">First Name</span>
+                <input type="text" autocomplete="given-name" maxlength="50" placeholder="First name" class="gateway-input" formControlName="firstName" />
+              </label>
+              <label class="sm:col-span-2">
+                <span class="sr-only">Last Name</span>
+                <input type="text" autocomplete="family-name" maxlength="50" placeholder="Last name" class="gateway-input" formControlName="lastName" />
+              </label>
+
+              <label class="sm:col-span-2">
+                <span class="sr-only">Company Name</span>
+                <input type="text" autocomplete="organization" maxlength="100" placeholder="Company Name" class="gateway-input" formControlName="companyName" />
+              </label>
+
+              <label class="sm:col-span-6">
+                <span class="mb-1.5 block text-[10px] font-medium text-[#545b5d]">Billing Address <span class="text-red-600" aria-hidden="true">*</span></span>
+                <input
+                  id="billing-address"
+                  type="text"
+                  autocomplete="address-line1"
+                  required
+                  maxlength="200"
+                  placeholder="Billing Address"
+                  class="gateway-input"
+                  formControlName="address"
+                  [attr.aria-invalid]="billingForm.controls.address.touched && billingForm.controls.address.invalid"
+                  [attr.aria-describedby]="controlError('address') ? 'billing-address-error' : null"
+                />
+                @if (controlError('address'); as error) {
+                  <span id="billing-address-error" class="gateway-error">{{ error }}</span>
+                }
+              </label>
+
+              <label class="sm:col-span-2">
+                <span class="mb-1.5 block text-[10px] font-medium text-[#545b5d]">City <span class="text-red-600" aria-hidden="true">*</span></span>
+                <input
+                  id="billing-city"
+                  type="text"
+                  autocomplete="address-level2"
+                  required
+                  maxlength="100"
+                  placeholder="City"
+                  class="gateway-input"
+                  formControlName="city"
+                  [attr.aria-invalid]="billingForm.controls.city.touched && billingForm.controls.city.invalid"
+                  [attr.aria-describedby]="controlError('city') ? 'billing-city-error' : null"
+                />
+                @if (controlError('city'); as error) {
+                  <span id="billing-city-error" class="gateway-error">{{ error }}</span>
+                }
+              </label>
+              <label class="sm:col-span-2">
+                <span class="mb-1.5 block text-[10px] font-medium text-[#545b5d]">Postal Code <span class="text-red-600" aria-hidden="true">*</span></span>
+                <input
+                  id="billing-postal-code"
+                  type="text"
+                  autocomplete="postal-code"
+                  required
+                  maxlength="100"
+                  placeholder="Postal Code"
+                  class="gateway-input"
+                  formControlName="postalCode"
+                  [attr.aria-invalid]="billingForm.controls.postalCode.touched && billingForm.controls.postalCode.invalid"
+                  [attr.aria-describedby]="controlError('postalCode') ? 'billing-postal-code-error' : null"
+                />
+                @if (controlError('postalCode'); as error) {
+                  <span id="billing-postal-code-error" class="gateway-error">{{ error }}</span>
+                }
+              </label>
+
+              <label class="sm:col-span-2">
+                <span class="sr-only">State</span>
+                <input type="text" autocomplete="address-level1" maxlength="100" placeholder="State" class="gateway-input" formControlName="state" />
+              </label>
+            </div>
+
+            <div class="mt-4">
+              <label class="flex cursor-pointer items-start gap-2 text-[10px] leading-5 text-[#596164]">
+                <input
+                  type="checkbox"
+                  required
+                  class="gateway-terms-checkbox mt-1 h-3.5 w-3.5 shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#319eaf]"
+                  formControlName="acceptedTerms"
+                  [attr.aria-invalid]="billingForm.controls.acceptedTerms.touched && billingForm.controls.acceptedTerms.invalid"
+                  [attr.aria-describedby]="controlError('acceptedTerms') ? 'billing-terms-error' : null"
+                />
+                <span>I agree to the Terms of Service and Privacy Policy <span class="text-red-600" aria-hidden="true">*</span></span>
+              </label>
+              @if (controlError('acceptedTerms'); as error) {
+                <span id="billing-terms-error" class="gateway-error">{{ error }}</span>
+              }
+            </div>
+          </section>
+
+          <p class="mt-4 rounded-lg bg-[#faf8f2] px-3 py-2 text-[10px] leading-4 text-[#705c36]" role="note">
+            Preview only: payment providers are not connected. Do not enter real card or bank credentials; no payment details are sent or stored.
+          </p>
+          @if (paymentError()) {
+            <p class="mt-3 rounded-lg border border-[#f2caca] bg-[#fff5f5] px-3 py-2 text-[11px] leading-4 text-[#a03939]" role="alert">
+              {{ paymentError() }}
+            </p>
+          }
+
+          <div class="mt-5 flex flex-col gap-3">
+            <button
+              type="button"
+              class="sr-only focus:not-sr-only focus:min-h-10 focus:rounded-lg focus:border focus:border-[#dedede] focus:bg-white focus:px-5 focus:text-xs focus:font-medium focus:text-[#555b5d] focus:outline-2 focus:outline-offset-2 focus:outline-[#319eaf]"
+              (click)="goBack()"
+            >
+              Back
+            </button>
+            <button
+              type="button"
+              class="min-h-12 w-full rounded-xl bg-[#f5f5f5] px-5 text-xs font-medium text-[#444b4d] transition hover:bg-[#ededed] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#319eaf]"
+              (click)="submitPayment()"
+            >
+              Pay
+            </button>
+          </div>
+        </section>
+
+        <aside class="rounded-xl bg-white p-5 sm:p-6" aria-labelledby="order-summary-title">
+          <h2 id="order-summary-title" class="text-sm font-semibold text-[#414749] sm:text-base">Order Summary</h2>
+          <dl class="mt-5 space-y-5">
+            <div class="flex items-center justify-between gap-4 text-[11px]">
+              <dt class="text-[#686f71]">Plan Type</dt>
+              <dd class="font-medium text-[#444b4d]">{{ plan.availablePackage }}</dd>
+            </div>
+            <div class="sr-only">
+              <dt class="text-[#686f71]">Plan</dt>
+              <dd class="max-w-[65%] truncate text-right font-medium text-[#444b4d]">{{ plan.name }}</dd>
+            </div>
+            <div class="sr-only">
+              <dt class="text-[#686f71]">Billing Cycle</dt>
+              <dd class="font-medium text-[#444b4d]">{{ billingCycle() }}</dd>
+            </div>
+            <div class="flex items-center justify-between gap-4 text-[11px]">
+              <dt class="text-[#686f71]">Plan Cost</dt>
+              <dd class="font-medium text-[#444b4d]">{{ amountDue() | currency:currency():'symbol':'1.0-2' }}</dd>
+            </div>
+          </dl>
+
+          <div class="mt-5">
+            <label for="discount-code" class="mb-2 block text-[11px] font-medium text-[#545b5d]">Apply Discount Code</label>
+            <div class="flex items-center gap-2 rounded-xl bg-[#f5f5f5] pr-3">
+              <input
+                id="discount-code"
+                type="text"
+                maxlength="50"
+                placeholder="Enter Code"
+                class="gateway-input min-w-0 flex-1 bg-transparent"
+                [formControl]="discountCode"
+                (input)="discountMessage.set('')"
+              />
+              <button
+                type="button"
+                class="min-h-9 shrink-0 rounded-lg px-2 text-[11px] font-medium text-[#61b5c2] transition hover:text-[#388d99] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#319eaf]"
+                (click)="applyDiscountCode()"
+              >
+                Apply
+              </button>
+            </div>
+            @if (discountMessage()) {
+              <p class="mt-2 text-[10px] text-[#785c26]" role="status">{{ discountMessage() }}</p>
+            }
+          </div>
+
+          <div class="mt-6 flex items-center gap-3">
+            <span class="shrink-0 text-xs font-medium text-[#686f71]">Amount Due</span>
+            <span class="h-px flex-1 border-t border-dotted border-[#d9d9d9]" aria-hidden="true"></span>
+            <span class="text-base font-semibold tabular-nums text-[#414749]">
+              {{ amountDue() | currency:currency():'symbol':'1.0-2' }}
+            </span>
+          </div>
+        </aside>
+      </div>
+    }
+  </div>
+</div>
+
+@if (modal(); as activeModal) {
+  <div
+    class="fixed inset-0 z-[70] grid place-items-center overflow-y-auto bg-black/25 p-4 backdrop-blur-[2px]"
+    (click)="closeModal()"
+  >
+    <section
+      class="w-full max-w-[420px] rounded-xl bg-white p-5 shadow-[0_12px_36px_rgba(0,0,0,.2)] sm:p-6"
+      role="dialog"
+      aria-modal="true"
+      [attr.aria-labelledby]="activeModal === 'bank' ? 'bank-login-title' : activeModal === 'paypal' ? 'paypal-login-title' : 'wallet-title-dialog'"
+      cdkTrapFocus
+      [cdkTrapFocusAutoCapture]="true"
+      (click)="$event.stopPropagation()"
+    >
+      @if (activeModal === 'bank') {
+        <h2 id="bank-login-title" class="text-lg font-semibold text-[#414749]">Login Into Your Bank</h2>
+        <p class="mt-1 text-[11px] text-[#6d7476]">Bank selected; log in to continue.</p>
+        <p class="mt-3 rounded-md bg-[#fff8e9] px-3 py-2 text-[10px] leading-4 text-[#705c36]">
+          UI preview only. Do not enter real bank credentials.
+        </p>
+        <form class="mt-4 space-y-3" [formGroup]="bankForm" (ngSubmit)="continueBankLogin()">
+          <label class="block">
+            <span class="mb-1.5 block text-[10px] font-medium text-[#545b5d]">User ID <span class="text-red-600" aria-hidden="true">*</span></span>
+            <input
+              type="text"
+              autocomplete="off"
+              required
+              class="gateway-input"
+              formControlName="userId"
+              aria-label="Bank user ID"
+              [attr.aria-invalid]="bankForm.controls.userId.touched && bankForm.controls.userId.invalid"
+            />
+            @if (bankForm.controls.userId.touched && bankForm.controls.userId.invalid) {
+              <span class="gateway-error">User ID is required.</span>
+            }
+          </label>
+          <label class="block">
+            <span class="mb-1.5 block text-[10px] font-medium text-[#545b5d]">Password <span class="text-red-600" aria-hidden="true">*</span></span>
+            <span class="relative block">
+              <input
+                [type]="showBankPassword() ? 'text' : 'password'"
+                autocomplete="new-password"
+                required
+                class="gateway-input pr-11"
+                formControlName="password"
+                aria-label="Bank password"
+                [attr.aria-invalid]="bankForm.controls.password.touched && bankForm.controls.password.invalid"
+              />
+              <button
+                type="button"
+                class="absolute inset-y-0 right-2 grid w-8 place-items-center rounded text-[#62696b] focus-visible:outline-2 focus-visible:outline-[#319eaf]"
+                [attr.aria-label]="showBankPassword() ? 'Hide password' : 'Show password'"
+                [attr.aria-pressed]="showBankPassword()"
+                (click)="showBankPassword.set(!showBankPassword())"
+              >
+                <svg viewBox="0 0 24 24" class="h-4 w-4 fill-none stroke-current" stroke-width="1.8" aria-hidden="true">
+                  <path d="M2.5 12s3.2-6 9.5-6 9.5 6 9.5 6-3.2 6-9.5 6-9.5-6-9.5-6Z" />
+                  <circle cx="12" cy="12" r="2.5" />
+                </svg>
+              </button>
+            </span>
+            @if (bankForm.controls.password.touched && bankForm.controls.password.invalid) {
+              <span class="gateway-error">Password is required.</span>
+            }
+          </label>
+          <div class="flex justify-end gap-2 pt-1">
+            <button
+              type="button"
+              class="min-h-10 min-w-24 rounded-lg bg-[#f2f2f2] px-4 text-xs font-medium text-[#555b5d] transition hover:bg-[#e8e8e8] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#319eaf]"
+              (click)="closeModal()"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              class="min-h-10 min-w-24 rounded-lg bg-[#70bec9] px-4 text-xs font-medium text-white transition hover:bg-[#5aaab6] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#28636e]"
+            >
+              Login
+            </button>
+          </div>
+        </form>
+      } @else if (activeModal === 'paypal') {
+        <h2 id="paypal-login-title" class="text-lg font-semibold text-[#414749]">Log in to PayPal</h2>
+        <p class="mt-1 text-[11px] text-[#6d7476]">UI preview only. PayPal authentication is not connected.</p>
+        <form class="mt-4 space-y-3" [formGroup]="paypalForm" (ngSubmit)="continuePaypal()">
+          @if (paypalStep() === 'email') {
+            <label class="block">
+              <span class="mb-1.5 block text-[10px] font-medium text-[#545b5d]">Email or Mobile Number <span class="text-red-600" aria-hidden="true">*</span></span>
+              <input
+                type="text"
+                autocomplete="off"
+                required
+                class="gateway-input"
+                formControlName="emailOrMobile"
+                [attr.aria-invalid]="paypalForm.controls.emailOrMobile.touched && paypalForm.controls.emailOrMobile.invalid"
+              />
+              @if (paypalForm.controls.emailOrMobile.touched && paypalForm.controls.emailOrMobile.invalid) {
+                <span class="gateway-error">Enter a valid email address or mobile number.</span>
+              }
+            </label>
+            <button
+              type="button"
+              class="text-[11px] font-medium text-[#16709f] underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-[#319eaf]"
+              (click)="showPaypalRecovery()"
+            >
+              Forgot email?
+            </button>
+          } @else {
+            <p class="rounded-md bg-[#f5f7f8] px-3 py-2 text-xs text-[#51595b]">{{ paypalForm.controls.emailOrMobile.value }}</p>
+            <label class="block">
+              <span class="mb-1.5 block text-[10px] font-medium text-[#545b5d]">Password <span class="text-red-600" aria-hidden="true">*</span></span>
+              <input
+                type="password"
+                autocomplete="new-password"
+                required
+                class="gateway-input"
+                formControlName="password"
+                [attr.aria-invalid]="paypalForm.controls.password.touched && paypalForm.controls.password.invalid"
+              />
+              @if (paypalForm.controls.password.touched && paypalForm.controls.password.invalid) {
+                <span class="gateway-error">Password is required.</span>
+              }
+            </label>
+          }
+          <div class="flex flex-wrap justify-end gap-2 pt-1">
+            <button
+              type="button"
+              class="min-h-10 rounded-lg bg-[#f2f2f2] px-4 text-xs font-medium text-[#555b5d] transition hover:bg-[#e8e8e8] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#319eaf]"
+              (click)="showPaypalCreateAccount()"
+            >
+              Create Account
+            </button>
+            <button
+              type="button"
+              class="min-h-10 rounded-lg bg-white px-4 text-xs font-medium text-[#555b5d] ring-1 ring-[#dedede] transition hover:bg-[#f7f7f7] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#319eaf]"
+              (click)="closeModal()"
+            >
+              Cancel &amp; Return
+            </button>
+            <button
+              type="submit"
+              class="min-h-10 rounded-lg bg-[#1269a5] px-5 text-xs font-medium text-white transition hover:bg-[#0f5a8e] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1269a5]"
+            >
+              {{ paypalStep() === 'email' ? 'Next' : 'Log In' }}
+            </button>
+          </div>
+        </form>
+      } @else {
+        <h2 id="wallet-title-dialog" class="text-lg font-semibold text-[#414749]">{{ walletProvider() }}</h2>
+        <p class="mt-2 text-sm text-[#646b6d]">{{ walletProvider() }} is not connected in this preview.</p>
+        <div class="mt-5 flex justify-end gap-2">
+          <button
+            type="button"
+            class="min-h-10 rounded-lg bg-[#f2f2f2] px-4 text-xs font-medium text-[#555b5d] transition hover:bg-[#e8e8e8] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#319eaf]"
+            (click)="closeModal()"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            class="min-h-10 rounded-lg bg-[#70bec9] px-4 text-xs font-medium text-white transition hover:bg-[#5aaab6] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#28636e]"
+            (click)="continueWalletPayment()"
+          >
+            Continue
+          </button>
+        </div>
+      }
+    </section>
+  </div>
+}

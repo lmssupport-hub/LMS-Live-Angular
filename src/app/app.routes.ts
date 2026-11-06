@@ -100,6 +100,19 @@ export const routes: Routes = [
           ),
         title: 'Role Management',
       },
+      // Subscription & Billing (company admin buys a package) + its payment step
+      {
+        path: 'subscription',
+        loadComponent: () =>
+          import('./subscription-billing/subscription/subscription').then((m) => m.Subscription),
+        title: 'Subscription & Billing',
+      },
+      {
+        path: 'subscription/payment',
+        loadComponent: () =>
+          import('./payment/payment-gateway/payment-gateway').then((m) => m.PaymentGateway),
+        title: 'Payment Method',
+      },
       {
         path: 'courses',
         loadComponent: () =>

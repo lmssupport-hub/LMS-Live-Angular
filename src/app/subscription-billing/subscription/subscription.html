@@ -1,0 +1,306 @@
+<div class="relative w-full font-sans text-[#505050]">
+  <main class="relative z-10 px-4 pb-7 sm:px-6 lg:px-10">
+    <header class="my-2 mb-5 flex flex-wrap items-center gap-3">
+     
+
+      <div class="min-w-[168px]">
+  <h1 class="text-sm font-semibold text-[#4c5153] sm:text-base">Subscription &amp; Billing</h1>
+  <p class="mt-0.5 text-[10px] text-[#727779]">Review plan pricing and additional features</p>
+</div>
+
+      <button
+        type="button"
+        class="ml-0 min-h-8 rounded-full bg-white px-4 text-[10px] text-[#555b5d] shadow-sm transition hover:bg-[#eaf7f8] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#319eaf] sm:ml-1"
+        (click)="openManageDetails()"
+      >
+        Manage Details
+      </button>
+
+      <div class="ml-auto flex items-center gap-3">
+        <label class="flex items-center gap-2 text-[10px] text-[#555b5d]">
+          Currency
+          <select
+            #currencySelect
+            class="h-7
+             min-w-[112px] rounded-full border-0 bg-white px-3 text-[9px] text-[#777d7f] outline-none focus-visible:ring-2 focus-visible:ring-[#319eaf]"
+            [value]="currency()"
+            (change)="setCurrency(currencySelect.value)"
+          >
+            <option value="USD">U.S.Dollar (USD)</option>
+            <option value="EUR">EURO (EUR)</option>
+            <option value="INR">Indian Rupee (INR ₹)</option>
+          </select>
+        </label>
+
+        <div class="flex items-center rounded-full bg-white p-0.5" role="group" aria-label="Billing period">
+          <button
+            type="button"
+            class="min-h-7 rounded-full px-3 text-[9px] transition"
+            [class.bg-[#65bdca]]="billingCycle() === 'Monthly'"
+            [class.text-white]="billingCycle() === 'Monthly'"
+            [class.text-[#4e5557]]="billingCycle() !== 'Monthly'"
+            [attr.aria-pressed]="billingCycle() === 'Monthly'"
+            (click)="setBillingCycle('Monthly')"
+          >
+            Monthly
+          </button>
+          <button
+            type="button"
+            class="min-h-7 rounded-full px-3 text-[9px] transition"
+            [class.bg-[#65bdca]]="billingCycle() === 'Yearly'"
+            [class.text-white]="billingCycle() === 'Yearly'"
+            [class.text-[#4e5557]]="billingCycle() !== 'Yearly'"
+            [attr.aria-pressed]="billingCycle() === 'Yearly'"
+            (click)="setBillingCycle('Yearly')"
+          >
+            Yearly
+          </button>
+        </div>
+      </div>
+    </header>
+
+    @if (actionMessage()) {
+      <p class="mt-3 rounded-lg bg-white px-4 py-2 text-xs text-[#687477]" role="status" aria-live="polite">
+        {{ actionMessage() }}
+      </p>
+    }
+
+    @if (loadError()) {
+      <p class="mt-3 rounded-lg bg-white px-4 py-2 text-xs text-[#687477]" role="alert">
+        {{ loadError() }}
+      </p>
+    }
+
+    <section class="min-h-[65vh] overflow-y-auto rounded-2xl bg-white p-4 pr-8 pt-5 sm:max-h-[calc(108vh-220px)] sm:min-h-[calc(108vh-220px)] sm:p-6 sm:pr-8" aria-label="Available subscription plans">
+      @if (loading()) {
+        <div class="grid min-h-[388px] place-items-center text-xs text-[#687477]" role="status">
+          Loading subscription plans…
+        </div>
+      } @else if (!visiblePackages().length) {
+        <div class="grid min-h-[388px] place-items-center text-xs text-[#687477]">
+          No active plans are available for the {{ billingCycle().toLowerCase() }} billing cycle.
+        </div>
+      } @else {
+      <div
+        class="flex snap-x snap-mandatory items-stretch gap-3 overflow-x-auto overflow-y-hidden pb-2 pt-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        @for (plan of visiblePackages(); track plan.id) {
+          <article
+            class="relative flex h-[clamp(420px,50vh,458px)] min-h-[500px] w-[clamp(182px,22vw,270px)] shrink-0 snap-start flex-col rounded-[18px] px-4 pb-5 pt-4"
+            [class.bg-[#8bcbd5]]="isPopular(plan)"
+            [class.text-white]="isPopular(plan)"
+            [class.bg-[#edf6f7]]="!isPopular(plan)"
+            [class.text-[#555b5d]]="!isPopular(plan)"
+          >
+            @if (isPopular(plan)) {
+              <span class="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap rounded-full bg-[#ffbd3e] px-3 py-1 text-[8px] font-medium text-white">
+                Popular Plan
+              </span>
+            }
+
+            <h2 class="min-h-7 truncate text-[clamp(17px,1.8vw,22px)] font-semibold leading-6">
+              <button
+                type="button"
+                class="max-w-full truncate text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#319eaf]"
+                [attr.aria-label]="'View details for ' + plan.name"
+                (click)="openPackageDetails(plan)"
+              >
+                {{ plan.name }}
+              </button>
+            </h2>
+            <p
+              class="plan-price mt-1 flex min-h-[48px] items-baseline whitespace-nowrap text-[clamp(35px,3.8vw,46px)] font-semibold leading-[1.05] tabular-nums"
+              [class.text-[#78c5d0]]="!isPopular(plan)"
+            >
+              {{ convertedPrice(plan.price) | currency:currency():'symbol':'1.0-2' }}
+            </p>
+            <p class="mt-1 min-h-3 text-[9px] leading-3">{{ plan.billingCycle }}</p>
+            <p class="mt-2 min-h-7 line-clamp-2 text-[clamp(8px,0.9vw,11px)] leading-3">
+              {{ plan.description }}
+            </p>
+
+            <ul class="mt-4 min-h-0 flex-1 space-y-2.5 overflow-y-auto">
+              @for (feature of featuresFor(plan); track feature) {
+                <li class="flex items-start gap-1.5 text-[clamp(9px,1vw,12px)] leading-3.5">
+                  <span class="mt-px grid h-2 w-2 shrink-0 place-items-center rounded-full bg-[#5eb8c6] text-[6px] leading-none text-white" aria-hidden="true">✓</span>
+                  <span>{{ feature }}</span>
+                </li>
+              }
+            </ul>
+
+            <button
+              type="button"
+              class="mt-auto min-h-6 w-full rounded-full bg-white px-3 text-[9px] font-medium text-[#555b5d] transition hover:bg-[#f1fbfc] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#319eaf]"
+              (click)="selectPlan(plan)"
+            >
+              Buy Plan
+            </button>
+          </article>
+        }
+      </div>
+      }
+    </section>
+  </main>
+</div>
+
+@if (detailsOpen()) {
+  <div
+    class="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-black/30 p-4 backdrop-blur-[2px]"
+    (click)="closeDetails()"
+  >
+    <section
+      class="relative flex h-[370px] w-full max-w-[314px] flex-col rounded-[11px] bg-white p-[17px] shadow-[0_8px_24px_rgba(0,0,0,.24)]"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="subscription-details-title"
+      (click)="$event.stopPropagation()"
+    >
+      <button
+        type="button"
+        class="absolute right-0 top-0 grid h-[27px] w-[34px] place-items-center rounded-bl-md rounded-tr-[11px] bg-[#f65353] text-xl leading-none text-white transition hover:bg-[#e54545] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#28636e]"
+        aria-label="Close subscription details"
+        (click)="closeDetails()"
+      >
+        <span aria-hidden="true">&times;</span>
+      </button>
+
+      <h2 id="subscription-details-title" class="sr-only">Manage Subscription &amp; Billing Details</h2>
+      <div class="flex h-[21px] shrink-0 items-start gap-4 pr-8" role="tablist" aria-label="Subscription details sections">
+        <button
+          id="subscription-tab"
+          type="button"
+          role="tab"
+          aria-controls="subscription-panel"
+          [attr.aria-selected]="detailsTab() === 'subscription'"
+          class="text-[9px] leading-4 transition"
+          [class.font-medium]="detailsTab() === 'subscription'"
+          [class.text-[#454a4b]]="detailsTab() === 'subscription'"
+          [class.text-[#a4a8a9]]="detailsTab() !== 'subscription'"
+          (click)="openDetails('subscription')"
+        >
+          Subscription Details
+        </button>
+        <button
+          id="billing-tab"
+          type="button"
+          role="tab"
+          aria-controls="billing-panel"
+          [attr.aria-selected]="detailsTab() === 'billing'"
+          class="text-[9px] leading-4 transition"
+          [class.font-medium]="detailsTab() === 'billing'"
+          [class.text-[#454a4b]]="detailsTab() === 'billing'"
+          [class.text-[#a4a8a9]]="detailsTab() !== 'billing'"
+          (click)="openDetails('billing')"
+        >
+          Billing Details
+        </button>
+      </div>
+
+      <div class="flex min-h-0 flex-1 flex-col rounded-[10px] bg-[#f5f5f5] p-[9px]">
+        @if (detailsTab() === 'subscription') {
+          <section id="subscription-panel" role="tabpanel" aria-labelledby="subscription-tab" class="flex min-h-0 flex-1 flex-col">
+            @if (selectedPackage(); as item) {
+              <dl class="space-y-2 overflow-y-auto">
+                <div class="flex min-h-[34px] items-center justify-between gap-3 rounded-[10px] bg-white px-[10px]">
+                  <dt class="text-[9px] text-[#303536]">Package Name</dt>
+                  <dd class="truncate text-[9px] text-[#898e8f]">{{ item.name }}</dd>
+                </div>
+                <div class="flex min-h-[34px] items-start justify-between gap-3 rounded-[10px] bg-white px-[10px] py-2">
+                  <dt class="shrink-0 text-[9px] text-[#303536]">Description</dt>
+                  <dd class="text-right text-[9px] text-[#898e8f]">{{ item.description || '—' }}</dd>
+                </div>
+                <div class="flex min-h-[34px] items-center justify-between gap-3 rounded-[10px] bg-white px-[10px]">
+                  <dt class="text-[9px] text-[#303536]">Billing Cycle</dt>
+                  <dd class="text-[9px] text-[#898e8f]">{{ item.billingCycle }}</dd>
+                </div>
+                <div class="flex min-h-[34px] items-center justify-between gap-3 rounded-[10px] bg-white px-[10px]">
+                  <dt class="text-[9px] text-[#303536]">Price</dt>
+                  <dd class="text-[9px] text-[#898e8f]">{{ convertedPrice(item.price) | currency:currency():'symbol':'1.0-2' }}</dd>
+                </div>
+              </dl>
+            } @else {
+              <dl class="space-y-3">
+                <div class="flex min-h-[34px] items-center justify-between gap-3 rounded-[10px] bg-white px-[10px]">
+                  <dt class="text-[9px] text-[#303536]">Current Plan</dt>
+                  <dd class="truncate text-[9px] text-[#898e8f]">{{ mySubscription()?.packageName || 'No active plan' }}</dd>
+                </div>
+                <div class="flex min-h-[34px] items-center justify-between gap-3 rounded-[10px] bg-white px-[10px]">
+                  <dt class="text-[9px] text-[#303536]">Start Date</dt>
+                  <dd class="text-[9px] text-[#898e8f]">{{ formatDate(mySubscription()?.assignedAt) }}</dd>
+                </div>
+                <div class="flex min-h-[34px] items-center justify-between gap-3 rounded-[10px] bg-white px-[10px]">
+                  <dt class="text-[9px] text-[#303536]">Due Date</dt>
+                  <dd
+                    class="text-[9px]"
+                    [class.text-[#898e8f]]="!isPlanExpired()"
+                    [class.text-[#f65353]]="isPlanExpired()"
+                  >
+                    {{ formatDate(mySubscription()?.expiresAt) }}{{ isPlanExpired() ? ' (Expired)' : '' }}
+                  </dd>
+                </div>
+              </dl>
+            }
+            <button
+              type="button"
+              disabled
+              class="mt-auto min-h-[27px] w-full cursor-not-allowed rounded-[10px] bg-white text-[9px] font-medium text-[#333839] disabled:opacity-100"
+              title="Current subscription data is unavailable"
+            >
+              Upgrade
+            </button>
+          </section>
+        } @else {
+          <section id="billing-panel" role="tabpanel" aria-labelledby="billing-tab" class="flex min-h-0 flex-1 flex-col">
+            @if (selectedPackage(); as item) {
+              <dl class="space-y-2">
+                <div class="flex min-h-[34px] items-center justify-between gap-3 rounded-[10px] bg-white px-[10px]">
+                  <dt class="text-[9px] text-[#303536]">User Limit</dt>
+                  <dd class="truncate text-[9px] text-[#898e8f]">{{ item.userLimit }}</dd>
+                </div>
+                <div class="flex min-h-[34px] items-center justify-between gap-3 rounded-[10px] bg-white px-[10px]">
+                  <dt class="text-[9px] text-[#303536]">Storage Limit</dt>
+                  <dd class="truncate text-[9px] text-[#898e8f]">{{ packageStorageLimit(item) }}</dd>
+                </div>
+                <div class="flex min-h-[34px] items-center justify-between gap-3 rounded-[10px] bg-white px-[10px]">
+                  <dt class="text-[9px] text-[#303536]">Plan Type</dt>
+                  <dd class="truncate text-[9px] text-[#898e8f]">{{ item.availablePackage }}</dd>
+                </div>
+              </dl>
+            } @else {
+              <dl class="space-y-2">
+                <div class="flex min-h-[34px] items-center justify-between gap-3 rounded-[10px] bg-white px-[10px]">
+                  <dt class="text-[9px] text-[#303536]">Billing Name</dt>
+                  <dd class="truncate text-[9px] text-[#898e8f]">{{ myBilling()?.billingName || 'Not available' }}</dd>
+                </div>
+                <div class="flex min-h-[34px] items-center justify-between gap-3 rounded-[10px] bg-white px-[10px]">
+                  <dt class="text-[9px] text-[#303536]">Company Name</dt>
+                  <dd class="truncate text-[9px] text-[#898e8f]">{{ myBilling()?.companyName || 'Not available' }}</dd>
+                </div>
+                <div class="flex min-h-[34px] items-center justify-between gap-3 rounded-[10px] bg-white px-[10px]">
+                  <dt class="shrink-0 text-[9px] text-[#303536]">Billing Address</dt>
+                  <dd class="truncate text-[9px] text-[#898e8f]" [attr.title]="billingAddress()">{{ billingAddress() || 'Not available' }}</dd>
+                </div>
+                <div class="flex min-h-[34px] items-center justify-between gap-3 rounded-[10px] bg-white px-[10px]">
+                  <dt class="text-[9px] text-[#303536]">Billing Email</dt>
+                  <dd class="truncate text-[9px] text-[#898e8f]">{{ myBilling()?.email || 'Not available' }}</dd>
+                </div>
+                <div class="flex min-h-[34px] items-center justify-between gap-3 rounded-[10px] bg-white px-[10px]">
+                  <dt class="text-[9px] text-[#303536]">VAT Number</dt>
+                  <dd class="truncate text-[9px] text-[#898e8f]">{{ myBilling()?.vatNumber || 'Not available' }}</dd>
+                </div>
+              </dl>
+            }
+            <button
+              type="button"
+              disabled
+              class="mt-auto min-h-[27px] w-full cursor-not-allowed rounded-[10px] bg-white text-[9px] font-medium text-[#333839] disabled:opacity-100"
+              title="Billing details are unavailable"
+            >
+              Edit Billing Details
+            </button>
+          </section>
+        }
+      </div>
+    </section>
+  </div>
+}

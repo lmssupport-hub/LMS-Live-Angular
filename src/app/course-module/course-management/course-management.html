@@ -70,7 +70,7 @@
         </button>
       </div>
 
-      @if (canManage()) {
+      @if (canCreate()) {
         <button #createButton type="button" class="ml-auto h-10 cursor-pointer rounded-full border-0 border-transparent bg-white px-7 text-xs text-[#333] transition-all duration-300 ease-out enabled:hover:border-[#7fb9c7] enabled:hover:bg-[#4694A4] enabled:hover:text-[#f4fbfc] enabled:hover:shadow-[0_8px_18px_-2px_rgba(70,160,180,0.65),0_3px_8px_rgba(120,200,215,0.3)] enabled:focus-visible:border-[#7fb9c7] enabled:focus-visible:bg-[#4694A4] enabled:focus-visible:text-[#f4fbfc] enabled:focus-visible:shadow-[0_8px_18px_-2px_rgba(70,160,180,0.65),0_3px_8px_rgba(120,200,215,0.3)] focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50" (click)="openCreateModal()">
           + Create course
         </button>
@@ -117,7 +117,7 @@
                 [ngClass]="statusBadgeClasses(course.status)"
               >{{ courseStatusLabel(course.status) }}</span>
 
-              @if (canManage()) {
+              @if (canOrganize() || canSeeEnrollments() || canDelete()) {
                 <!-- 3-dot stays top-right; actions open in an arc around it, inside the card -->
                 <div class="absolute right-3 top-3 z-20 size-8">
                   <button
@@ -136,6 +136,7 @@
                     </svg>
                   </button>
 
+                  @if (canSeeEnrollments()) {
                   <!-- Enrollments (left of the 3-dot) -->
                   <button
                     type="button"
@@ -160,7 +161,9 @@
                       </svg>
                     </span>
                   </button>
+                  }
 
+                  @if (canOrganize()) {
                   <!-- Organize sections (bottom-left of the 3-dot) -->
                   <button
                     type="button"
@@ -184,7 +187,9 @@
                       </svg>
                     </span>
                   </button>
+                  }
 
+                  @if (canDelete()) {
                   <!-- Delete (directly below the 3-dot) -->
                   <button
                     type="button"
@@ -204,6 +209,7 @@
                       </svg>
                     </span>
                   </button>
+                  }
                 </div>
               }
               <div class="absolute inset-x-4 bottom-3">
@@ -225,8 +231,8 @@
                       View
                     </button>
                   } @else {
-                    <button type="button" class="h-6 shrink-0 cursor-pointer rounded-full bg-white px-4 text-[9px] font-medium text-neutral-700 shadow-sm transition hover:bg-[#61b7c5] hover:text-white" (click)="enrollCourse(course)" [attr.aria-label]="'Enroll in ' + course.name">
-                      Enroll
+                    <button type="button" class="h-6 shrink-0 cursor-pointer rounded-full bg-white px-4 text-[9px] font-medium text-neutral-700 shadow-sm transition hover:bg-[#61b7c5] hover:text-white" (click)="startCourse(course)" [attr.aria-label]="'Start course ' + course.name">
+                      Start course
                     </button>
                   }
                 </div>

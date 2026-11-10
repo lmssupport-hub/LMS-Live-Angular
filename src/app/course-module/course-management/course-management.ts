@@ -20,7 +20,7 @@ import {
 } from '../course.model';
 import { CourseManagementService } from '../../services/course-management.service';
  
-import { AuthService } from '../../services/auth';
+import { AuthService, FEATURE } from '../../services/auth';
 import { environment } from '../../../environments/environment';
  
 type DropdownName = 'filter';
@@ -64,13 +64,19 @@ export class CourseManagement {
     });
   });
  
-  // ---------- role checks ----------
+  // ---------- permissions (set per role in Role Management; the server enforces the same rules) ----------
   readonly isAdmin = computed(() => this.authService.user()?.role === 'ADMIN');
-  readonly isLearner = computed(() => this.authService.user()?.role === 'LEARNER');
-  readonly canManage = computed(() => {
-    const role = this.authService.user()?.role;
-    return role === 'ADMIN' || role === 'INSTRUCTOR';
-  });
+  readonly canCreate = computed(() => this.authService.can(FEATURE.COURSE_CREATE, 'create'));
+  readonly canEdit = computed(() => this.authService.can(FEATURE.COURSE_CREATE, 'update'));
+  readonly canDelete = computed(() => this.authService.can(FEATURE.COURSE_CREATE, 'delete'));
+  readonly canOrganize = computed(() => this.authService.can(FEATURE.COURSE_ORGANIZE, 'update'));
+  readonly canSeeEnrollments = computed(() => this.authService.can(FEATURE.ENROLLED_LIST, 'read'));
+  /** Anything beyond looking at the list gives the admin-style cards. Mirrors CourseService.getVisibleCourses. */
+  readonly canManage = computed(
+    () => this.canCreate() || this.canEdit() || this.canDelete() || this.canOrganize(),
+  );
+  /** Read-only users (learners): only their enrolled courses, each with a "Start course" button. */
+  readonly isLearner = computed(() => !this.canManage());
  
   // ---------- organize (sections) state ----------
   // CHANGED: replaces the old contentEditorOpen / editorCourse pair.
@@ -122,6 +128,12 @@ export class CourseManagement {
       untracked(() => this.organizingCourse.set(course));
     });
 
+    // Re-read the role's permissions so a change made by the admin shows up without logging in again.
+    this.authService.refreshPermissions().subscribe({
+      error: () => {
+        /* keep the permissions saved at login */
+      },
+    });
     this.loadCourses();
   }
  
@@ -214,7 +226,10 @@ export class CourseManagement {
    */
   editFromOrganize(): void {
     const course = this.organizingCourse();
-    if (course) this.openEditModal(course);
+    if (!course) return;
+    // a role without "update" on Create Course can look at the course, not change it
+    if (this.canEdit()) this.openEditModal(course);
+    else this.openViewModal(course);
   }
  
   // ---------- create / edit / view ----------
@@ -500,14 +515,11 @@ export class CourseManagement {
   }
  
   /**
-   * NEW: placeholder for the learner-facing "Enroll" action from the Figma. No enrollment
-   * API was shared yet (CourseManagementService only has CRUD + instructor lookup), so this
-   * currently just opens the view modal so the learner can still see the course details.
-   * TODO: replace the body with a real POST /api/courses/{id}/enroll call once that
-   * endpoint exists, and show a success/already-enrolled state instead of the view modal.
+   * "Start course" on a learner's card.
+   * TODO: what happens next is not decided yet - wire the navigation here once it is.
    */
-  enrollCourse(course: Course): void {
-    this.openViewModal(course);
+  startCourse(course: Course): void {
+    void course;
   }
  
   // ---------- out-of-scope entry points (other features, not part of the Create Course SRS) ----------

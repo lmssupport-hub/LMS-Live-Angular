@@ -6,6 +6,18 @@ import { TokenStorageService } from './token-storage.service';
 import { catchError, throwError } from 'rxjs';
 import { Router } from '@angular/router';
 
+export type AccessAction = 'create' | 'read' | 'update' | 'delete';
+export type PermissionFlags = Record<AccessAction, boolean>;
+
+/** Feature ids - the same ids the backend seeds (SystemFeatureSeeder). */
+export const FEATURE = {
+  COURSE_CREATE: 'COURSE_MGMT_CREATE_COURSE',
+  COURSE_LIST: 'COURSE_MGMT_COURSE_LIST',
+  COURSE_ORGANIZE: 'COURSE_MGMT_ORGANIZE_MODULES',
+  ENROLL_UNENROLL: 'ENROLLMENT_ENROLL_UNENROLL',
+  ENROLLED_LIST: 'ENROLLMENT_ENROLLED_LIST',
+} as const;
+
 export interface AuthUser {
   id: number;
   firstName: string;
@@ -14,6 +26,10 @@ export interface AuthUser {
   role: string;
   roles: string[];
   instructorId: number | null;
+  /** True for company ADMIN / SUPER_ADMIN: every action is allowed. */
+  fullAccess: boolean;
+  /** What the user's role grants, keyed by feature id (empty when fullAccess). */
+  permissions: Record<string, PermissionFlags>;
 }
 
 export interface LoginResponse {
@@ -37,6 +53,19 @@ interface LoginApiData {
   role: string;
   roles?: string[];
   instructorId?: number | null;
+  fullAccess?: boolean;
+  permissions?: PermissionGrantApi[];
+}
+
+/** One row of the backend's permission list (PermissionDto.Grant). */
+interface PermissionGrantApi extends PermissionFlags {
+  featureId: string;
+}
+
+/** Row shape for GET /api/profile/permissions. */
+interface PermissionsApiData {
+  fullAccess?: boolean;
+  permissions?: PermissionGrantApi[];
 }
 
 /** Row shape for GET /api/auth/signup/admins — User-table fields only. */
@@ -98,6 +127,8 @@ export class AuthService {
           role: data.role,
           roles: data.roles ?? [],
           instructorId: data.instructorId ?? null,
+          fullAccess: !!data.fullAccess,
+          permissions: this.toPermissionMap(data.permissions),
         })!,
       })),
       tap((response) => {
@@ -119,6 +150,8 @@ export class AuthService {
           role: data.role,
           roles: data.roles ?? [],
           instructorId: data.instructorId ?? null,
+          fullAccess: !!data.fullAccess,
+          permissions: this.toPermissionMap(data.permissions),
         })!,
       ),
       tap({
@@ -133,6 +166,51 @@ export class AuthService {
         },
       }),
     );
+  }
+
+  /**
+   * Can the logged-in user do `action` on `featureId`? (Options a role does not grant stay disabled.)
+   * Reads the `user` signal, so it works inside computed() and templates.
+   */
+  can(featureId: string, action: AccessAction): boolean {
+    const user = this.user();
+    if (!user) return false;
+    // fullAccess comes from the server; the role check keeps sessions saved before it existed working.
+    if (user.fullAccess || user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') return true;
+    return !!user.permissions?.[featureId]?.[action];
+  }
+
+  /** GET /api/profile/permissions - re-reads the role's permissions without logging in again. */
+  refreshPermissions(): Observable<AuthUser | null> {
+    return this.http
+      .get<ApiResponse<PermissionsApiData>>(`${environment.apiBaseUrl}/api/profile/permissions`)
+      .pipe(
+        map(({ data }) => {
+          const current = this.user();
+          if (!current) return null;
+          const next: AuthUser = {
+            ...current,
+            fullAccess: !!data.fullAccess,
+            permissions: this.toPermissionMap(data.permissions),
+          };
+          this.tokenStorage.updateUser(next);
+          this.user.set(next);
+          return next;
+        }),
+      );
+  }
+
+  private toPermissionMap(rows: PermissionGrantApi[] | undefined): Record<string, PermissionFlags> {
+    const map: Record<string, PermissionFlags> = {};
+    for (const row of rows ?? []) {
+      map[row.featureId] = {
+        create: !!row.create,
+        read: !!row.read,
+        update: !!row.update,
+        delete: !!row.delete,
+      };
+    }
+    return map;
   }
 
   token(): string | null {
@@ -201,6 +279,9 @@ export class AuthService {
       ...user,
       roles: user.roles?.length ? user.roles : [this.toAuthority(user.role)],
       instructorId: user.instructorId ?? null,
+      // sessions saved before permissions existed have neither field
+      fullAccess: user.fullAccess ?? false,
+      permissions: user.permissions ?? {},
     };
   }
 

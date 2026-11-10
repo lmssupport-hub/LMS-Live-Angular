@@ -277,7 +277,12 @@ export class PaymentGateway implements OnInit {
     this.cardForm.markAllAsTouched();
     this.billingForm.markAllAsTouched();
     if (this.cardForm.invalid || this.billingForm.invalid) {
-      this.paymentError.set('Please complete the required card and billing details.');
+      const missing = this.invalidFieldLabels();
+      this.paymentError.set(
+        missing.length
+          ? `Please complete the required details: ${missing.join(', ')}.`
+          : 'Please complete the required card and billing details.',
+      );
       return;
     }
     if (!this.otpVerified()) {
@@ -335,6 +340,31 @@ export class PaymentGateway implements OnInit {
           this.otpVerified.set(false);
         },
       });
+  }
+
+  /** Names of the card / billing fields that are still invalid, so the error says exactly what to fix. */
+  private invalidFieldLabels(): string[] {
+    const cardLabels: Record<string, string> = {
+      number: 'Card number',
+      expiry: 'Expiry (MM/YY)',
+      cvc: 'CVC',
+    };
+    const billingLabels: Record<string, string> = {
+      country: 'Country',
+      email: 'Billing email',
+      address: 'Address',
+      city: 'City',
+      postalCode: 'Postal code',
+      acceptedTerms: 'Terms of Service',
+    };
+    const labels: string[] = [];
+    for (const [key, label] of Object.entries(cardLabels)) {
+      if (this.cardForm.get(key)?.invalid) labels.push(label);
+    }
+    for (const [key, label] of Object.entries(billingLabels)) {
+      if (this.billingForm.get(key)?.invalid) labels.push(label);
+    }
+    return labels;
   }
 
   /** Card data never stays in memory after the request finishes. */

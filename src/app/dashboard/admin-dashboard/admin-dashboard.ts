@@ -1,10 +1,11 @@
 import { ChangeDetectionStrategy, Component, ElementRef, HostListener, computed, inject, signal, viewChild } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRouteSnapshot, NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { EMPTY, interval, timer } from 'rxjs';
 import { catchError, filter, map, startWith, switchMap } from 'rxjs/operators';
 
 import { AuthService } from '../../services/auth';
+import { ADMIN_MENU, isMenuVisible } from '../../config/admin-menu';
 import { PackageService } from '../../services/package.service';
 import { RolePageState } from '../../services/role.service';
 
@@ -31,6 +32,29 @@ export class AdminDashboard {
   private readonly packagesApi = inject(PackageService);
   private readonly rolePageState = inject(RolePageState);
 
+  // ---------- sidebar menu (role / package based) ----------
+  /** Company's own ADMIN? (only they get Role Management, Subscription and the package countdown) */
+  readonly isCompanyAdmin = this.auth.isCompanyAdmin;
+
+  /**
+   * The menu items this user may see:
+   *  - Admin       -> Dashboard + Role + Subscription (always) + the menus their PACKAGE includes
+   *  - Instructor / Learner / any role -> Dashboard + only the menus their ROLE grants
+   * Recomputes by itself whenever the permissions change (see the refresh timer in the constructor).
+   */
+  readonly menuItems = computed(() => ADMIN_MENU.filter((item) => isMenuVisible(item, this.auth)));
+
+  constructor() {
+    // Package / role can change while the page is open (expiry, role edited by the admin):
+    // re-read the permissions every 5 minutes so menus update without logging in again.
+    timer(5 * 60_000, 5 * 60_000)
+      .pipe(
+        switchMap(() => this.auth.refreshPermissions().pipe(catchError(() => EMPTY))),
+        takeUntilDestroyed(),
+      )
+      .subscribe();
+  }
+
   // ---------- header: identity ----------
   // Single source of truth lives in AuthService (firstName + lastName, falls
   // back to email) - kept DRY instead of re-deriving it here.
@@ -54,15 +78,15 @@ export class AdminDashboard {
   /** Reads the admin's package expiry now and every 5 minutes (so an unassign / new assign shows without re-login). */
   private readonly subscription = toSignal(
     timer(0, 5 * 60_000).pipe(
-      switchMap(() =>
+      // Only the company ADMIN has a package of their own; the API rejects everyone else.
+      switchMap(() => (!this.isCompanyAdmin() ? EMPTY :
         this.packagesApi.getMySubscription().pipe(
           map((s) => ({ s, fetchedAt: Date.now() })),
           catchError((err) => {
   console.error('my-subscription failed', err);
   return EMPTY;
 }),
-        ),
-      ),
+        ))),
     ),
     { initialValue: null },
   );

@@ -110,10 +110,12 @@
       <p class="mt-1 text-xs text-neutral-500">
         Add the first section to organize lessons and multimedia.
       </p>
-      <button type="button" class="mx-auto mt-4 h-9 rounded-lg bg-[#61b7c5] px-5 text-xs font-medium text-white"
-        (click)="openAddSection()">
-        Add first section
-      </button>
+      @if (canAddSection()) {
+        <button type="button" class="mx-auto mt-4 h-9 rounded-lg bg-[#61b7c5] px-5 text-xs font-medium text-white"
+          (click)="openAddSection()">
+          Add first section
+        </button>
+      }
     </div>
     } @else {
     <!-- CHANGED: ONLY this area scrolls. px-2 / pt-2 / pb-4 keep the drag-over ring and the
@@ -161,28 +163,34 @@
           </button>
 
           <!-- Edit / Delete icons + drag handle -->
-          <button type="button"
-            class="grid size-7 shrink-0 place-items-center rounded-full bg-[#61b7c5] text-white transition hover:bg-[#489daa] disabled:opacity-50"
-            [disabled]="sectionsSaving()" [attr.aria-label]="'Edit ' + section.name" (click)="openEditSection(section)"
-            title="Edit section">
-            <svg class="h-4 w-4 text-white" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-              <path
-                d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25ZM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83Z" />
-            </svg>
-          </button>
-          <button type="button"
-            class="grid size-7 shrink-0 place-items-center rounded-full bg-[#61b7c5] text-white transition hover:bg-red-500 disabled:opacity-50"
-            [disabled]="sectionsSaving()" [attr.aria-label]="'Delete ' + section.name"
-            (click)="requestRemoveSection(section)" title="Delete section">
-            <svg class="h-4 w-4 text-white" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12ZM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4Z" />
-            </svg>
-          </button>
-          <span
-            class="shrink-0 cursor-grab select-none px-1 text-lg leading-none text-neutral-300 active:cursor-grabbing"
-            [attr.draggable]="!sectionsSaving()" (dragstart)="startSectionDrag($event, section)"
-            (dragend)="endSectionDrag()" title="Drag to reorder"
-            [attr.aria-label]="'Drag ' + section.name + ' to reorder'">⠿</span>
+          @if (canEditSection()) {
+            <button type="button"
+              class="grid size-7 shrink-0 place-items-center rounded-full bg-[#61b7c5] text-white transition hover:bg-[#489daa] disabled:opacity-50"
+              [disabled]="sectionsSaving()" [attr.aria-label]="'Edit ' + section.name" (click)="openEditSection(section)"
+              title="Edit section">
+              <svg class="h-4 w-4 text-white" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25ZM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83Z" />
+              </svg>
+            </button>
+          }
+          @if (canDeleteSection()) {
+            <button type="button"
+              class="grid size-7 shrink-0 place-items-center rounded-full bg-[#61b7c5] text-white transition hover:bg-red-500 disabled:opacity-50"
+              [disabled]="sectionsSaving()" [attr.aria-label]="'Delete ' + section.name"
+              (click)="requestRemoveSection(section)" title="Delete section">
+              <svg class="h-4 w-4 text-white" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12ZM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4Z" />
+              </svg>
+            </button>
+          }
+          @if (canEditSection()) {
+            <span
+              class="shrink-0 cursor-grab select-none px-1 text-lg leading-none text-neutral-300 active:cursor-grabbing"
+              [attr.draggable]="!sectionsSaving()" (dragstart)="startSectionDrag($event, section)"
+              (dragend)="endSectionDrag()" title="Drag to reorder"
+              [attr.aria-label]="'Drag ' + section.name + ' to reorder'">⠿</span>
+          }
         </div>
         @if (reorderingSectionId() === section.id) {
         <div class="mt-2 flex items-center justify-end gap-2 border-t border-neutral-200 px-2 pt-2"
@@ -230,32 +238,38 @@
               }}</span>
             <span class="min-w-0 flex-1 truncate">{{ activity.title }}</span><span
               class="rounded-full bg-[#eef8fa] px-2 py-0.5 text-[8px] text-[#3e8d99]">{{ activity.kind }}</span>
-            <button type="button"
-              class="grid size-7 place-items-center rounded-full bg-[#61b7c5] text-white transition hover:bg-[#489daa]"
-              [attr.aria-label]="'Edit ' + activity.title"
-              (click)="$event.stopPropagation(); openActivity(section.id, activity)" title="Edit activity">
-              <svg viewBox="0 0 24 24" class="size-3.5 fill-none stroke-current" stroke-width="2" aria-hidden="true">
-                <path d="m4 20 4.5-1 10-10a2.1 2.1 0 0 0-3-3l-10 10L4 20Z" stroke-linecap="round"
-                  stroke-linejoin="round" />
-                <path d="m14 7 3 3" stroke-linecap="round" />
-              </svg>
-            </button>
+            @if (canEditActivity(activity.kind)) {
+              <button type="button"
+                class="grid size-7 place-items-center rounded-full bg-[#61b7c5] text-white transition hover:bg-[#489daa]"
+                [attr.aria-label]="'Edit ' + activity.title"
+                (click)="$event.stopPropagation(); openActivity(section.id, activity)" title="Edit activity">
+                <svg viewBox="0 0 24 24" class="size-3.5 fill-none stroke-current" stroke-width="2" aria-hidden="true">
+                  <path d="m4 20 4.5-1 10-10a2.1 2.1 0 0 0-3-3l-10 10L4 20Z" stroke-linecap="round"
+                    stroke-linejoin="round" />
+                  <path d="m14 7 3 3" stroke-linecap="round" />
+                </svg>
+              </button>
+            }
             <!-- delete asks for confirmation first -->
-            <button type="button"
-              class="grid size-7 place-items-center rounded-full bg-[#61b7c5] text-white transition hover:bg-red-500"
-              [attr.aria-label]="'Delete ' + activity.title" (click)="$event.stopPropagation(); requestRemoveActivity(section.id, activity)"
-              title="Delete activity">
-              <svg viewBox="0 0 24 24" class="size-3.5 fill-none stroke-current" stroke-width="2" aria-hidden="true">
-                <path d="M4 7h16" stroke-linecap="round" />
-                <path d="M9 7V4h6v3" stroke-linecap="round" stroke-linejoin="round" />
-                <path d="m7 7 1 13h8l1-13" stroke-linecap="round" stroke-linejoin="round" />
-                <path d="M10 11v5M14 11v5" stroke-linecap="round" />
-              </svg>
-            </button>
-            <span class="cursor-grab select-none text-lg text-neutral-300 active:cursor-grabbing" draggable="true"
-              (click)="$event.stopPropagation()"
-              (dragstart)="startActivityDrag($event, section.id, activityIndex)" (dragend)="endActivityDrag()"
-              title="Drag activity within or between sections" aria-label="Drag activity">⠿</span>
+            @if (canDeleteActivity(activity.kind)) {
+              <button type="button"
+                class="grid size-7 place-items-center rounded-full bg-[#61b7c5] text-white transition hover:bg-red-500"
+                [attr.aria-label]="'Delete ' + activity.title" (click)="$event.stopPropagation(); requestRemoveActivity(section.id, activity)"
+                title="Delete activity">
+                <svg viewBox="0 0 24 24" class="size-3.5 fill-none stroke-current" stroke-width="2" aria-hidden="true">
+                  <path d="M4 7h16" stroke-linecap="round" />
+                  <path d="M9 7V4h6v3" stroke-linecap="round" stroke-linejoin="round" />
+                  <path d="m7 7 1 13h8l1-13" stroke-linecap="round" stroke-linejoin="round" />
+                  <path d="M10 11v5M14 11v5" stroke-linecap="round" />
+                </svg>
+              </button>
+            }
+            @if (canEditSection()) {
+              <span class="cursor-grab select-none text-lg text-neutral-300 active:cursor-grabbing" draggable="true"
+                (click)="$event.stopPropagation()"
+                (dragstart)="startActivityDrag($event, section.id, activityIndex)" (dragend)="endActivityDrag()"
+                title="Drag activity within or between sections" aria-label="Drag activity">⠿</span>
+            }
           </div>
           } @empty {
           <p class="rounded-xl bg-white px-5 py-3 text-center text-[10px] text-neutral-500"
@@ -265,57 +279,65 @@
           }
 
           <!-- ============ ADD ACTIVITY (filter-style animation, bottom -> top) ============ -->
-          <div class="relative" (dragover)="
-                    dragOverActivity($event, section.id, activitiesForSection(section.id).length)
-                  " (drop)="dropActivityAtEnd($event, section.id)">
+          @if (canAddActivity()) {
+            <div class="relative" (dragover)="
+                      dragOverActivity($event, section.id, activitiesForSection(section.id).length)
+                    " (drop)="dropActivityAtEnd($event, section.id)">
 
-            <!-- Menu: always in DOM so the close animation can play -->
-            <div
-              [id]="'activity-menu-' + section.id"
-              class="up-clip absolute bottom-6 left-1/2 z-20 w-[122px] -translate-x-1/2"
-              [class.up-open]="activityMenuSectionId() === section.id"
-              [class.up-closing]="isActivityMenuUsed(section.id) && activityMenuSectionId() !== section.id"
-              [attr.inert]="activityMenuSectionId() === section.id ? null : ''"
-              [attr.aria-hidden]="activityMenuSectionId() !== section.id"
-              role="menu"
-              [attr.aria-label]="'Activity types for ' + section.name"
-            >
-              <div class="up-panel">
-                <button type="button" role="menuitem" data-no-teal-hover class="up-item"
-                  [style.--i]="0" [style.--r]="2"
-                  (click)="openResourceDialog('Ebook', section.id)">
-                  Ebook
-                </button>
-                <button type="button" role="menuitem" data-no-teal-hover class="up-item"
-                  [style.--i]="1" [style.--r]="1"
-                  (click)="openResourceDialog('Multimedia', section.id)">
-                  Multimedia
-                </button>
-                <button type="button" role="menuitem" data-no-teal-hover class="up-item"
-                  [style.--i]="2" [style.--r]="0"
-                  (click)="openQuestionBankList(section.id)">
-                  Question Bank
-                </button>
-                <div class="up-spacer" aria-hidden="true"></div>
+              <!-- Menu: always in DOM so the close animation can play -->
+              <div
+                [id]="'activity-menu-' + section.id"
+                class="up-clip absolute bottom-6 left-1/2 z-20 w-[122px] -translate-x-1/2"
+                [class.up-open]="activityMenuSectionId() === section.id"
+                [class.up-closing]="isActivityMenuUsed(section.id) && activityMenuSectionId() !== section.id"
+                [attr.inert]="activityMenuSectionId() === section.id ? null : ''"
+                [attr.aria-hidden]="activityMenuSectionId() !== section.id"
+                role="menu"
+                [attr.aria-label]="'Activity types for ' + section.name"
+              >
+                <div class="up-panel">
+                  @if (canAddEbook()) {
+                    <button type="button" role="menuitem" data-no-teal-hover class="up-item"
+                      [style.--i]="0" [style.--r]="2"
+                      (click)="openResourceDialog('Ebook', section.id)">
+                      Ebook
+                    </button>
+                  }
+                  @if (canAddMultimedia()) {
+                    <button type="button" role="menuitem" data-no-teal-hover class="up-item"
+                      [style.--i]="1" [style.--r]="1"
+                      (click)="openResourceDialog('Multimedia', section.id)">
+                      Multimedia
+                    </button>
+                  }
+                  @if (canAddQuestionBank()) {
+                    <button type="button" role="menuitem" data-no-teal-hover class="up-item"
+                      [style.--i]="2" [style.--r]="0"
+                      (click)="openQuestionBankList(section.id)">
+                      Question Bank
+                    </button>
+                  }
+                  <div class="up-spacer" aria-hidden="true"></div>
+                </div>
               </div>
-            </div>
 
-            <!-- Add Activity button -->
-            <button type="button" data-no-teal-hover
-              class="relative z-30 h-12 w-full rounded-xl border-2 border-dashed border-[#61b7c5] bg-white text-xs text-neutral-600 outline-none transition-colors hover:bg-[#f7fcfd] focus-visible:ring-2 focus-visible:ring-[#61b7c5]/40 focus-visible:ring-offset-2"
-              [style.box-shadow]="activityMenuSectionId() === section.id ? '0 -8px 10px -4px rgba(0,0,0,.25)' : null"
-              (click)="
-                markActivityMenuUsed(section.id);
-                activityMenuSectionId.set(
-                  activityMenuSectionId() === section.id ? null : section.id
-                )
-              " [attr.aria-label]="'Add activity to ' + section.name" aria-haspopup="menu"
-              [attr.aria-controls]="'activity-menu-' + section.id"
-              [attr.aria-expanded]="activityMenuSectionId() === section.id">
-              + Add Activity
-            </button>
-          </div>
-          <!-- ============ /ADD ACTIVITY ============ -->
+              <!-- Add Activity button -->
+              <button type="button" data-no-teal-hover
+                class="relative z-30 h-12 w-full rounded-xl border-2 border-dashed border-[#61b7c5] bg-white text-xs text-neutral-600 outline-none transition-colors hover:bg-[#f7fcfd] focus-visible:ring-2 focus-visible:ring-[#61b7c5]/40 focus-visible:ring-offset-2"
+                [style.box-shadow]="activityMenuSectionId() === section.id ? '0 -8px 10px -4px rgba(0,0,0,.25)' : null"
+                (click)="
+                  markActivityMenuUsed(section.id);
+                  activityMenuSectionId.set(
+                    activityMenuSectionId() === section.id ? null : section.id
+                  )
+                " [attr.aria-label]="'Add activity to ' + section.name" aria-haspopup="menu"
+                [attr.aria-controls]="'activity-menu-' + section.id"
+                [attr.aria-expanded]="activityMenuSectionId() === section.id">
+                + Add Activity
+              </button>
+            </div>
+            <!-- ============ /ADD ACTIVITY ============ -->
+          }
         </div>
         }
 
@@ -323,19 +345,21 @@
              On the last section it simply adds at the end.
              Same hover effect as the course-list action icons: the pill expands, the icon spins
              and the "Add Section" label slides out. -->
-        <button type="button" data-no-teal-hover
-          class="group/btn absolute bottom-0 left-1/2 z-10 flex h-6 -translate-x-1/2 translate-y-1/2 items-center overflow-hidden rounded-full border border-dashed border-[#61b7c5] bg-white px-1 text-[#3e8d99] shadow-sm outline-none transition-all duration-300 ease-out hover:border-solid hover:bg-[#61b7c5] hover:pr-3 hover:text-white hover:shadow-md focus-visible:border-solid focus-visible:bg-[#61b7c5] focus-visible:pr-3 focus-visible:text-white focus-visible:ring-2 focus-visible:ring-[#61b7c5]/40 disabled:opacity-50 motion-reduce:transition-none"
-          [disabled]="sectionsSaving()" [attr.aria-label]="'Add section after ' + section.name" title="Add section here"
-          (click)="openAddSection(section.id)">
-          <span class="grid size-3.5 shrink-0 place-items-center transition-transform duration-500 ease-linear group-hover/btn:rotate-[360deg] group-focus-visible/btn:rotate-[360deg] motion-reduce:transition-none">
-            <svg viewBox="0 0 24 24" class="size-3.5 fill-none stroke-current" stroke-width="2.4" aria-hidden="true">
-              <path d="M12 5v14M5 12h14" stroke-linecap="round" />
-            </svg>
-          </span>
-          <span
-            class="max-w-0 overflow-hidden whitespace-nowrap text-[10px] font-semibold opacity-0 transition-all duration-500 ease-out group-hover/btn:ml-1.5 group-hover/btn:max-w-[90px] group-hover/btn:opacity-100 group-focus-visible/btn:ml-1.5 group-focus-visible/btn:max-w-[90px] group-focus-visible/btn:opacity-100 motion-reduce:transition-none"
-          >Add Section</span>
-        </button>
+        @if (canAddSection()) {
+          <button type="button" data-no-teal-hover
+            class="group/btn absolute bottom-0 left-1/2 z-10 flex h-6 -translate-x-1/2 translate-y-1/2 items-center overflow-hidden rounded-full border border-dashed border-[#61b7c5] bg-white px-1 text-[#3e8d99] shadow-sm outline-none transition-all duration-300 ease-out hover:border-solid hover:bg-[#61b7c5] hover:pr-3 hover:text-white hover:shadow-md focus-visible:border-solid focus-visible:bg-[#61b7c5] focus-visible:pr-3 focus-visible:text-white focus-visible:ring-2 focus-visible:ring-[#61b7c5]/40 disabled:opacity-50 motion-reduce:transition-none"
+            [disabled]="sectionsSaving()" [attr.aria-label]="'Add section after ' + section.name" title="Add section here"
+            (click)="openAddSection(section.id)">
+            <span class="grid size-3.5 shrink-0 place-items-center transition-transform duration-500 ease-linear group-hover/btn:rotate-[360deg] group-focus-visible/btn:rotate-[360deg] motion-reduce:transition-none">
+              <svg viewBox="0 0 24 24" class="size-3.5 fill-none stroke-current" stroke-width="2.4" aria-hidden="true">
+                <path d="M12 5v14M5 12h14" stroke-linecap="round" />
+              </svg>
+            </span>
+            <span
+              class="max-w-0 overflow-hidden whitespace-nowrap text-[10px] font-semibold opacity-0 transition-all duration-500 ease-out group-hover/btn:ml-1.5 group-hover/btn:max-w-[90px] group-hover/btn:opacity-100 group-focus-visible/btn:ml-1.5 group-focus-visible/btn:max-w-[90px] group-focus-visible/btn:opacity-100 motion-reduce:transition-none"
+            >Add Section</span>
+          </button>
+        }
       </article>
       }
     </div>

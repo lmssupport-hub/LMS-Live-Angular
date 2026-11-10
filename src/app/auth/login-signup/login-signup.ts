@@ -20,6 +20,7 @@ import {
 import { ActivatedRoute, Router } from '@angular/router';
 import { TimeoutError, finalize, timeout } from 'rxjs';
 import { AuthService } from '../../services/auth';
+import { homeRouteFor } from '../../guards/role.guard';
 import { InviteService, getInviteErrorMessage } from '../../services/invite.service';
 import { DOCUMENT, NgTemplateOutlet } from '@angular/common';
 
@@ -55,12 +56,6 @@ const PHONE_LENGTHS_BY_COUNTRY_CODE: Readonly<Record<string, readonly [number, n
 };
 
 const COUNTRY_CODES = Object.keys(PHONE_LENGTHS_BY_COUNTRY_CODE);
-
-const HOME_ROUTE_BY_ROLE: Readonly<Record<string, string>> = {
-  SUPER_ADMIN: '/super-admin-dashboard',
-  ADMIN: '/admin-dashboard',
-};
-const DEFAULT_HOME_ROUTE = '/courses';
 
 // Forgot-password settings (moved here from the old standalone page)
 const RESEND_COOLDOWN_SECONDS = 30;
@@ -542,7 +537,7 @@ export class LoginSignup {
       )
       .subscribe({
         next: ({ user }) => {
-          void this.router.navigate([HOME_ROUTE_BY_ROLE[user.role] ?? DEFAULT_HOME_ROUTE]);
+          void this.router.navigate([homeRouteFor(user)]);
         },
         error: (error: HttpErrorResponse) => this.loginError.set(this.toLoginMessage(error)),
       });

@@ -16,6 +16,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize, take } from 'rxjs/operators';
 import { Router } from '@angular/router';
 import { environment } from '../../../environments/environment';
+import { AuthService, FEATURE } from '../../services/auth';
 import { Course } from '../course.model';
 import {
   Section,
@@ -67,11 +68,46 @@ export class OrganizeSections implements OnInit, AfterViewInit, OnDestroy {
   /** "Edit course" button on the banner -> parent opens its edit-course modal. */
   readonly editCourseRequested = output<void>();
 
+  private readonly auth = inject(AuthService);
   private readonly sectionService = inject(SectionManagementService);
 
   private readonly multimediaService = inject(MultimediaManagementService);
   private readonly questionBankService = inject(QuestionBankService);
   private readonly destroyRef = inject(DestroyRef);
+
+  // ---------- permissions (Admin -> package, other roles -> Role Management; the server enforces the same) ----------
+  /** Organize Modules: create = add section, update = edit / reorder, delete = remove section. */
+  protected readonly canAddSection = computed(() => this.auth.can(FEATURE.COURSE_ORGANIZE, 'create'));
+  protected readonly canEditSection = computed(() => this.auth.can(FEATURE.COURSE_ORGANIZE, 'update'));
+  protected readonly canDeleteSection = computed(() => this.auth.can(FEATURE.COURSE_ORGANIZE, 'delete'));
+  /** Add-activity menu entries. Question Bank is managed by whoever may update Organize Modules. */
+  protected readonly canAddEbook = computed(() => this.auth.can(FEATURE.EBOOK, 'create'));
+  protected readonly canAddMultimedia = computed(() => this.auth.can(FEATURE.MULTIMEDIA, 'create'));
+  protected readonly canAddQuestionBank = computed(() => this.auth.can(FEATURE.COURSE_ORGANIZE, 'update'));
+  protected readonly canAddActivity = computed(
+    () => this.canAddEbook() || this.canAddMultimedia() || this.canAddQuestionBank(),
+  );
+
+  /** Edit an activity (Ebook / Multimedia / Question Bank)? */
+  protected canEditActivity(kind: ActivityKind): boolean {
+    return this.auth.can(this.featureOf(kind), 'update');
+  }
+
+  /** Delete an activity (Ebook / Multimedia / Question Bank)? */
+  protected canDeleteActivity(kind: ActivityKind): boolean {
+    return this.auth.can(this.featureOf(kind), kind === 'Question Bank' ? 'update' : 'delete');
+  }
+
+  private featureOf(kind: ActivityKind): string {
+    switch (kind) {
+      case 'Ebook':
+        return FEATURE.EBOOK;
+      case 'Multimedia':
+        return FEATURE.MULTIMEDIA;
+      case 'Question Bank':
+        return FEATURE.COURSE_ORGANIZE;
+    }
+  }
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   // ---------- page state ----------

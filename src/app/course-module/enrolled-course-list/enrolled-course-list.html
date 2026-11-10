@@ -13,7 +13,7 @@
           <p class="mt-1 text-[11px] font-medium text-[#398995]">{{ selectedCourse.name }}</p>
         } -->
       </div>
-      @if (canManage()) {
+      @if (canEnroll()) {
       <button #enrollButton type="button" data-enroll-course
         class="h-10 min-w-[150px] cursor-pointer rounded-full border border-transparent bg-white px-7 text-sm text-[#333] transition-all duration-300 ease-out enabled:hover:border-[#7fb9c7] enabled:hover:bg-[#4694A4] enabled:hover:text-[#f4fbfc] enabled:hover:shadow-[0_8px_18px_-2px_rgba(70,160,180,0.65),0_3px_8px_rgba(120,200,215,0.3)] enabled:focus-visible:border-[#7fb9c7] enabled:focus-visible:bg-[#4694A4] enabled:focus-visible:text-[#f4fbfc] enabled:focus-visible:shadow-[0_8px_18px_-2px_rgba(70,160,180,0.65),0_3px_8px_rgba(120,200,215,0.3)] focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
         [disabled]="courseLoading() || !course()" (click)="openEnrollPopup()">
@@ -145,31 +145,33 @@
                 {{ enrollment.completion || '—' }}
               </td>
               <td class="relative px-2 text-center">
-                <div class="relative inline-block" (click)="$event.stopPropagation()">
-                  <button type="button"
-                    class="grid size-7 place-items-center rounded-full bg-[#f5f5f5] text-[#555] outline-none transition hover:bg-[#e7f6f8] focus-visible:ring-2 focus-visible:ring-[#61b7c5]/60"
-                    [disabled]="unenrolling()" aria-haspopup="menu"
-                    [attr.aria-expanded]="openActionFor() === enrollment.userId"
-                    [attr.aria-label]="'More actions for ' + enrollment.username"
-                    (click)="toggleActionMenu($event, enrollment.userId)">
-                    <svg viewBox="0 0 24 24" class="size-4 fill-current" aria-hidden="true">
-                      <circle cx="12" cy="5" r="1.6" />
-                      <circle cx="12" cy="12" r="1.6" />
-                      <circle cx="12" cy="19" r="1.6" />
-                    </svg>
-                  </button>
-                  @if (openActionFor() === enrollment.userId) {
-                  <div
-                      class="absolute right-7 top-0 z-30 min-w-30 rounded-xl border border-neutral-100 bg-white p-1.5 text-left shadow-xl"
-                    role="menu">
-                    <button type="button" role="menuitem"
-                      class="w-full rounded-lg px-3 py-0 text-left text-[10px] text-red-700 outline-none transition hover:bg-red-50 focus-visible:bg-red-50 disabled:opacity-50"
-                      [disabled]="unenrolling()" (click)="unenrollSelectedUsers($event)"> {{unenrolling() ? 'Unenrolling…' : selectedCount() > 1 ? 'Unenroll selected' : 'Unenroll'
-                      }}
+                @if (canUnenroll()) {
+                  <div class="relative inline-block" (click)="$event.stopPropagation()">
+                    <button type="button"
+                      class="grid size-7 place-items-center rounded-full bg-[#f5f5f5] text-[#555] outline-none transition hover:bg-[#e7f6f8] focus-visible:ring-2 focus-visible:ring-[#61b7c5]/60"
+                      [disabled]="unenrolling()" aria-haspopup="menu"
+                      [attr.aria-expanded]="openActionFor() === enrollment.userId"
+                      [attr.aria-label]="'More actions for ' + enrollment.username"
+                      (click)="toggleActionMenu($event, enrollment.userId)">
+                      <svg viewBox="0 0 24 24" class="size-4 fill-current" aria-hidden="true">
+                        <circle cx="12" cy="5" r="1.6" />
+                        <circle cx="12" cy="12" r="1.6" />
+                        <circle cx="12" cy="19" r="1.6" />
+                      </svg>
                     </button>
+                    @if (openActionFor() === enrollment.userId) {
+                    <div
+                        class="absolute right-7 top-0 z-30 min-w-30 rounded-xl border border-neutral-100 bg-white p-1.5 text-left shadow-xl"
+                      role="menu">
+                      <button type="button" role="menuitem"
+                        class="w-full rounded-lg px-3 py-0 text-left text-[10px] text-red-700 outline-none transition hover:bg-red-50 focus-visible:bg-red-50 disabled:opacity-50"
+                        [disabled]="unenrolling()" (click)="unenrollSelectedUsers($event)"> {{unenrolling() ? 'Unenrolling…' : selectedCount() > 1 ? 'Unenroll selected' : 'Unenroll'
+                        }}
+                      </button>
+                    </div>
+                    }
                   </div>
-                  }
-                </div>
+                }
               </td>
             </tr>
             }

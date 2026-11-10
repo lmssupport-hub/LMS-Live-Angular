@@ -6,17 +6,12 @@ import { finalize } from 'rxjs';
 import { Router } from '@angular/router';
 
 import { AuthService } from '../../services/auth';
+import { homeRouteFor } from '../../guards/role.guard';
 
 const PASSWORD_MIN_LENGTH = 8;
 const PASSWORD_MAX_LENGTH = 16;
 const STRONG_PASSWORD_PATTERN = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).+$/;
 const EMOJI_PATTERN = /[\p{Extended_Pictographic}\p{Regional_Indicator}]/u;
-
-const HOME_ROUTE_BY_ROLE: Readonly<Record<string, string>> = {
-  SUPER_ADMIN: '/super-admin-dashboard/package',
-  ADMIN: '/admin-dashboard/admin-dashboard-home',
-};
-const DEFAULT_HOME_ROUTE = '/courses';
 
 const passwordsMatchValidator: ValidatorFn = (group: AbstractControl): ValidationErrors | null => {
   const newPassword = group.get('newPassword')?.value;
@@ -141,9 +136,7 @@ export class ChangePassword implements AfterViewInit {
 
     // CHANGED - learner / instructor ippo login page ku poga maatanga
     const user = this.auth.user();
-    const dashboardRoute = user
-      ? (HOME_ROUTE_BY_ROLE[user.role] ?? DEFAULT_HOME_ROUTE)
-      : '/auth';
+    const dashboardRoute = homeRouteFor(user);
     void this.router.navigateByUrl(dashboardRoute, { replaceUrl: true });
   }
 }

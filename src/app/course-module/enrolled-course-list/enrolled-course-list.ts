@@ -7,7 +7,7 @@ import { ApiRequestError, Enrollment, EnrollmentStatus } from '../enrollment.mod
 import { EnrollUser } from '../pop-modals/enroll-user/enroll-user'; // TODO: adjust path
 import { CourseManagementService } from '../../services/course-management.service';
 import { EnrollmentService } from '../../services/enrollment.service';
-import { AuthService } from '../../services/auth';
+import { AuthService, FEATURE } from '../../services/auth';
 
 
 @Component({
@@ -31,11 +31,11 @@ export class EnrolledCourseList {
   private courseId: number | null = null;
   private flashTimer: ReturnType<typeof setTimeout> | null = null;
 
-  // ---------- role (SRS: Admins & Instructors only) ----------
-  readonly canManage = computed(() => {
-    const role = this.authService.user()?.role;
-    return role === 'ADMIN' || role === 'INSTRUCTOR';
-  });
+  // ---------- permissions (Admin -> package, other roles -> Role Management; the server enforces the same) ----------
+  /** "Enroll/Unroll in Course" - create = enroll users. */
+  readonly canEnroll = computed(() => this.authService.can(FEATURE.ENROLL_UNENROLL, 'create'));
+  /** "Enroll/Unroll in Course" - delete = unenroll users. */
+  readonly canUnenroll = computed(() => this.authService.can(FEATURE.ENROLL_UNENROLL, 'delete'));
 
   // ---------- selected course ----------
   readonly course = signal<Course | null>(null);

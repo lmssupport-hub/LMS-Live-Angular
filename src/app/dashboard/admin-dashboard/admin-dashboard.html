@@ -64,32 +64,34 @@
       </nav>
     }
 
-    <!-- Package "days left" pill: hangs from the top-centre of the header, visible on ALL screen sizes -->
-    @if (packageCountdown(); as pc) {
-      <div
-        class="pointer-events-auto absolute left-1/2 top-0 z-50 flex -translate-x-1/2 items-center justify-center gap-3 whitespace-nowrap rounded-b-2xl border border-t-0 border-white/40 px-4 py-2.5 text-white shadow-[0_8px_18px_-4px_rgba(70,160,180,0.55)] transition-colors duration-300 sm:gap-5 sm:px-7"
-        [class]="pc.expired || pc.expiringSoon
-          ? 'bg-gradient-to-b from-[#ff8a80] to-[#ff5a5f]'
-          : 'bg-gradient-to-b from-[#6fc3d1] to-[#4694A4]'"
-        role="timer"
-        [attr.aria-label]="pc.expired ? 'Package expired' : 'Package time remaining: ' + pc.daysLabel + ', ' + pc.hours + ' hours'"
-        [title]="pc.packageName ? 'Package: ' + pc.packageName : 'Package'"
-      >
-        @if (pc.expired) {
-          <span class="text-[13px] font-semibold sm:text-[15px]">Package expired</span>
-        } @else {
-          <span class="text-[13px] font-semibold tabular-nums sm:text-[15px]">{{ pc.daysLabel }}</span>
-          <span class="text-[13px] font-semibold tabular-nums sm:text-[15px]">{{ pc.hours }} Hrs</span>
-        }
-      </div>
-    } @else {
-      <!-- Shown when the admin has no package (or the API has not answered yet) -->
-      <div
-        class="absolute left-1/2 top-0 z-50 flex -translate-x-1/2 items-center justify-center whitespace-nowrap rounded-b-2xl border border-t-0 border-white/40 bg-neutral-400 px-4 py-2.5 text-[13px] font-semibold text-white sm:px-7 sm:text-[15px]"
-        role="status"
-      >
-        No package
-      </div>
+    @if (isCompanyAdmin()) {
+      <!-- Package "days left" pill: hangs from the top-centre of the header, visible on ALL screen sizes -->
+      @if (packageCountdown(); as pc) {
+        <div
+          class="pointer-events-auto absolute left-1/2 top-0 z-50 flex -translate-x-1/2 items-center justify-center gap-3 whitespace-nowrap rounded-b-2xl border border-t-0 border-white/40 px-4 py-2.5 text-white shadow-[0_8px_18px_-4px_rgba(70,160,180,0.55)] transition-colors duration-300 sm:gap-5 sm:px-7"
+          [class]="pc.expired || pc.expiringSoon
+            ? 'bg-gradient-to-b from-[#ff8a80] to-[#ff5a5f]'
+            : 'bg-gradient-to-b from-[#6fc3d1] to-[#4694A4]'"
+          role="timer"
+          [attr.aria-label]="pc.expired ? 'Package expired' : 'Package time remaining: ' + pc.daysLabel + ', ' + pc.hours + ' hours'"
+          [title]="pc.packageName ? 'Package: ' + pc.packageName : 'Package'"
+        >
+          @if (pc.expired) {
+            <span class="text-[13px] font-semibold sm:text-[15px]">Package expired</span>
+          } @else {
+            <span class="text-[13px] font-semibold tabular-nums sm:text-[15px]">{{ pc.daysLabel }}</span>
+            <span class="text-[13px] font-semibold tabular-nums sm:text-[15px]">{{ pc.hours }} Hrs</span>
+          }
+        </div>
+      } @else {
+        <!-- Shown when the admin has no package (or the API has not answered yet) -->
+        <div
+          class="absolute left-1/2 top-0 z-50 flex -translate-x-1/2 items-center justify-center whitespace-nowrap rounded-b-2xl border border-t-0 border-white/40 bg-neutral-400 px-4 py-2.5 text-[13px] font-semibold text-white sm:px-7 sm:text-[15px]"
+          role="status"
+        >
+          No package
+        </div>
+      }
     }
 
     <!-- Everything else lives on the right: search, then the icon actions, then account -->
@@ -217,68 +219,51 @@
       </svg>
     </aside>
 
-    <!-- Icon nav, placed on top of the curve -->
+    <!-- Icon nav, placed on top of the curve.
+         Built from ADMIN_MENU (config/admin-menu.ts) and filtered by the user's package / role. -->
     <nav
       class="fixed left-0 top-16 z-10 hidden h-[calc(100vh-4rem)] w-[clamp(48px,4.5vw,84px)] flex-col items-center justify-center gap-8 sm:flex"
+      aria-label="Main menu"
     >
-      <!-- Dashboard Home -->
-      <a
-        routerLink="admin-dashboard-home"
-        routerLinkActive="text-white"
-        class="group flex flex-col items-center gap-1 text-white/90 transition hover:text-white"
-        title="Dashboard"
-      >
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="3" width="7" height="9" rx="1"></rect>
-          <rect x="14" y="3" width="7" height="5" rx="1"></rect>
-          <rect x="14" y="12" width="7" height="9" rx="1"></rect>
-          <rect x="3" y="16" width="7" height="5" rx="1"></rect>
-        </svg>
-        <span class="text-[10px] leading-tight">Dashboard</span>
-      </a>
-
-      <!-- Role Management -->
-      <a
-        routerLink="role"
-        routerLinkActive="text-white"
-        class="group flex flex-col items-center gap-1 text-white/90 transition hover:text-white"
-        title="Role Management"
-      >
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-          <circle cx="12" cy="7" r="4"></circle>
-        </svg>
-        <span class="text-[10px] leading-tight">Role</span>
-      </a>
-
-      <!-- Course Management -->
-      <a
-        routerLink="courses"
-        routerLinkActive="text-white"
-        class="group flex flex-col items-center gap-1 text-white/90 transition hover:text-white"
-        title="Course Management"
-      >
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-        </svg>
-        <span class="text-[10px] leading-tight">Course</span>
-      </a>
-
-      <!-- Subscription & Billing -->
-      <a
-        routerLink="subscription"
-        routerLinkActive="text-white"
-        class="group flex flex-col items-center gap-1 text-white/90 transition hover:text-white"
-        title="Subscription & Billing"
-      >
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="2" y="5" width="20" height="14" rx="2"></rect>
-          <path d="M2 10h20"></path>
-          <path d="M6 15h4"></path>
-        </svg>
-        <span class="text-[10px] leading-tight">Subscription</span>
-      </a>
+      @for (item of menuItems(); track item.id) {
+        <a
+          [routerLink]="item.route"
+          routerLinkActive="text-white"
+          class="group flex flex-col items-center gap-1 text-white/90 transition hover:text-white"
+          [title]="item.title"
+        >
+          @switch (item.icon) {
+            @case ('dashboard') {
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="3" width="7" height="9" rx="1"></rect>
+                <rect x="14" y="3" width="7" height="5" rx="1"></rect>
+                <rect x="14" y="12" width="7" height="9" rx="1"></rect>
+                <rect x="3" y="16" width="7" height="5" rx="1"></rect>
+              </svg>
+            }
+            @case ('role') {
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+            }
+            @case ('course') {
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+              </svg>
+            }
+            @case ('subscription') {
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+                <path d="M2 10h20"></path>
+                <path d="M6 15h4"></path>
+              </svg>
+            }
+          }
+          <span class="text-[10px] leading-tight">{{ item.label }}</span>
+        </a>
+      }
     </nav>
 
     <main class="min-h-[calc(100vh-4rem)] bg-[#f5f5f5] pl-0 pt-2 sm:pl-[clamp(48px,4.5vw,84px)]">

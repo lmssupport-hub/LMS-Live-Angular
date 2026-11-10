@@ -1,6 +1,8 @@
 import { Routes } from '@angular/router';
 
-import { roleGuard } from './guards/role.guard';
+import { adminAreaGuard, companyAdminGuard, featureGuard, roleGuard } from './guards/role.guard';
+import { COURSE_ACCESS } from './config/admin-menu';
+import { FEATURE } from './services/auth';
 
 export const routes: Routes = [
   {
@@ -79,8 +81,11 @@ export const routes: Routes = [
   },
 
   // ---------- admin-dashboard ----------
+  // Admin, Instructor, Learner and every custom role open this dashboard. The sidebar and each page
+  // are limited to what the Admin's PACKAGE / the other roles' ROLE allows.
   {
     path: 'admin-dashboard',
+    canActivate: [adminAreaGuard],
     loadComponent: () =>
       import('./dashboard/admin-dashboard/admin-dashboard').then((m) => m.AdminDashboard),
     title: 'Admin Dashboard',
@@ -92,8 +97,10 @@ export const routes: Routes = [
           import('./dashboard/admin-dashboard-home/admin-dashboard-home').then((m) => m.AdminDashboardHome),
         title: 'Dashboard',
       },
+      // Role Management - company ADMIN only
       {
         path: 'role',
+        canActivate: [companyAdminGuard],
         loadComponent: () =>
           import('./access-permission/role-management/role-management').then(
             (m) => m.RoleManagement,
@@ -103,18 +110,21 @@ export const routes: Routes = [
       // Subscription & Billing (company admin buys a package) + its payment step
       {
         path: 'subscription',
+        canActivate: [companyAdminGuard],
         loadComponent: () =>
           import('./subscription-billing/subscription/subscription').then((m) => m.Subscription),
         title: 'Subscription & Billing',
       },
       {
         path: 'subscription/payment',
+        canActivate: [companyAdminGuard],
         loadComponent: () =>
           import('./payment/payment-gateway/payment-gateway').then((m) => m.PaymentGateway),
         title: 'Payment Method',
       },
       {
         path: 'courses',
+        canActivate: [featureGuard(...COURSE_ACCESS)],
         loadComponent: () =>
           import('./course-module/course-management/course-management').then(
             (m) => m.CourseManagement,
@@ -124,6 +134,7 @@ export const routes: Routes = [
 
       {
   path: 'courses/:courseId/enrollments',
+  canActivate: [featureGuard([FEATURE.ENROLLED_LIST, 'read'])],
   loadComponent: () =>
     import('./course-module/enrolled-course-list/enrolled-course-list').then((m) => m.EnrolledCourseList),
   title: 'Enrolled Course List',
@@ -131,6 +142,7 @@ export const routes: Routes = [
 
 {
         path: 'courses/:courseId/organize',
+        canActivate: [featureGuard([FEATURE.COURSE_ORGANIZE, 'update'])],
         loadComponent: () =>
           import('./course-module/course-management/course-management').then(
             (m) => m.CourseManagement,
@@ -140,6 +152,7 @@ export const routes: Routes = [
 
       {
   path: 'courses/:courseId/sections/:sectionId/question-banks/:bankId',
+  canActivate: [featureGuard([FEATURE.COURSE_ORGANIZE, 'update'])],
   loadComponent: () =>
     import('./course-module/question-bank/question-bank').then(
       (m) => m.QuestionBankComponent,
@@ -149,6 +162,7 @@ export const routes: Routes = [
 
 {
         path: 'courses/:courseId/preview',
+        canActivate: [featureGuard(...COURSE_ACCESS)],
         loadComponent: () =>
           import('./course-module/course-preview/course-preview').then(
             (m) => m.CoursePreview,
@@ -158,6 +172,7 @@ export const routes: Routes = [
 
       {
   path: 'courses/:courseId/sections/:sectionId/content',
+  canActivate: [featureGuard(...COURSE_ACCESS)],
   loadComponent: () =>
     import('./course-module/course-content-viewer/course-content-viewer').then(
       (m) => m.CourseContentViewer,

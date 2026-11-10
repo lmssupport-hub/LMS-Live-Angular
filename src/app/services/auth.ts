@@ -9,6 +9,9 @@ import { Router } from '@angular/router';
 export type AccessAction = 'create' | 'read' | 'update' | 'delete';
 export type PermissionFlags = Record<AccessAction, boolean>;
 
+/** "Needs `action` on `featureId`" - one requirement of a menu item / route / button. */
+export type AccessRequirement = readonly [featureId: string, action: AccessAction];
+
 /** Feature ids - the same ids the backend seeds (SystemFeatureSeeder). */
 export const FEATURE = {
   COURSE_CREATE: 'COURSE_MGMT_CREATE_COURSE',
@@ -16,6 +19,8 @@ export const FEATURE = {
   COURSE_ORGANIZE: 'COURSE_MGMT_ORGANIZE_MODULES',
   ENROLL_UNENROLL: 'ENROLLMENT_ENROLL_UNENROLL',
   ENROLLED_LIST: 'ENROLLMENT_ENROLLED_LIST',
+  MULTIMEDIA: 'CONTENT_MGMT_MULTIMEDIA',
+  EBOOK: 'CONTENT_MGMT_EBOOK',
 } as const;
 
 export interface AuthUser {
@@ -26,9 +31,17 @@ export interface AuthUser {
   role: string;
   roles: string[];
   instructorId: number | null;
-  /** True for company ADMIN / SUPER_ADMIN: every action is allowed. */
+  /** True for SUPER_ADMIN (app owner) only: every action is allowed. */
   fullAccess: boolean;
-  /** What the user's role grants, keyed by feature id (empty when fullAccess). */
+  /**
+   * True for the company's own ADMIN. Always sees Dashboard, Role Management and Subscription;
+   * every other menu / button comes from the package (see `permissions`).
+   */
+  companyAdmin: boolean;
+  /**
+   * What the user may do, keyed by feature id (empty when fullAccess):
+   * the package's features for the company ADMIN, the role's features (limited to the package) for everyone else.
+   */
   permissions: Record<string, PermissionFlags>;
 }
 
@@ -54,6 +67,7 @@ interface LoginApiData {
   roles?: string[];
   instructorId?: number | null;
   fullAccess?: boolean;
+  companyAdmin?: boolean;
   permissions?: PermissionGrantApi[];
 }
 
@@ -65,6 +79,7 @@ interface PermissionGrantApi extends PermissionFlags {
 /** Row shape for GET /api/profile/permissions. */
 interface PermissionsApiData {
   fullAccess?: boolean;
+  companyAdmin?: boolean;
   permissions?: PermissionGrantApi[];
 }
 
@@ -105,6 +120,8 @@ export class AuthService {
   readonly user = signal<AuthUser | null>(null);
   readonly roleResolved = signal(true);
   readonly isSuperAdmin = computed(() => this.user()?.role === 'SUPER_ADMIN');
+  /** The company's own ADMIN (not an invited Instructor / Learner / custom role). */
+  readonly isCompanyAdmin = computed(() => !!this.user()?.companyAdmin);
   readonly displayName = computed(() => {
     const user = this.user();
     if (!user) return '';
@@ -128,6 +145,7 @@ export class AuthService {
           roles: data.roles ?? [],
           instructorId: data.instructorId ?? null,
           fullAccess: !!data.fullAccess,
+          companyAdmin: !!data.companyAdmin,
           permissions: this.toPermissionMap(data.permissions),
         })!,
       })),
@@ -151,6 +169,7 @@ export class AuthService {
           roles: data.roles ?? [],
           instructorId: data.instructorId ?? null,
           fullAccess: !!data.fullAccess,
+          companyAdmin: !!data.companyAdmin,
           permissions: this.toPermissionMap(data.permissions),
         })!,
       ),
@@ -169,15 +188,21 @@ export class AuthService {
   }
 
   /**
-   * Can the logged-in user do `action` on `featureId`? (Options a role does not grant stay disabled.)
-   * Reads the `user` signal, so it works inside computed() and templates.
+   * Can the logged-in user do `action` on `featureId`? Menus, pages and buttons the role / package
+   * does not grant stay hidden. Reads the `user` signal, so it works inside computed() and templates.
+   *
+   * Only SUPER_ADMIN (fullAccess) bypasses the check - the company ADMIN is limited to the package.
    */
   can(featureId: string, action: AccessAction): boolean {
     const user = this.user();
     if (!user) return false;
-    // fullAccess comes from the server; the role check keeps sessions saved before it existed working.
-    if (user.fullAccess || user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') return true;
+    if (user.fullAccess || user.role === 'SUPER_ADMIN') return true;
     return !!user.permissions?.[featureId]?.[action];
+  }
+
+  /** True when the user satisfies AT LEAST ONE of the requirements. */
+  canAny(requirements: readonly AccessRequirement[]): boolean {
+    return requirements.some(([featureId, action]) => this.can(featureId, action));
   }
 
   /** GET /api/profile/permissions - re-reads the role's permissions without logging in again. */
@@ -191,6 +216,7 @@ export class AuthService {
           const next: AuthUser = {
             ...current,
             fullAccess: !!data.fullAccess,
+            companyAdmin: !!data.companyAdmin,
             permissions: this.toPermissionMap(data.permissions),
           };
           this.tokenStorage.updateUser(next);
@@ -279,8 +305,9 @@ export class AuthService {
       ...user,
       roles: user.roles?.length ? user.roles : [this.toAuthority(user.role)],
       instructorId: user.instructorId ?? null,
-      // sessions saved before permissions existed have neither field
+      // sessions saved before permissions existed have none of these fields
       fullAccess: user.fullAccess ?? false,
+      companyAdmin: user.companyAdmin ?? user.role?.trim().toUpperCase() === 'ADMIN',
       permissions: user.permissions ?? {},
     };
   }

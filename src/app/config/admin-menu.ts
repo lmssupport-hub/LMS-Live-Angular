@@ -1,11 +1,16 @@
-import { AccessRequirement, AuthService, FEATURE } from '../services/auth';
+import { AccessRequirement, AuthService, FEATURE, MENU } from '../services/auth';
 
 export type MenuIcon = 'dashboard' | 'role' | 'course' | 'subscription';
 
 
 export type MenuAccess =
-  | { readonly type: 'always' }
+  /** Admin dashboard home: everyone except a learner (a learner has its own dashboard home). */
+  | { readonly type: 'adminHome' }
+  /** Learner dashboard home: learners only. */
+  | { readonly type: 'learnerHome' }
   | { readonly type: 'companyAdmin' }
+  /** Shown when the category switch (e.g. Course Management) is ON - the create/read/update/delete flags do not matter. */
+  | { readonly type: 'menu'; readonly categoryId: string }
   | { readonly type: 'feature'; readonly anyOf: readonly AccessRequirement[] };
 
 export interface AdminMenuItem {
@@ -37,7 +42,15 @@ export const ADMIN_MENU: readonly AdminMenuItem[] = [
     title: 'Dashboard',
     route: 'admin-dashboard-home',
     icon: 'dashboard',
-    access: { type: 'always' },
+    access: { type: 'adminHome' },
+  },
+  {
+    id: 'learner-dashboard',
+    label: 'Dashboard',
+    title: 'Dashboard',
+    route: 'learner-dashboard-home',
+    icon: 'dashboard',
+    access: { type: 'learnerHome' },
   },
   {
     id: 'role',
@@ -53,7 +66,7 @@ export const ADMIN_MENU: readonly AdminMenuItem[] = [
     title: 'Course Management',
     route: 'courses',
     icon: 'course',
-    access: { type: 'feature', anyOf: COURSE_ACCESS },
+    access: { type: 'menu', categoryId: MENU.COURSE },
   },
   {
     id: 'subscription',
@@ -69,10 +82,14 @@ export const ADMIN_MENU: readonly AdminMenuItem[] = [
 export function isMenuVisible(item: AdminMenuItem, auth: AuthService): boolean {
   if (!auth.user()) return false;
   switch (item.access.type) {
-    case 'always':
-      return true;
+    case 'adminHome':
+      return !auth.isLearner();
+    case 'learnerHome':
+      return auth.isLearner();
     case 'companyAdmin':
       return auth.isCompanyAdmin();
+    case 'menu':
+      return auth.hasMenu(item.access.categoryId);
     case 'feature':
       return auth.canAny(item.access.anyOf);
   }

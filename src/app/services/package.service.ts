@@ -39,6 +39,13 @@ export function isSingleToggleFeature(featureId: string): boolean {
   return SINGLE_TOGGLE_FEATURE_IDS.has(featureId);
 }
 
+/**
+ * Categories that have no Create/Read/Update/Delete meaning (Authentication = just login access).
+ * Their category switch also sets every flag of the (hidden) feature.
+ * For every other category the switch ONLY decides whether the left menu is shown.
+ */
+export const TOGGLE_ONLY_CATEGORY_IDS: ReadonlySet<string> = new Set(['AUTHENTICATION']);
+
 export interface PackagePermissionFeature {
   id: string;
   name: string;
@@ -295,8 +302,10 @@ export class PackageDraftService {
    
   setSeedCategories(categories: PackagePermissionCategory[]): void {
     const saved = new Map<string, Record<PermissionAction, boolean>>();
+    const savedEnabled = new Map<string, boolean>();
     if (this._editingPackageId() !== null) {
       for (const category of this._categories()) {
+        savedEnabled.set(category.id, category.enabled);
         for (const feature of category.features) {
           saved.set(`${category.id}:${feature.id}`, feature.permissions);
         }
@@ -314,10 +323,11 @@ export class PackageDraftService {
               : { create: false, read: false, update: false, delete: false },
           };
         });
+        // The category switch (left menu) is its own value: it is NOT derived from the actions below it.
         return {
           ...category,
           features,
-          enabled: features.some((f) => Object.values(f.permissions).some(Boolean)),
+          enabled: savedEnabled.get(category.id) ?? false,
         };
       }),
     );
@@ -368,19 +378,29 @@ export class PackageDraftService {
           }
           return { ...feature, permissions: { ...feature.permissions, [action]: !feature.permissions[action] } };
         });
-        return { ...category, enabled: features.some((f) => Object.values(f.permissions).some(Boolean)), features };
+        // Toggle-only categories (Authentication) follow their flags; for every other category the
+        // switch is independent: turning an action on/off never changes the left-menu switch.
+        const enabled = TOGGLE_ONLY_CATEGORY_IDS.has(category.id)
+          ? features.some((f) => Object.values(f.permissions).some(Boolean))
+          : category.enabled;
+        return { ...category, enabled, features };
       }),
     );
   }
 
   /**
-   * Category header switch: if every permission in the category is already on,
-   * turn all off; otherwise turn all on.
+   * Category header switch.
+   * - Toggle-only category (Authentication): all flags follow the switch.
+   * - Every other category (e.g. Course Management): flips ONLY the left-menu switch. The
+   *   create / read / update / delete flags of its features are left untouched.
    */
   toggleCategory(categoryId: string): void {
     this._categories.update((categories) =>
       categories.map((category) => {
         if (category.id !== categoryId) return category;
+        if (!TOGGLE_ONLY_CATEGORY_IDS.has(category.id)) {
+          return { ...category, enabled: !category.enabled };
+        }
         const next = !category.features.every((f) => Object.values(f.permissions).every(Boolean));
         const features = category.features.map((f) => ({
           ...f,
@@ -393,6 +413,7 @@ export class PackageDraftService {
 
   hasAnyPermissionEnabled(): boolean {
     return this._categories().some((category) =>
+      category.enabled ||
       category.features.some((feature) => Object.values(feature.permissions).some(Boolean)));
   }
 

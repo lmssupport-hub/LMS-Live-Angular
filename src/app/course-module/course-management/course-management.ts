@@ -77,6 +77,16 @@ export class CourseManagement {
   );
   /** Read-only users (learners): only their enrolled courses, each with a "Start course" button. */
   readonly isLearner = computed(() => !this.canManage());
+  /**
+   * Mirrors CourseService.getVisibleCourses: without "read" on Course List (and no manage rights) the API
+   * answers 403. The Course Management menu can be ON with every action OFF, so the list is then simply empty.
+   */
+  private readonly canViewList = computed(
+    () =>
+      this.authService.isLearner() ||
+      this.authService.can(FEATURE.COURSE_LIST, 'read') ||
+      this.canManage(),
+  );
  
   // ---------- organize (sections) state ----------
   // CHANGED: replaces the old contentEditorOpen / editorCourse pair.
@@ -139,8 +149,13 @@ export class CourseManagement {
  
   // ---------- list loading ----------
   loadCourses(): void {
-    this.loading.set(true);
     this.loadError.set(null);
+    if (!this.canViewList()) {
+      this.courses.set([]);
+      this.loading.set(false);
+      return;
+    }
+    this.loading.set(true);
     this.courseManagementService.getAllCourses().subscribe({
       next: courses => {
         this.courses.set(courses);

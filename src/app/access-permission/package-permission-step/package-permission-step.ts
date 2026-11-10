@@ -7,6 +7,7 @@ import {
   PermissionAction,
   PackageDraftService,
   isSingleToggleFeature,
+  TOGGLE_ONLY_CATEGORY_IDS,
 } from '../../services/package.service';
 
 /** Absolute path, matching app.routes.ts (child of 'super-admin-dashboard'). */
@@ -34,7 +35,7 @@ export class PackagePermissionStep implements OnInit {
    * The UI shows only the category switch for them; their feature rows are hidden.
    * The hidden feature is still saved (all four flags follow the switch), so the backend is unchanged.
    */
-  private readonly toggleOnlyCategoryIds: ReadonlySet<string> = new Set(['AUTHENTICATION']);
+  private readonly toggleOnlyCategoryIds: ReadonlySet<string> = TOGGLE_ONLY_CATEGORY_IDS;
 
   protected isToggleOnlyCategory(categoryId: string): boolean {
     return this.toggleOnlyCategoryIds.has(categoryId);
@@ -58,15 +59,14 @@ export class PackagePermissionStep implements OnInit {
     this.draft.categories().filter((category) => category.features.length > 0));
 
   protected readonly selectedCount = computed(() =>
-    this.draft.categories().reduce(
-      (total, category) =>
-        total +
-        category.features.reduce(
-          (t, f) => t + (Object.values(f.permissions).some(Boolean) ? 1 : 0),
-          0,
-        ),
-      0,
-    ));
+    this.draft.categories().reduce((total, category) => {
+      const selected = category.features.reduce(
+        (t, f) => t + (Object.values(f.permissions).some(Boolean) ? 1 : 0),
+        0,
+      );
+      // A category switched ON with no action selected still counts as one selection (it shows the menu).
+      return total + (selected === 0 && category.enabled ? 1 : selected);
+    }, 0));
 
   ngOnInit(): void {
     // Draft lives in memory only, so a hard refresh drops it.
@@ -114,9 +114,9 @@ export class PackagePermissionStep implements OnInit {
     this.draft.toggle(categoryId, featureId, action);
   }
 
-  /** True when every permission of every feature in the category is on. */
+  /** The category switch (left menu) is its own value; it does not depend on the actions below it. */
   protected isCategoryOn(category: PackagePermissionCategory): boolean {
-    return category.features.every((f) => Object.values(f.permissions).every(Boolean));
+    return category.enabled;
   }
 
   protected toggleCategory(categoryId: string): void {

@@ -26,6 +26,8 @@ export class RolePermission {
 
   readonly role = input<Role | null>(null);
   readonly permissions = input.required<PermissionRow[]>();
+  /** Categories whose category switch (left menu) is ON. Independent of the row switches below. */
+  readonly enabledCategories = input<ReadonlySet<string>>(new Set());
   readonly actions = input<PermissionAction[]>(['create', 'read', 'update', 'delete']);
   readonly isEditing = input(false);
   readonly isAdmin = input(true);
@@ -33,9 +35,21 @@ export class RolePermission {
   readonly canSave = input(false);
   readonly error = input<string | null>(null);
 
-  readonly selectedCount = computed(() =>
-    this.permissions().filter((row) => Object.values(row.values).some(Boolean)).length,
-  );
+  readonly selectedCount = computed(() => {
+    const withActions = new Set<string>();
+    let count = 0;
+    for (const row of this.permissions()) {
+      if (Object.values(row.values).some(Boolean)) {
+        count++;
+        withActions.add(row.categoryId);
+      }
+    }
+    // A category switched ON with every action OFF still counts (it shows the menu).
+    for (const categoryId of this.enabledCategories()) {
+      if (!withActions.has(categoryId)) count++;
+    }
+    return count;
+  });
 
   /** Discard-confirmation popup shown when the Cancel button is clicked. */
   protected readonly confirmOpen = signal(false);
@@ -68,14 +82,9 @@ export class RolePermission {
     this.toggleCategory.emit(categoryId);
   }
 
-  /** Category switch is ON when every action the package allows in this category is ON. */
+  /** The category switch is its own value (left menu); it does not depend on the row switches below it. */
   isCategoryOn(categoryId: string): boolean {
-    const categoryRows = this.permissions().filter((row) => row.categoryId === categoryId);
-    if (!categoryRows.length) return false;
-
-    return categoryRows.every((row) =>
-      this.actions().every((action) => !this.isAllowed(row, action) || row.values[action]),
-    );
+    return this.enabledCategories().has(categoryId);
   }
 
   protected requestCancel(): void {

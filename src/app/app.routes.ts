@@ -1,8 +1,16 @@
 import { Routes } from '@angular/router';
 
-import { adminAreaGuard, companyAdminGuard, featureGuard, roleGuard } from './guards/role.guard';
+import {
+  adminAreaGuard,
+  adminHomeGuard,
+  companyAdminGuard,
+  featureGuard,
+  learnerHomeGuard,
+  menuGuard,
+  roleGuard,
+} from './guards/role.guard';
 import { COURSE_ACCESS } from './config/admin-menu';
-import { FEATURE } from './services/auth';
+import { FEATURE, MENU } from './services/auth';
 
 export const routes: Routes = [
   {
@@ -93,8 +101,20 @@ export const routes: Routes = [
       { path: '', redirectTo: 'admin-dashboard-home', pathMatch: 'full' },
       {
         path: 'admin-dashboard-home',
+        // A learner has its own home (learner-dashboard-home); the guard redirects them there.
+        canActivate: [adminHomeGuard],
         loadComponent: () =>
           import('./dashboard/admin-dashboard-home/admin-dashboard-home').then((m) => m.AdminDashboardHome),
+        title: 'Dashboard',
+      },
+      // Learner dashboard home - learners only
+      {
+        path: 'learner-dashboard-home',
+        canActivate: [learnerHomeGuard],
+        loadComponent: () =>
+          import('./dashboard/learner-dashboard-home/learner-dashboard-home').then(
+            (m) => m.LearnerDashboardHome,
+          ),
         title: 'Dashboard',
       },
       // Role Management - company ADMIN only
@@ -124,7 +144,9 @@ export const routes: Routes = [
       },
       {
         path: 'courses',
-        canActivate: [featureGuard(...COURSE_ACCESS)],
+        // Opens when the Course Management switch is ON. Create / edit / delete / view are checked
+        // separately inside the page, so the menu can be visible with every action OFF.
+        canActivate: [menuGuard(MENU.COURSE)],
         loadComponent: () =>
           import('./course-module/course-management/course-management').then(
             (m) => m.CourseManagement,

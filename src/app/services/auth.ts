@@ -23,6 +23,17 @@ export const FEATURE = {
   EBOOK: 'CONTENT_MGMT_EBOOK',
 } as const;
 
+/**
+ * Category ids (the same ids the backend seeds) whose LEFT MENU entry can be switched on in
+ * Package / Role Management. The category switch only decides whether the menu is shown; the
+ * create / read / update / delete flags decide what the user can do inside the page.
+ */
+export const MENU = {
+  COURSE: 'COURSE_MGMT',
+  CONTENT: 'CONTENT_MGMT',
+  ENROLLMENT: 'ENROLLMENT',
+} as const;
+
 export interface AuthUser {
   id: number;
   firstName: string;
@@ -43,6 +54,11 @@ export interface AuthUser {
    * the package's features for the company ADMIN, the role's features (limited to the package) for everyone else.
    */
   permissions: Record<string, PermissionFlags>;
+  /**
+   * Category ids whose left-menu entry is visible (the category switch in Package / Role Management).
+   * Independent of `permissions`: "Course Management" can be ON while every Course action is OFF.
+   */
+  menus: string[];
 }
 
 export interface LoginResponse {
@@ -69,6 +85,7 @@ interface LoginApiData {
   fullAccess?: boolean;
   companyAdmin?: boolean;
   permissions?: PermissionGrantApi[];
+  menus?: string[];
 }
 
 /** One row of the backend's permission list (PermissionDto.Grant). */
@@ -81,6 +98,7 @@ interface PermissionsApiData {
   fullAccess?: boolean;
   companyAdmin?: boolean;
   permissions?: PermissionGrantApi[];
+  menus?: string[];
 }
 
 /** Row shape for GET /api/auth/signup/admins — User-table fields only. */
@@ -122,6 +140,8 @@ export class AuthService {
   readonly isSuperAdmin = computed(() => this.user()?.role === 'SUPER_ADMIN');
   /** The company's own ADMIN (not an invited Instructor / Learner / custom role). */
   readonly isCompanyAdmin = computed(() => !!this.user()?.companyAdmin);
+  /** An invited user whose role is literally LEARNER (the backend uses the same rule for the course list). */
+  readonly isLearner = computed(() => this.user()?.role?.trim().toUpperCase() === 'LEARNER');
   readonly displayName = computed(() => {
     const user = this.user();
     if (!user) return '';
@@ -147,6 +167,7 @@ export class AuthService {
           fullAccess: !!data.fullAccess,
           companyAdmin: !!data.companyAdmin,
           permissions: this.toPermissionMap(data.permissions),
+          menus: data.menus ?? [],
         })!,
       })),
       tap((response) => {
@@ -171,6 +192,7 @@ export class AuthService {
           fullAccess: !!data.fullAccess,
           companyAdmin: !!data.companyAdmin,
           permissions: this.toPermissionMap(data.permissions),
+          menus: data.menus ?? [],
         })!,
       ),
       tap({
@@ -200,6 +222,18 @@ export class AuthService {
     return !!user.permissions?.[featureId]?.[action];
   }
 
+  /**
+   * Is the LEFT MENU entry of this category (e.g. MENU.COURSE) switched on for the user?
+   * Only the category switch counts here - the create / read / update / delete flags are checked
+   * separately with can() for the buttons inside the page.
+   */
+  hasMenu(categoryId: string): boolean {
+    const user = this.user();
+    if (!user) return false;
+    if (user.fullAccess || user.role === 'SUPER_ADMIN') return true;
+    return !!user.menus?.includes(categoryId);
+  }
+
   /** True when the user satisfies AT LEAST ONE of the requirements. */
   canAny(requirements: readonly AccessRequirement[]): boolean {
     return requirements.some(([featureId, action]) => this.can(featureId, action));
@@ -218,6 +252,7 @@ export class AuthService {
             fullAccess: !!data.fullAccess,
             companyAdmin: !!data.companyAdmin,
             permissions: this.toPermissionMap(data.permissions),
+            menus: data.menus ?? [],
           };
           this.tokenStorage.updateUser(next);
           this.user.set(next);
@@ -309,6 +344,7 @@ export class AuthService {
       fullAccess: user.fullAccess ?? false,
       companyAdmin: user.companyAdmin ?? user.role?.trim().toUpperCase() === 'ADMIN',
       permissions: user.permissions ?? {},
+      menus: user.menus ?? [],
     };
   }
 

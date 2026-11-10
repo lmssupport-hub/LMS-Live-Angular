@@ -21,6 +21,7 @@ import {
   getApiErrorMessage,
   getApiFieldErrors,
 } from '../../services/role.service';
+import { TOGGLE_ONLY_CATEGORY_IDS } from '../../services/package.service';
 
 type RoleFilterField = 'Role Name' | 'Status';
 type DialogKind = 'invite' | 'role' | null;
@@ -67,6 +68,11 @@ export class RoleManagement implements OnInit {
   readonly permissionStep = signal(false);
   readonly selectedRole = signal<Role | null>(null);
   readonly permissions = signal<PermissionRow[]>([]);
+  /**
+   * Category ids whose category switch (left menu, e.g. "Course Management") is ON for this role.
+   * Independent of the create / read / update / delete switches of the rows below the category.
+   */
+  readonly enabledCategories = signal<ReadonlySet<string>>(new Set());
   readonly editingId = signal<number | null>(null);
 
   readonly submitting = signal(false);
@@ -106,8 +112,10 @@ export class RoleManagement implements OnInit {
     return [];
   });
 
-  private readonly hasSelectedPermission = computed(() =>
-    this.permissions().some((row) => this.actions.some((action) => row.values[action])),
+  private readonly hasSelectedPermission = computed(
+    () =>
+      this.enabledCategories().size > 0 ||
+      this.permissions().some((row) => this.actions.some((action) => row.values[action])),
   );
 
   private readonly initialPermissions = signal('');
@@ -117,7 +125,7 @@ export class RoleManagement implements OnInit {
   readonly canUpdateRole = computed(
     () =>
       this.hasSelectedPermission() &&
-      JSON.stringify(this.permissions()) !== this.initialPermissions() &&
+      this.permissionSnapshot(this.permissions(), this.enabledCategories()) !== this.initialPermissions() &&
       !this.submitting(),
   );
 
@@ -373,8 +381,29 @@ export class RoleManagement implements OnInit {
     return rows;
   }
 
+  /** Comparable snapshot of everything the admin can change on the Role Permission screen. */
+  private permissionSnapshot(rows: PermissionRow[], enabled: ReadonlySet<string>): string {
+    return JSON.stringify({ rows, enabled: Array.from(enabled).sort() });
+  }
+
   private toRoleCategoryPermissions(rows: PermissionRow[]): Category[] {
+    const enabledIds = this.enabledCategories();
     const byCategory = new Map<string, Category>();
+    const categoryOf = (row: PermissionRow): Category => {
+      let category = byCategory.get(row.categoryId);
+      if (!category) {
+        category = {
+          id: row.categoryId,
+          name: row.categoryName,
+          // The category switch (left menu) is saved as its own value, not derived from the actions.
+          enabled: enabledIds.has(row.categoryId),
+          features: [],
+        };
+        byCategory.set(row.categoryId, category);
+      }
+      return category;
+    };
+
     for (const row of rows) {
       if (!ALLOWED_PERMISSION_CATEGORIES.has(row.categoryName)) continue;
       // Never send an action the package does not allow (backend re-checks too).
@@ -385,13 +414,12 @@ export class RoleManagement implements OnInit {
         delete: row.values.delete && row.allowed.delete,
       };
       const hasAny = this.actions.some((action) => permissions[action]);
-      if (!hasAny) continue;
-      let category = byCategory.get(row.categoryId);
-      if (!category) {
-        category = { id: row.categoryId, name: row.categoryName, enabled: true, features: [] };
-        byCategory.set(row.categoryId, category);
+      if (!hasAny) {
+        // Category switched ON with every action OFF: still saved, so the menu shows for the role.
+        if (enabledIds.has(row.categoryId)) categoryOf(row);
+        continue;
       }
-      category.features.push({
+      categoryOf(row).features.push({
         id: row.featureId,
         name: row.name,
         permissions,
@@ -423,28 +451,35 @@ export class RoleManagement implements OnInit {
     });
   }
 
+  /**
+   * Category switch. For a normal category (Course Management ...) it ONLY decides whether the left menu
+   * is shown - the create / read / update / delete switches below it are left untouched.
+   * Authentication has no create / read / update / delete meaning, so its flags follow the switch.
+   */
   toggleCategory(categoryId: string): void {
     if (!this.isAdmin()) return;
+    if (!this.permissions().some((row) => row.categoryId === categoryId)) return;
 
-    this.permissions.update((rows) => {
-      const categoryRows = rows.filter((row) => row.categoryId === categoryId);
-      if (!categoryRows.length) return rows;
+    const turnOn = !this.enabledCategories().has(categoryId);
+    this.enabledCategories.update((current) => {
+      const next = new Set(current);
+      if (turnOn) next.add(categoryId);
+      else next.delete(categoryId);
+      return next;
+    });
 
-      // "All on" only considers the actions the package allows.
-      const allOn = categoryRows.every((row) =>
-        this.actions.every((action) => !row.allowed[action] || row.values[action]),
-      );
+    if (!TOGGLE_ONLY_CATEGORY_IDS.has(categoryId)) return;
 
-      return rows.map((row) => {
+    this.permissions.update((rows) =>
+      rows.map((row) => {
         if (row.categoryId !== categoryId) return row;
-
         const values: Permission = { create: false, read: false, update: false, delete: false };
         for (const action of this.actions) {
-          values[action] = row.allowed[action] ? !allOn : false;
+          values[action] = row.allowed[action] ? turnOn : false;
         }
         return { ...row, values };
-      });
-    });
+      }),
+    );
   }
 
   nextToPermissions(): void {
@@ -471,8 +506,17 @@ export class RoleManagement implements OnInit {
       return;
     }
 
+    // Category switches ON in the saved role (only categories this package still offers).
+    const offeredCategoryIds = new Set(rows.map((row) => row.categoryId));
+    const enabled: ReadonlySet<string> = new Set(
+      (editingRole?.permissions ?? [])
+        .filter((category) => category.enabled && offeredCategoryIds.has(category.id))
+        .map((category) => category.id),
+    );
+
     this.permissions.set(rows);
-    this.initialPermissions.set(JSON.stringify(rows));
+    this.enabledCategories.set(enabled);
+    this.initialPermissions.set(this.permissionSnapshot(rows, enabled));
     this.actionError.set(null);
     this.dialog.set(null);
     this.permissionStep.set(true);
@@ -483,6 +527,7 @@ export class RoleManagement implements OnInit {
     this.selectedRole.set(null);
     this.editingId.set(null);
     this.permissions.set([]);
+    this.enabledCategories.set(new Set());
     this.roleForm.reset({ roleName: '' });
     this.actionError.set(null);
   }

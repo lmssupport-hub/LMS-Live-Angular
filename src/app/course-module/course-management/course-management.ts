@@ -53,6 +53,8 @@ export class CourseManagement {
   readonly openCardMenuId = signal<number | null>(null);
   readonly successMessage = signal<string | null>(null);
   readonly permissionError = signal<string | null>(null);
+  /** NEW: id of the course whose "Enroll" button is currently waiting for the server. */
+  readonly enrollingCourseId = signal<number | null>(null);
  
   readonly filteredCourses = computed(() => {
     const term = this.search().trim().toLowerCase();
@@ -529,12 +531,34 @@ export class CourseManagement {
     return 'bg-slate-500';
   }
  
-  /**
-   * "Start course" on a learner's card.
-   * TODO: what happens next is not decided yet - wire the navigation here once it is.
-   */
+  /** "Start course" on an ENROLLED learner's card: opens the course (sections -> content viewer). */
   startCourse(course: Course): void {
-    void course;
+    try {
+      // the course page reads the course from here (same hand-over the Organize "Show Preview" uses)
+      sessionStorage.setItem(`course-preview:${course.id}`, JSON.stringify(course));
+    } catch {
+      // storage unavailable: the page still opens, it just cannot restore the course on refresh
+    }
+    void this.router.navigate(['/admin-dashboard', 'courses', course.id, 'preview']);
+  }
+
+  /** NEW: "Enroll" on a published course the learner is not enrolled in yet. The card then shows "Start course". */
+  enrollInCourse(course: Course): void {
+    if (this.enrollingCourseId() !== null) return;
+    this.enrollingCourseId.set(course.id);
+    this.permissionError.set(null);
+    this.courseManagementService.selfEnroll(course.id).subscribe({
+      next: () => {
+        this.courses.update(list => list.map(c => (c.id === course.id ? { ...c, enrolled: true } : c)));
+        this.enrollingCourseId.set(null);
+        this.successMessage.set('Enrolled successfully. You can start the course now.');
+        setTimeout(() => this.successMessage.set(null), 4000);
+      },
+      error: (err: Error) => {
+        this.enrollingCourseId.set(null);
+        this.permissionError.set(err.message);
+      },
+    });
   }
  
   // ---------- out-of-scope entry points (other features, not part of the Create Course SRS) ----------

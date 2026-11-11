@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { HttpResponse } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
@@ -13,7 +14,7 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
+import { moveItemInArray } from '@angular/cdk/drag-drop';
 import { EMPTY, Subject, catchError, debounceTime, distinctUntilChanged, finalize, switchMap, tap } from 'rxjs';
 
 import {
@@ -21,7 +22,6 @@ import {
   QuestionBankService,
   ValidationIssue,
   cloneQuestionAsNew,
-  cloneSectionAsNew,
   createOption,
   createQuestion,
   createSection,
@@ -29,7 +29,7 @@ import {
   isNumber,
   toUiError,
   uniqueCopyText,
-  uniqueSectionName,
+  validateQuestion,
   validateSections,
 } from '../../services/question-bank.service';
 import {
@@ -69,7 +69,7 @@ const TOAST_ERROR_MS = 6000;
 @Component({
   selector: 'app-question-bank',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, DragDropModule],
+  imports: [FormsModule, NgTemplateOutlet],
   templateUrl: './question-bank.html',
 })
 export class QuestionBankComponent implements OnInit {
@@ -97,7 +97,6 @@ export class QuestionBankComponent implements OnInit {
   readonly sections = signal<SectionVm[]>([]);
   readonly activeSectionId = signal<string | null>(null);
   readonly selectedType = signal<SelectedType>(null); // SRS: nothing selected by default
-  readonly editingSectionId = signal<string | null>(null);
   readonly highlightId = signal<string | null>(null);
   /** Question whose scoring/feedback block is expanded (closed by default). */
   readonly scoringOpenId = signal<string | null>(null);
@@ -107,7 +106,6 @@ export class QuestionBankComponent implements OnInit {
    * NEW: section whose "Section points" panel is shown (picked from the Scoring dropdown).
    * UI-only: the backend ScoringType stays 'basic' | 'advanced'.
    */
-  readonly sectionPointsId = signal<string | null>(null);
 
   readonly loading = signal(false);
   readonly saving = signal(false);
@@ -119,7 +117,6 @@ export class QuestionBankComponent implements OnInit {
   readonly showBackDialog = signal(false);
   readonly confirm = signal<ConfirmState | null>(null);
   readonly hasClipboard = signal(false);
-  readonly hasSectionClipboard = signal(false);
   /** pulling the other user's latest version after a conflict */
   readonly resolving = signal(false);
   /** session expired: message is on screen, redirect to Login is pending */
@@ -136,42 +133,35 @@ export class QuestionBankComponent implements OnInit {
   readonly busy = computed(
     () => this.loading() || this.saving() || this.importing() || this.exporting() || this.resolving() || this.redirecting(),
   );
-  readonly canExport = computed(() => !!this.activeSection()?.questions.some(q => q.id !== null));
+  readonly canExport = computed(() => this.sections().some(s => s.questions.some(q => q.id !== null)));
 
   /** NEW: bumped on every edit so the memoized section totals recompute (question objects are mutated in place). */
   private readonly revision = signal(0);
 
   /**
-   * NEW: total score shown on each section row (left panel, next to the move icons):
-   *  - Section points mode -> the section score (e.g. 10)
-   *  - Basic / Advanced    -> sum of the questions' maximum scores (e.g. Q1 5 + Q2 10 = 15)
-   * Key = section.clientId.
+   * NEW: every question of the bank as ONE flat list (left panel). Sections still exist in the data
+   * (the API stores questions inside a question section) but they are no longer shown: new questions
+   * always go into the first section, and a bank that already has several sections is simply flattened.
    */
-  readonly sectionTotals = computed<ReadonlyMap<string, number>>(() => {
-    this.revision(); // dependency: re-run after in-place edits
-    const activeId = this.activeSectionId();
-    const pointsId = this.sectionPointsId();
-    const totals = new Map<string, number>();
-
-    for (const s of this.sections()) {
-      // Same rule as showSectionPointsIfSet(): the active section follows the Scoring dropdown,
-      // every other section counts as "section points" when it carries a score / feedback.
-      const sectionLevel =
-        s.clientId === pointsId || (s.clientId !== activeId && (s.score !== null || !!s.feedback));
-      totals.set(
-        s.clientId,
-        sectionLevel ? (s.score ?? 0) : s.questions.reduce((sum, q) => sum + this.questionMaxScore(q), 0),
-      );
-    }
-    return totals;
+  readonly questionRows = computed(() => {
+    let number = 0;
+    return this.sections().flatMap(section => section.questions.map(question => ({ section, question, number: ++number })));
   });
+
+  /** NEW: total of the questions' maximum scores, shown above the question list. */
+  readonly totalPoints = computed(() => {
+    this.revision(); // dependency: re-run after in-place edits
+    return this.sections().reduce((sum, s) => sum + s.questions.reduce((t, q) => t + this.questionMaxScore(q), 0), 0);
+  });
+
+  /** NEW: the question being typed in the right panel ("Add Question"). It joins the list on the left when added. */
+  readonly draft = signal<QuestionVm>(createQuestion('single'));
 
   private courseId = 0;
   /** course + organize section + bank. null until the route params are valid. */
   private scope: BankScope | null = null;
   private baselineSectionIds: number[] = [];
   private clipboard: QuestionVm | null = null;
-  private sectionClipboard: SectionVm | null = null;
   private draftTimer: ReturnType<typeof setTimeout> | null = null;
   /** bumped on every edit, so an edit made while a save is running is never marked as saved */
   private editVersion = 0;
@@ -298,21 +288,16 @@ export class QuestionBankComponent implements OnInit {
   }
 
   /** Short Text has no per-option points, so "Advanced" is not offered for it. */
-  scoringChoices(question: QuestionVm): ReadonlyArray<{ label: string; value: ScoringType | 'section' }> {
+  scoringChoices(question: QuestionVm): ReadonlyArray<{ label: string; value: ScoringType }> {
     return question.type === 'short'
-      ? [
-          { label: 'Basic', value: 'basic' },
-          { label: 'Section points', value: 'section' },
-        ]
+      ? [{ label: 'Basic', value: 'basic' }]
       : [
           { label: 'Basic', value: 'basic' },
           { label: 'Advanced', value: 'advanced' },
-          { label: 'Section points', value: 'section' },
         ];
   }
 
-  scoringLabel(section: SectionVm, question: QuestionVm): string {
-    if (this.sectionPointsId() === section.clientId) return 'Section points';
+  scoringLabel(question: QuestionVm): string {
     return question.scoringType === 'advanced' ? 'Advanced' : 'Basic';
   }
 
@@ -332,9 +317,9 @@ export class QuestionBankComponent implements OnInit {
     return q.options.reduce((max, o) => Math.max(max, n(o.points)), 0);
   }
 
-  pickScoring(section: SectionVm, question: QuestionVm, choice: ScoringType | 'section'): void {
+  pickScoring(question: QuestionVm, choice: ScoringType): void {
     this.pillDropdown.set(null);
-    this.changeScoringChoice(section, question, choice);
+    this.changeScoring(question, choice);
   }
 
   // ───────────────────────── load ─────────────────────────
@@ -360,7 +345,6 @@ export class QuestionBankComponent implements OnInit {
     this.sections.set(sections);
     this.baselineSectionIds = sections.map(s => s.id).filter(isNumber);
     this.activeSectionId.set(sections[0]?.clientId ?? null);
-    this.showSectionPointsIfSet(); // NEW
     this.dirty.set(false);
   }
 
@@ -372,7 +356,6 @@ export class QuestionBankComponent implements OnInit {
     this.baselineSectionIds = draft.baselineSectionIds;
     this.selectedType.set(draft.selectedType);
     this.activeSectionId.set(draft.sections[0]?.clientId ?? null);
-    this.showSectionPointsIfSet(); // NEW
     this.dirty.set(true);
     this.banner.set({ kind: 'info', text: 'Your unsaved changes were restored.' });
   }
@@ -385,6 +368,7 @@ export class QuestionBankComponent implements OnInit {
 
   // ───────────────────────── dirty / draft ─────────────────────────
   markDirty(question?: QuestionVm): void {
+    if (question === this.draft()) return; // typing in the "Add Question" form does not change the bank yet
     if (question) question.dirty = true;
     this.dirty.set(true);
     this.editVersion++;
@@ -410,12 +394,6 @@ export class QuestionBankComponent implements OnInit {
   }
 
   // ───────────────────────── question type ─────────────────────────
-  /** Top radio = type used for NEW questions. Existing questions keep their own type. */
-  setDefaultType(type: Exclude<SelectedType, null>): void {
-    this.selectedType.set(type);
-    this.markDirty(); // only a UI choice, kept in the draft
-  }
-
   changeQuestionType(question: QuestionVm, type: QuestionType): void {
     if (question.type === type) return;
     question.type = type;
@@ -443,167 +421,39 @@ export class QuestionBankComponent implements OnInit {
     this.markDirty(question);
   }
 
-  /**
-   * NEW: Scoring dropdown in the question action pill.
-   * 'basic' / 'advanced' -> real question scoring (hides the Section points panel of this section).
-   * 'section'            -> UI-only: shows the Section points panel at the bottom.
-   */
-  changeScoringChoice(section: SectionVm, question: QuestionVm, choice: ScoringType | 'section'): void {
-    if (choice === 'section') {
-      this.sectionPointsId.set(section.clientId);
-      return;
-    }
-    if (this.sectionPointsId() === section.clientId) this.sectionPointsId.set(null);
-    this.changeScoring(question, choice);
-  }
-
-  /** NEW: show the panel again for sections that already have a score / feedback saved. */
-  private showSectionPointsIfSet(): void {
-    const s = this.activeSection();
-    this.sectionPointsId.set(s && (s.score !== null || s.feedback) ? s.clientId : null);
-  }
-
   /** Expand / collapse the scoring + feedback block of one question. */
   toggleScoring(id: string): void {
     this.scoringOpenId.update(current => (current === id ? null : id));
   }
 
-  // ───────────────────────── sections (question sections of this bank) ─────────────────────────
-  addSection(): void {
-    if (this.sections().length >= LIMITS.maxSectionsPerBank) {
-      this.notifyError(`A question bank can contain at most ${LIMITS.maxSectionsPerBank} sections.`);
-      return;
-    }
-    const section = createSection(`Section ${this.sections().length + 1}`);
-    this.sections.update(s => [...s, section]);
-    this.activeSectionId.set(section.clientId);
-    this.markDirty();
-  }
-
-  selectSection(id: string): void {
-    this.activeSectionId.set(id);
-    this.showSectionPointsIfSet(); // NEW
-  }
-
-  editSection(id: string): void {
-    this.activeSectionId.set(id);
-    this.editingSectionId.set(id);
-    setTimeout(() => document.getElementById(`section-name-${id}`)?.focus());
-  }
-
-  renameSection(section: SectionVm, name: string): void {
-    section.name = name.slice(0, LIMITS.sectionNameChars);
-    this.markDirty();
-  }
-
-  // ───── section points (bottom panel): score + feedback ─────
-  sectionScore(section: SectionVm): number | null {
-    return section.score;
-  }
-
-  sectionFeedback(section: SectionVm): string {
-    return section.feedback;
-  }
-
-  setSectionScore(section: SectionVm, value: unknown): void {
-    section.score = value === '' || value === null || value === undefined ? null : this.clampScore(value);
-    this.markDirty();
-  }
-
-  setSectionFeedback(section: SectionVm, text: string): void {
-    section.feedback = (text ?? '').slice(0, LIMITS.feedbackChars);
-    this.markDirty();
-  }
-
-  requestDeleteSection(section: SectionVm): void {
-    if (section.id === null && section.questions.length === 0) {
-      this.deleteSection(section.clientId);
-      return;
-    }
-    this.confirm.set({
-      title: 'Delete section',
-      message: `Delete "${section.name}" and its ${section.questions.length} question(s)? This is applied when you save.`,
-      action: () => this.deleteSection(section.clientId),
-    });
-  }
-
-  private deleteSection(clientId: string): void {
-    const remaining = this.sections().filter(s => s.clientId !== clientId);
-    this.sections.set(remaining);
-    if (this.activeSectionId() === clientId) {
-      this.activeSectionId.set(remaining[0]?.clientId ?? null);
-      this.showSectionPointsIfSet(); // NEW
-    }
-    this.markDirty();
-  }
-
-  duplicateSection(section: SectionVm): void {
-    if (this.sections().length >= LIMITS.maxSectionsPerBank) {
-      this.notifyError(`A question bank can contain at most ${LIMITS.maxSectionsPerBank} sections.`);
-      return;
-    }
-    const copy = cloneSectionAsNew(section);
-    copy.name = uniqueSectionName(section.name, this.sections().map(s => s.name));
-    const next = [...this.sections()];
-    next.splice(next.indexOf(section) + 1, 0, copy);
-    this.sections.set(next);
-    this.activeSectionId.set(copy.clientId);
-    this.markDirty();
-  }
-
-  /** SRS field #7: section Copy (then "Paste Section" adds it at the end of the list). */
-  copySection(section: SectionVm): void {
-    this.sectionClipboard = structuredClone(section);
-    this.hasSectionClipboard.set(true);
-    this.banner.set({ kind: 'info', text: 'Section copied. Choose "Paste Section" to add it.' });
-  }
-
-  pasteSection(): void {
-    const source = this.sectionClipboard;
-    if (!source) return;
-    if (this.sections().length >= LIMITS.maxSectionsPerBank) {
-      this.notifyError(`A question bank can contain at most ${LIMITS.maxSectionsPerBank} sections.`);
-      return;
-    }
-    const copy = cloneSectionAsNew(source);
-    copy.name = uniqueSectionName(source.name, this.sections().map(s => s.name));
-    this.sections.update(s => [...s, copy]);
-    this.activeSectionId.set(copy.clientId);
-    this.markDirty();
-  }
-
-  moveSection(section: SectionVm, direction: -1 | 1): void {
-    const next = [...this.sections()];
-    const from = next.indexOf(section);
-    const to = from + direction;
-    if (from < 0 || to < 0 || to >= next.length) return;
-    moveItemInArray(next, from, to);
-    this.sections.set(next);
-    this.markDirty();
-  }
-
-  dropSection(event: CdkDragDrop<SectionVm[]>): void {
-    if (event.previousIndex === event.currentIndex) return;
-    const next = [...this.sections()];
-    moveItemInArray(next, event.previousIndex, event.currentIndex);
-    this.sections.set(next);
-    this.markDirty();
-  }
-
   // ───────────────────────── questions ─────────────────────────
+  /** Right panel: type of the new question. */
+  changeDraftType(type: QuestionType): void {
+    this.changeQuestionType(this.draft(), type);
+    this.draft.set(this.draft()); // same object, new signal value -> the form re-renders
+  }
+
+  changeDraftScoring(scoring: ScoringType): void {
+    this.draft().scoringType = scoring;
+  }
+
+  /** Right panel "Add Question": validates the new question, then moves it to the list on the left. */
   addQuestion(): void {
-    const selected = this.selectedType();
-    if (!selected) {
-      this.notifyError('Please select a question type first.');
+    const question = this.draft();
+    const problem = validateQuestion(question);
+    if (problem) {
+      this.notifyError(problem);
       return;
     }
     const section = this.ensureActiveSection();
     if (!this.hasRoom(section)) return;
 
-    const type: QuestionType = selected === 'mixed' ? 'single' : selected;
-    section.questions.push(createQuestion(type));
+    section.questions.push(question);
+    this.draft.set(createQuestion(question.type)); // next blank form, same type
     this.touchSections();
-    this.markDirty();
+    this.markDirty(question);
+    this.banner.set({ kind: 'success', text: 'Question added. Click Save to store it.' });
+    setTimeout(() => document.getElementById(`q-${question.clientId}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
   }
 
   duplicateQuestion(section: SectionVm, question: QuestionVm): void {
@@ -616,7 +466,7 @@ export class QuestionBankComponent implements OnInit {
   copyQuestion(question: QuestionVm): void {
     this.clipboard = structuredClone(question);
     this.hasClipboard.set(true);
-    this.banner.set({ kind: 'info', text: 'Question copied. Select a section and choose Paste.' });
+    this.banner.set({ kind: 'info', text: 'Question copied. Choose Paste to add a copy to the list.' });
   }
 
   cutQuestion(section: SectionVm, question: QuestionVm): void {
@@ -669,16 +519,22 @@ export class QuestionBankComponent implements OnInit {
     this.markDirty(question);
   }
 
+  /** The one (hidden) section new questions go into. Created on first use, named "Questions". */
   private ensureActiveSection(): SectionVm {
-    const current = this.activeSection();
-    if (current) return current;
-    this.addSection();
-    return this.activeSection() as SectionVm;
+    const current = this.activeSection() ?? this.sections()[0];
+    if (current) {
+      this.activeSectionId.set(current.clientId);
+      return current;
+    }
+    const section = createSection('Questions');
+    this.sections.update(s => [...s, section]);
+    this.activeSectionId.set(section.clientId);
+    return section;
   }
 
   private hasRoom(section: SectionVm): boolean {
     if (section.questions.length >= LIMITS.maxQuestionsPerSection) {
-      this.notifyError(`A section can contain at most ${LIMITS.maxQuestionsPerSection} questions.`);
+      this.notifyError(`A question bank can contain at most ${LIMITS.maxQuestionsPerSection} questions.`);
       return false;
     }
     return true;
@@ -822,10 +678,6 @@ export class QuestionBankComponent implements OnInit {
       setTimeout(() =>
         document.getElementById(`q-${issue.questionClientId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }),
       );
-    } else if (/score|feedback/i.test(issue.message)) {
-      // Section-level problem -> the "Section points" panel at the bottom.
-      this.sectionPointsId.set(issue.sectionClientId); // NEW: make sure the panel is visible
-      setTimeout(() => document.getElementById('section-score')?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
     }
   }
 
@@ -951,7 +803,7 @@ export class QuestionBankComponent implements OnInit {
   private requireSavedSection(): SectionVm | null {
     const section = this.activeSection();
     if (!section) {
-      this.notifyError('Please add a section first.');
+      this.notifyError('Please add a question and save the Question Bank first.');
       return null;
     }
     if (section.id === null) {

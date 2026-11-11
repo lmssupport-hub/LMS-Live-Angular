@@ -95,8 +95,8 @@
         <p class="p-12 text-center">Loading courses…</p>
       } @else if (!filteredCourses().length) {
         <div class="grid min-h-80 place-content-center p-12 text-center">
-          <h1 class="text-2xl font-semibold">{{ search() ? 'No courses found.' : courseFilter() !== 'ALL' ? 'No courses available for the selected filter.' : isLearner() ? 'No enrolled courses available' : 'No courses yet' }}</h1>
-          <p class="mt-2 text-sm text-neutral-500">{{ search() ? 'Try a different search.' : courseFilter() !== 'ALL' ? 'Try selecting a different filter.' : isLearner() ? 'You have not enrolled in any courses yet.' : 'Create your first course to get started.' }}</p>
+          <h1 class="text-2xl font-semibold">{{ search() ? 'No courses found.' : courseFilter() !== 'ALL' ? 'No courses available for the selected filter.' : isLearner() ? 'No courses available' : 'No courses yet' }}</h1>
+          <p class="mt-2 text-sm text-neutral-500">{{ search() ? 'Try a different search.' : courseFilter() !== 'ALL' ? 'Try selecting a different filter.' : isLearner() ? 'No published courses are available in your organization yet.' : 'Create your first course to get started.' }}</p>
         </div>
       } @else {
         <div class="grid grid-cols-1 gap-7 md:grid-cols-2 xl:grid-cols-3">
@@ -230,9 +230,13 @@
                     <button type="button" class="h-6 shrink-0 cursor-pointer rounded-full border border-transparent bg-white px-4 text-[9px] text-[#333] font-medium transition-all duration-300 ease-out enabled:hover:border-[#7fb9c7] enabled:hover:bg-[#4694A4] enabled:hover:text-[#f4fbfc] enabled:hover:shadow-[0_8px_18px_-2px_rgba(70,160,180,0.65),0_3px_8px_rgba(120,200,215,0.3)] enabled:focus-visible:border-[#7fb9c7] enabled:focus-visible:bg-[#4694A4] enabled:focus-visible:text-[#f4fbfc] enabled:focus-visible:shadow-[0_8px_18px_-2px_rgba(70,160,180,0.65),0_3px_8px_rgba(120,200,215,0.3)] focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50" (click)="openViewModal(course)" [attr.aria-label]="'View ' + course.name">
                       View
                     </button>
-                  } @else {
+                  } @else if (course.enrolled) {
                     <button type="button" class="h-6 shrink-0 cursor-pointer rounded-full bg-white px-4 text-[9px] font-medium text-neutral-700 shadow-sm transition hover:bg-[#61b7c5] hover:text-white" (click)="startCourse(course)" [attr.aria-label]="'Start course ' + course.name">
                       Start course
+                    </button>
+                  } @else {
+                    <button type="button" class="h-6 shrink-0 cursor-pointer rounded-full bg-white px-4 text-[9px] font-medium text-neutral-700 shadow-sm transition hover:bg-[#61b7c5] hover:text-white disabled:cursor-not-allowed disabled:opacity-50" [disabled]="enrollingCourseId() !== null" (click)="enrollInCourse(course)" [attr.aria-label]="'Enroll in ' + course.name">
+                      {{ enrollingCourseId() === course.id ? 'Enrolling...' : 'Enroll' }}
                     </button>
                   }
                 </div>

@@ -32,6 +32,8 @@ export interface Course {
   thumbnailUrl?: string | null;
   createdAt: string;
   updatedAt: string;
+  /** Learner view: true = enrolled (show "Start course"), false = not yet (show "Enroll"). Null/absent for managers. */
+  enrolled?: boolean | null;
 }
 
 export interface CourseRequest {

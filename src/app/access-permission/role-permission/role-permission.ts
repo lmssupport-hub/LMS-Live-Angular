@@ -87,7 +87,11 @@ export class RolePermission {
     return this.enabledCategories().has(categoryId);
   }
 
-  protected requestCancel(): void {
+  /**
+   * Opens the "Discard changes?" popup.
+   * PUBLIC on purpose: RoleManagement calls it when the header breadcrumb's "Role List" is clicked.
+   */
+  requestCancel(): void {
     this.confirmOpen.set(true);
   }
 

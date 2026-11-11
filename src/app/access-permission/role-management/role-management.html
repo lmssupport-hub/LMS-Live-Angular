@@ -28,7 +28,7 @@
   <main class="relative z-10 px-4 pb-7 sm:px-6 lg:px-10">
     @if (viewingRoleUsers(); as role) {
     <div class="mb-5 flex items-center gap-4">
-      
+
       <div>
         <h1 class="text-xl font-semibold 2xl:text-[25px]">{{ role.name }}</h1>
         <h2 class="mt-1 mb-4 text-sm font-semibold">View {{ role.name }} Details and Information</h2>
@@ -41,18 +41,37 @@
           <colgroup><col class="w-[30%]" /><col class="w-[38%]" /><col class="w-[18%]" /><col class="w-[14%]" /></colgroup>
           <thead>
             <tr>
-              <th class="sticky top-0 z-10 truncate border-b border-[#ededed] bg-white px-6 py-4 font-semibold">Role Name</th>
+              <th class="sticky top-0 z-10 truncate border-b border-[#ededed] bg-white px-6 py-4 font-semibold">User Name</th>
               <th class="sticky top-0 z-10 truncate border-b border-[#ededed] bg-white px-6 py-4 font-semibold">Email Address</th>
               <th class="sticky top-0 z-10 truncate border-b border-[#ededed] bg-white px-6 py-4 font-semibold">Status</th>
               <th class="sticky top-0 z-10 truncate border-b border-[#ededed] bg-white px-6 py-4 font-semibold">More Action</th>
             </tr>
           </thead>
           <tbody>
+            @if (roleUsersLoading()) {
             <tr>
-              <td colspan="4" class="px-6 py-6 text-xs text-[#9a9a9a]">
-                User details are unavailable because this app does not expose a role-specific user list.
+              <td colspan="4" class="px-6 py-6 text-center text-xs text-[#9a9a9a]">Loading users…</td>
+            </tr>
+            } @else if (roleUsersError()) {
+            <tr>
+              <td colspan="4" class="px-6 py-6 text-center text-xs text-red-600">{{ roleUsersError() }}</td>
+            </tr>
+            } @else {
+            @for (user of roleUsers(); track user.email) {
+            <tr class="h-[56px] transition hover:bg-[#fafafa]">
+              <td class="truncate px-6">{{ user.name }}</td>
+              <td class="truncate px-6">{{ user.email }}</td>
+              <td class="px-6">{{ user.status }}</td>
+              <td class="px-6"></td>
+            </tr>
+            } @empty {
+            <tr>
+              <td colspan="4" class="px-6 py-6 text-center text-xs text-[#9a9a9a]">
+                No users have this role yet.
               </td>
             </tr>
+            }
+            }
           </tbody>
         </table>
       </div>

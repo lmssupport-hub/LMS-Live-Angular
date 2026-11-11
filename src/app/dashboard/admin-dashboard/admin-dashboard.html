@@ -33,7 +33,20 @@
                     aria-hidden="true"
                   ></span>
                 </span>
-              } @else if (crumb.link) {            
+              } @else if (crumb.action) {
+                <!-- Clickable step that changes in-page state (no URL change), e.g. Role List -->
+                <button
+                  type="button"
+                  (click)="crumb.action()"
+                  class="group relative cursor-pointer rounded px-1.5 py-1 text-[13px] font-medium text-[#444] outline-none transition-colors duration-200 hover:text-[#4694A4] focus-visible:text-[#4694A4] focus-visible:ring-2 focus-visible:ring-[#4694A4]/40 motion-reduce:transition-none"
+                >
+                  {{ crumb.label }}
+                  <span
+                    class="absolute inset-x-1.5 bottom-0 h-0.5 origin-left scale-x-0 rounded-full bg-[#4694A4] transition-transform duration-300 ease-out group-hover:scale-x-100 motion-reduce:transition-none"
+                    aria-hidden="true"
+                  ></span>
+                </button>
+              } @else if (crumb.link) {
                 <!-- Clickable step -->
                 <a
                   [routerLink]="crumb.link"
@@ -144,8 +157,6 @@
         </svg>
       </button>
 
-      
-
       <span class="mx-1 h-6 w-px bg-neutral-200" aria-hidden="true"></span>
 
       <!-- Account menu -->
@@ -167,41 +178,39 @@
         </button>
 
         @if (accountMenuOpen()) {
-  <div
-    class="absolute right-0 top-12 w-48 overflow-hidden rounded-xl bg-white py-1 shadow-[0_14px_25px_rgba(0,0,0,.15)] ring-1 ring-black/5"
-    role="menu"
-  >
-    <div class="border-b border-neutral-100 px-4 py-2.5">
-      <p class="truncate text-xs font-semibold text-[#333]">{{ displayName() }}</p>
-      <p class="truncate text-[11px] text-neutral-400">{{ roleLabel() }}</p>
-    </div>
-    <a
-      role="menuitem"
-      routerLink="/admin-dashboard/edit-profile"
-      class="block w-full px-4 py-2.5 text-left text-xs text-[#555] transition hover:bg-[#f6f6f6]"
-      (click)="accountMenuOpen.set(false)"
-    >
-      Edit Profile
-    </a>
-    <!-- NEW - Change Password -->
-    <a
-      role="menuitem"
-      routerLink="/admin-dashboard/change-password"
-      class="block w-full px-4 py-2.5 text-left text-xs text-[#555] transition hover:bg-[#f6f6f6]"
-      (click)="accountMenuOpen.set(false)"
-    >
-      Change Password
-    </a>
-    <button
-      type="button"
-      role="menuitem"
-      class="block w-full px-4 py-2.5 text-left text-xs text-[#555] transition hover:bg-[#f6f6f6]"
-      (click)="logout()"
-    >
-      Log out
-    </button>
-  </div>
-
+          <div
+            class="absolute right-0 top-12 w-48 overflow-hidden rounded-xl bg-white py-1 shadow-[0_14px_25px_rgba(0,0,0,.15)] ring-1 ring-black/5"
+            role="menu"
+          >
+            <div class="border-b border-neutral-100 px-4 py-2.5">
+              <p class="truncate text-xs font-semibold text-[#333]">{{ displayName() }}</p>
+              <p class="truncate text-[11px] text-neutral-400">{{ roleLabel() }}</p>
+            </div>
+            <a
+              role="menuitem"
+              routerLink="/admin-dashboard/edit-profile"
+              class="block w-full px-4 py-2.5 text-left text-xs text-[#555] transition hover:bg-[#f6f6f6]"
+              (click)="accountMenuOpen.set(false)"
+            >
+              Edit Profile
+            </a>
+            <a
+              role="menuitem"
+              routerLink="/admin-dashboard/change-password"
+              class="block w-full px-4 py-2.5 text-left text-xs text-[#555] transition hover:bg-[#f6f6f6]"
+              (click)="accountMenuOpen.set(false)"
+            >
+              Change Password
+            </a>
+            <button
+              type="button"
+              role="menuitem"
+              class="block w-full px-4 py-2.5 text-left text-xs text-[#555] transition hover:bg-[#f6f6f6]"
+              (click)="logout()"
+            >
+              Log out
+            </button>
+          </div>
         }
       </div>
     </div>

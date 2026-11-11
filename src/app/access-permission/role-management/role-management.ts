@@ -1,4 +1,4 @@
-import { Component, DestroyRef, HostListener, OnInit, computed, effect, inject, signal } from '@angular/core';
+import { Component, DestroyRef, HostListener, OnInit, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { Router } from '@angular/router';
 import { finalize } from 'rxjs';
@@ -18,6 +18,7 @@ import {
   RolePageState,
   RoleRequest,
   RoleService,
+  RoleUser,
   getApiErrorMessage,
   getApiFieldErrors,
 } from '../../services/role.service';
@@ -62,7 +63,12 @@ export class RoleManagement implements OnInit {
   readonly roleFilterDropdownUsed = signal(false);
   readonly roleFilterField = signal<RoleFilterField | null>(null);
   readonly roleFilterValue = signal<string | null>(null);
+
+  // "View users" screen of one role
   readonly viewingRoleUsers = signal<Role | null>(null);
+  readonly roleUsers = signal<RoleUser[]>([]);
+  readonly roleUsersLoading = signal(false);
+  readonly roleUsersError = signal<string | null>(null);
 
   readonly dialog = signal<DialogKind>(null);
   readonly permissionStep = signal(false);
@@ -131,6 +137,9 @@ export class RoleManagement implements OnInit {
 
   private readonly pageState = inject(RolePageState);
 
+  /** The Role Permission screen (only exists while permissionStep() is true). */
+  private readonly rolePermissionView = viewChild(RolePermission);
+
   constructor() {
     // Tell the header breadcrumb which view is showing (these views share one URL).
     effect(() => {
@@ -138,7 +147,27 @@ export class RoleManagement implements OnInit {
         this.permissionStep() ? 'permission' : this.viewingRoleUsers() ? 'assign' : null,
       );
     });
-    inject(DestroyRef).onDestroy(() => this.pageState.step.set(null));
+
+    // Let the header breadcrumb's "Role List" crumb take us back to the list.
+    const unregister = this.pageState.registerBackToList(() => this.backToList());
+
+    inject(DestroyRef).onDestroy(() => {
+      unregister();
+      this.pageState.step.set(null);
+    });
+  }
+
+  /** Breadcrumb "Role List" click (Permission / Assign List -> Role List). */
+  private backToList(): void {
+    if (this.permissionStep()) {
+      // Unsaved changes possible: reuse the existing "Discard changes?" popup.
+      // "Discard changes" -> RolePermission emits (cancel) -> cancelPermissions() -> list.
+      this.rolePermissionView()?.requestCancel();
+      return;
+    }
+    if (this.viewingRoleUsers()) {
+      this.closeRoleUsers();
+    }
   }
 
   ngOnInit(): void {
@@ -223,12 +252,26 @@ export class RoleManagement implements OnInit {
     this.dialog.set('invite');
   }
 
+  /** "View users" icon: opens the users list of this role and loads it from the server. */
   openRoleUsers(role: Role): void {
     this.viewingRoleUsers.set(role);
+    this.roleUsers.set([]);
+    this.roleUsersError.set(null);
+    this.roleUsersLoading.set(true);
+    this.roleService
+      .getUsers(role.id)
+      .pipe(finalize(() => this.roleUsersLoading.set(false)))
+      .subscribe({
+        next: (users) => this.roleUsers.set(users),
+        error: (err) =>
+          this.roleUsersError.set(getApiErrorMessage(err, 'Unable to load users. Please try again.')),
+      });
   }
 
   closeRoleUsers(): void {
     this.viewingRoleUsers.set(null);
+    this.roleUsers.set([]);
+    this.roleUsersError.set(null);
   }
 
   openRole(role?: Role): void {

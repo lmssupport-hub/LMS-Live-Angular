@@ -9,8 +9,10 @@
         <!-- <button type="button" (click)="back()" [disabled]="saving()" aria-label="Back"
           class="grid size-8 shrink-0 place-items-center rounded-full bg-white text-base hover:bg-[#e9f6f8] disabled:opacity-50 xl:absolute xl:-left-9 xl:top-0">←</button> -->
         <div>
-          <h3 class="text-xl font-semibold leading-7">Create Question Bank</h3>
-          <p class="mt-1 text-sm">Add questions on the right; review and edit them on the left</p>
+          <input type="text" [ngModel]="bankName()" (ngModelChange)="onBankNameChange($event)"
+            [maxlength]="limits.bankNameChars" placeholder="Enter Question Bank name" aria-label="Question Bank name"
+            class="h-9 w-full min-w-[260px] max-w-[420px] rounded-lg border-0 bg-transparent px-2 text-xl font-semibold leading-7 text-[#505050] outline-none transition placeholder:text-[#b5b5b5] hover:bg-white focus:bg-white focus:ring-1 focus:ring-[#64bbcb]">
+          <p class="mt-1 px-2 text-sm">Add questions on the right; review and edit them on the left</p>
         </div>
       </div>
       <div class="flex flex-wrap gap-3">
@@ -25,21 +27,14 @@
         </button>
         <button type="button" (click)="openExisting()" [disabled]="busy()"
           class="h-[30px] min-w-[80px] rounded-full bg-white px-4 text-xs hover:bg-[#e9f6f8] disabled:opacity-50">Existing</button>
+        <button type="button" (click)="save()" [disabled]="busy() || !dirty()"
+          class="h-[30px] min-w-[90px] rounded-full bg-[#64bbcb] px-5 text-xs font-medium text-white hover:bg-[#459aa7] disabled:opacity-50">
+          {{ saving() ? 'Saving...' : 'Save' }}
+        </button>
       </div>
     </header>
 
     <div class="flex min-h-0 flex-1 flex-col rounded-3xl bg-white p-4 sm:p-6 lg:px-[30px] lg:pb-[30px] lg:pt-6">
-      <!-- Save (frozen: outside the scroll area) -->
-      <div class="mb-4 shrink-0">
-        <div class="flex flex-wrap items-center gap-x-5 gap-y-3 rounded-2xl bg-[#f6f6f6] px-[17px] py-2.5">
-          <span class="text-sm">Fill the form on the right and click Add Question. Remember to Save.</span>
-          <button type="button" (click)="save()" [disabled]="busy() || !dirty()"
-            class="ml-auto h-[35px] w-[95px] rounded-lg bg-white text-xs hover:bg-[#e9f6f8] disabled:opacity-50">
-            {{ saving() ? 'Saving...' : 'Save' }}
-          </button>
-        </div>
-      </div>
-
       @if (banner(); as b) {
         <!-- Popup toast: absolute inside <main> (which is relative), so it sits BELOW the app header, centered over the page content -->
         <div class="absolute left-1/2 top-3 z-[60] flex w-max max-w-[min(24rem,calc(100%-2rem))] -translate-x-1/2 items-center gap-2 rounded-lg border px-3 py-1.5 text-xs shadow-md"
@@ -60,7 +55,7 @@
       } @else {
         <div class="grid grid-cols-1 gap-5 lg:grid-cols-2" [attr.inert]="saving() ? '' : null">
 
-          <!-- LEFT: all questions (one flat list, no sections). Every question is edited right here. -->
+          <!-- LEFT: all questions (one flat list, no sections). Collapsed = name only; click a row to expand and edit. -->
           <section class="min-h-[515px] rounded-2xl bg-[#f6f6f6] px-4 py-4">
             <div class="mb-5 flex items-start justify-between gap-2">
               <div>
@@ -77,173 +72,189 @@
               @let question = row.question;
               @let section = row.section;
               @let qi = section.questions.indexOf(question);
-                <article class="group relative mb-8 scroll-mt-4 rounded-2xl last-of-type:mb-0" [id]="'q-' + question.clientId"
+                <article class="group relative mb-4 scroll-mt-4 rounded-2xl last-of-type:mb-0" [id]="'q-' + question.clientId"
                   [class.ring-2]="highlightId() === question.clientId"
                   [class.ring-red-400]="highlightId() === question.clientId">
 
-                  <!-- label row: label on the left, floating action pill on the right (in normal flow, so it can never overlap "Question N") -->
-                  <div class="relative z-20 mb-4 flex min-h-[32px] items-center justify-between gap-3">
-                    <div class="flex min-w-0 items-center gap-2">
-                      <span class="text-sm">Question {{ row.number }}</span>
-                      @if (question.hidden) {
-                        <span class="rounded-full bg-white px-2 py-0.5 text-[11px] text-[#8a8a8a]">Hidden</span>
+                  <!-- Header row: always visible. Click the left part = expand / collapse -->
+                  <div class="relative z-20 flex min-h-[44px] items-center justify-between gap-3 rounded-2xl bg-white px-3 py-1.5"
+                    [class.mb-3]="isExpanded(question.clientId)">
+
+                    <button type="button" (click)="toggleExpand(question.clientId)"
+                      [attr.aria-expanded]="isExpanded(question.clientId)"
+                      class="flex min-w-0 flex-1 items-center gap-2 rounded-xl py-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-[#64bbcb]">
+                      <svg class="size-3.5 shrink-0 text-[#8a8a8a] transition-transform duration-200"
+                        [class.rotate-90]="isExpanded(question.clientId)"
+                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+
+                      <span class="shrink-0 text-sm font-medium">Question {{ row.number }}</span>
+
+                      <!-- Collapsed: show the question name only -->
+                      @if (!isExpanded(question.clientId)) {
+                        <span class="min-w-0 flex-1 truncate text-sm text-[#7a7a7a]">{{ question.text || 'Untitled question' }}</span>
                       }
-                    </div>
+                      @if (question.hidden) {
+                        <span class="shrink-0 rounded-full bg-[#f6f6f6] px-2 py-0.5 text-[11px] text-[#8a8a8a]">Hidden</span>
+                      }
+                    </button>
 
-                    <!-- Action pill: slides up + fades in on hover / focus (always visible on touch or while its menu is open) -->
-                    <div class="relative flex shrink-0 items-center gap-2 text-xs text-[#505050]">
+                    <!-- Action pill: only when expanded -->
+                    @if (isExpanded(question.clientId)) {
+                      <div class="relative flex shrink-0 items-center gap-2 text-xs text-[#505050]">
 
-                      <!-- Left group (type, scoring, up/down): slides left while the 3-dot ring is open so the circles never cover it -->
-                      <div class="flex items-center gap-2 transition-transform duration-300 ease-out"
-                        [style.transform]="menuOpenId() === question.clientId ? 'translateX(-56px)' : 'translateX(0)'">
+                        <!-- Left group (type, scoring, up/down): slides left while the 3-dot ring is open so the circles never cover it -->
+                        <div class="flex items-center gap-2 transition-transform duration-300 ease-out"
+                          [style.transform]="menuOpenId() === question.clientId ? 'translateX(-56px)' : 'translateX(0)'">
 
-                      <!-- Question type dropdown (same animation as the course Filter dropdown) -->
-                      @let typeKey = 'type-' + question.clientId;
-                      <div class="relative z-30 h-7 w-32" (click)="$event.stopPropagation()">
-                        <div class="dd-clip dd-sm"
-                          [class.dd-open]="pillDropdown() === typeKey"
-                          [class.dd-closing]="isPillDropdownUsed(typeKey) && pillDropdown() !== typeKey"
-                          [attr.inert]="pillDropdown() === typeKey ? null : ''"
-                          [attr.aria-hidden]="pillDropdown() !== typeKey"
-                          role="menu" aria-label="Question type">
-                          <div class="dd-panel">
-                            <div class="dd-spacer" aria-hidden="true"></div>
-                            @for (t of typeOptions; track t.value; let i = $index) {
-                              <button type="button" role="menuitem" class="dd-item"
-                                [style.--i]="i" [style.--r]="typeOptions.length - 1 - i"
-                                [class.font-semibold]="question.type === t.value"
-                                (click)="pickQuestionType(question, t.value)">{{ t.label }}</button>
-                            }
+                          <!-- Question type dropdown (same animation as the course Filter dropdown) -->
+                          @let typeKey = 'type-' + question.clientId;
+                          <div class="relative z-30 h-7 w-32" (click)="$event.stopPropagation()">
+                            <div class="dd-clip dd-sm"
+                              [class.dd-open]="pillDropdown() === typeKey"
+                              [class.dd-closing]="isPillDropdownUsed(typeKey) && pillDropdown() !== typeKey"
+                              [attr.inert]="pillDropdown() === typeKey ? null : ''"
+                              [attr.aria-hidden]="pillDropdown() !== typeKey"
+                              role="menu" aria-label="Question type">
+                              <div class="dd-panel">
+                                <div class="dd-spacer" aria-hidden="true"></div>
+                                @for (t of typeOptions; track t.value; let i = $index) {
+                                  <button type="button" role="menuitem" class="dd-item"
+                                    [style.--i]="i" [style.--r]="typeOptions.length - 1 - i"
+                                    [class.font-semibold]="question.type === t.value"
+                                    (click)="pickQuestionType(question, t.value)">{{ t.label }}</button>
+                                }
+                              </div>
+                            </div>
+                            <button type="button" aria-haspopup="menu" aria-label="Question type"
+                              [attr.aria-expanded]="pillDropdown() === typeKey"
+                              class="relative z-10 flex h-7 w-full cursor-pointer items-center justify-between gap-2 rounded-full border-0 bg-white px-3 text-xs text-[#505050] outline-none transition hover:bg-[#e9f6f8] focus-visible:ring-2 focus-visible:ring-[#64bbcb]"
+                              [class]="pillDropdown() === typeKey ? 'shadow-[0_8px_10px_-4px_rgba(0,0,0,.35)]' : 'shadow-sm hover:shadow-md'"
+                              (click)="togglePillDropdown(typeKey)">
+                              <span class="truncate">{{ questionTypeLabel(question.type) }}</span>
+                              <svg class="size-3 shrink-0 text-[#8a8a8a]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+                            </button>
                           </div>
-                        </div>
-                        <button type="button" aria-haspopup="menu" aria-label="Question type"
-                          [attr.aria-expanded]="pillDropdown() === typeKey"
-                          class="relative z-10 flex h-7 w-full cursor-pointer items-center justify-between gap-2 rounded-full border-0 bg-white px-3 text-xs text-[#505050] outline-none transition hover:bg-[#e9f6f8] focus-visible:ring-2 focus-visible:ring-[#64bbcb]"
-                          [class]="pillDropdown() === typeKey ? 'shadow-[0_8px_10px_-4px_rgba(0,0,0,.35)]' : 'shadow-sm hover:shadow-md'"
-                          (click)="togglePillDropdown(typeKey)">
-                          <span class="truncate">{{ questionTypeLabel(question.type) }}</span>
-                          <svg class="size-3 shrink-0 text-[#8a8a8a]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
-                        </button>
-                      </div>
 
-                      <!-- Scoring dropdown (same animation as the course Filter dropdown) -->
-                      @let scoringKey = 'scoring-' + question.clientId;
-                      @let scoringItems = scoringChoices(question);
-                      <div class="relative z-30 h-7 w-[7.5rem]" (click)="$event.stopPropagation()">
-                        <div class="dd-clip dd-sm"
-                          [class.dd-open]="pillDropdown() === scoringKey"
-                          [class.dd-closing]="isPillDropdownUsed(scoringKey) && pillDropdown() !== scoringKey"
-                          [attr.inert]="pillDropdown() === scoringKey ? null : ''"
-                          [attr.aria-hidden]="pillDropdown() !== scoringKey"
-                          role="menu" aria-label="Scoring type">
-                          <div class="dd-panel">
-                            <div class="dd-spacer" aria-hidden="true"></div>
-                            @for (s of scoringItems; track s.value; let i = $index) {
-                              <button type="button" role="menuitem" class="dd-item"
-                                [style.--i]="i" [style.--r]="scoringItems.length - 1 - i"
-                                [class.font-semibold]="scoringLabel(question) === s.label"
-                                (click)="pickScoring(question, s.value)">{{ s.label }}</button>
-                            }
+                          <!-- Scoring dropdown (same animation as the course Filter dropdown) -->
+                          @let scoringKey = 'scoring-' + question.clientId;
+                          @let scoringItems = scoringChoices(question);
+                          <div class="relative z-30 h-7 w-[7.5rem]" (click)="$event.stopPropagation()">
+                            <div class="dd-clip dd-sm"
+                              [class.dd-open]="pillDropdown() === scoringKey"
+                              [class.dd-closing]="isPillDropdownUsed(scoringKey) && pillDropdown() !== scoringKey"
+                              [attr.inert]="pillDropdown() === scoringKey ? null : ''"
+                              [attr.aria-hidden]="pillDropdown() !== scoringKey"
+                              role="menu" aria-label="Scoring type">
+                              <div class="dd-panel">
+                                <div class="dd-spacer" aria-hidden="true"></div>
+                                @for (s of scoringItems; track s.value; let i = $index) {
+                                  <button type="button" role="menuitem" class="dd-item"
+                                    [style.--i]="i" [style.--r]="scoringItems.length - 1 - i"
+                                    [class.font-semibold]="scoringLabel(question) === s.label"
+                                    (click)="pickScoring(question, s.value)">{{ s.label }}</button>
+                                }
+                              </div>
+                            </div>
+                            <button type="button" aria-haspopup="menu" aria-label="Scoring type"
+                              [attr.aria-expanded]="pillDropdown() === scoringKey"
+                              class="relative z-10 flex h-7 w-full cursor-pointer items-center justify-between gap-2 rounded-full border-0 bg-white px-3 text-xs text-[#505050] outline-none transition hover:bg-[#e9f6f8] focus-visible:ring-2 focus-visible:ring-[#64bbcb]"
+                              [class]="pillDropdown() === scoringKey ? 'shadow-[0_8px_10px_-4px_rgba(0,0,0,.35)]' : 'shadow-sm hover:shadow-md'"
+                              (click)="togglePillDropdown(scoringKey)">
+                              <span class="truncate">{{ scoringLabel(question) }}</span>
+                              <svg class="size-3 shrink-0 text-[#8a8a8a]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+                            </button>
                           </div>
+
+                          <!-- up / down: their own small white pill -->
+                          <div class="flex h-7 items-center rounded-full bg-white shadow-sm">
+                            <button type="button" (click)="moveQuestion(section, qi, -1)" [disabled]="qi === 0" aria-label="Move question up" title="Move up"
+                              class="grid size-7 place-items-center rounded-full text-[#6b6b6b] transition-colors hover:bg-[#e9f6f8] hover:text-[#357f8d] disabled:pointer-events-none disabled:opacity-30">
+                              <svg class="size-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m18 15-6-6-6 6" /></svg>
+                            </button>
+                            <button type="button" (click)="moveQuestion(section, qi, 1)" [disabled]="qi === section.questions.length - 1" aria-label="Move question down" title="Move down"
+                              class="grid size-7 place-items-center rounded-full text-[#6b6b6b] transition-colors hover:bg-[#e9f6f8] hover:text-[#357f8d] disabled:pointer-events-none disabled:opacity-30">
+                              <svg class="size-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+                            </button>
+                          </div>
+
+                        </div><!-- /left group -->
+
+                        <!-- 3-dot + circle actions (arc, opens down-left like the course list). No hover-expand label. -->
+                        <div class="relative size-7 shrink-0" [class.z-40]="menuOpenId() === question.clientId">
+                          <button type="button" (click)="toggleMenu(question.clientId, $event)" aria-label="More actions" title="More"
+                            aria-haspopup="menu" [attr.aria-expanded]="menuOpenId() === question.clientId"
+                            class="relative z-10 grid size-7 cursor-pointer place-items-center rounded-full bg-[#61b7c5] text-white shadow-sm outline-none transition hover:bg-[#459aa7] focus-visible:ring-2 focus-visible:ring-[#64bbcb]">
+                            <svg class="size-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.6" /><circle cx="12" cy="12" r="1.6" /><circle cx="19" cy="12" r="1.6" /></svg>
+                          </button>
+
+                          <!-- Duplicate -->
+                          <button type="button" role="menuitem" title="Duplicate" aria-label="Duplicate question"
+                            (click)="duplicateQuestion(section, question)"
+                            class="absolute left-0 top-0 z-[5] grid size-7 cursor-pointer place-items-center rounded-full bg-[#61b7c5] text-white shadow-md transition-all duration-300 ease-out hover:bg-[#459aa7]"
+                            [class.opacity-0]="menuOpenId() !== question.clientId"
+                            [class.pointer-events-none]="menuOpenId() !== question.clientId"
+                            [style.transform]="menuOpenId() === question.clientId ? 'translate(0px, -42px)' : 'translate(0, 0) scale(0.5)'"
+                            [attr.tabindex]="menuOpenId() === question.clientId ? 0 : -1">
+                            <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+                          </button>
+
+                          <!-- Copy -->
+                          <button type="button" role="menuitem" title="Copy" aria-label="Copy question"
+                            (click)="copyQuestion(question)"
+                            class="absolute left-0 top-0 z-[4] grid size-7 cursor-pointer place-items-center rounded-full bg-[#61b7c5] text-white shadow-md transition-all duration-300 ease-out hover:bg-[#459aa7]"
+                            [class.opacity-0]="menuOpenId() !== question.clientId"
+                            [class.pointer-events-none]="menuOpenId() !== question.clientId"
+                            [style.transform]="menuOpenId() === question.clientId ? 'translate(-30px, -30px)' : 'translate(0, 0) scale(0.5)'"
+                            [attr.tabindex]="menuOpenId() === question.clientId ? 0 : -1">
+                            <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="2" width="8" height="4" rx="1" /><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" /></svg>
+                          </button>
+
+                          <!-- Cut -->
+                          <button type="button" role="menuitem" title="Cut" aria-label="Cut question"
+                            (click)="cutQuestion(section, question)"
+                            class="absolute left-0 top-0 z-[3] grid size-7 cursor-pointer place-items-center rounded-full bg-[#61b7c5] text-white shadow-md transition-all duration-300 ease-out hover:bg-[#459aa7]"
+                            [class.opacity-0]="menuOpenId() !== question.clientId"
+                            [class.pointer-events-none]="menuOpenId() !== question.clientId"
+                            [style.transform]="menuOpenId() === question.clientId ? 'translate(-42px, 0px)' : 'translate(0, 0) scale(0.5)'"
+                            [attr.tabindex]="menuOpenId() === question.clientId ? 0 : -1">
+                            <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="6" r="3" /><circle cx="6" cy="18" r="3" /><path d="M20 4 8.12 15.88M14.47 14.48 20 20M8.12 8.12 12 12" /></svg>
+                          </button>
+
+                          <!-- Hide / Show -->
+                          <button type="button" role="menuitem" [attr.title]="question.hidden ? 'Show' : 'Hide'" [attr.aria-label]="question.hidden ? 'Show question' : 'Hide question'"
+                            (click)="toggleHidden(question)"
+                            class="absolute left-0 top-0 z-[2] grid size-7 cursor-pointer place-items-center rounded-full bg-[#61b7c5] text-white shadow-md transition-all duration-300 ease-out hover:bg-[#459aa7]"
+                            [class.opacity-0]="menuOpenId() !== question.clientId"
+                            [class.pointer-events-none]="menuOpenId() !== question.clientId"
+                            [style.transform]="menuOpenId() === question.clientId ? 'translate(-30px, 30px)' : 'translate(0, 0) scale(0.5)'"
+                            [attr.tabindex]="menuOpenId() === question.clientId ? 0 : -1">
+                            @if (question.hidden) {
+                              <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></svg>
+                            } @else {
+                              <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68M6.61 6.61A13.53 13.53 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61M2 2l20 20" /></svg>
+                            }
+                          </button>
+
+                          <!-- Delete -->
+                          <button type="button" role="menuitem" title="Delete" aria-label="Delete question"
+                            (click)="requestDeleteQuestion(section, question)"
+                            class="absolute left-0 top-0 z-[1] grid size-7 cursor-pointer place-items-center rounded-full bg-[#61b7c5] text-white shadow-md transition-all duration-300 ease-out hover:bg-red-500"
+                            [class.opacity-0]="menuOpenId() !== question.clientId"
+                            [class.pointer-events-none]="menuOpenId() !== question.clientId"
+                            [style.transform]="menuOpenId() === question.clientId ? 'translate(0px, 42px)' : 'translate(0, 0) scale(0.5)'"
+                            [attr.tabindex]="menuOpenId() === question.clientId ? 0 : -1">
+                            <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
+                          </button>
                         </div>
-                        <button type="button" aria-haspopup="menu" aria-label="Scoring type"
-                          [attr.aria-expanded]="pillDropdown() === scoringKey"
-                          class="relative z-10 flex h-7 w-full cursor-pointer items-center justify-between gap-2 rounded-full border-0 bg-white px-3 text-xs text-[#505050] outline-none transition hover:bg-[#e9f6f8] focus-visible:ring-2 focus-visible:ring-[#64bbcb]"
-                          [class]="pillDropdown() === scoringKey ? 'shadow-[0_8px_10px_-4px_rgba(0,0,0,.35)]' : 'shadow-sm hover:shadow-md'"
-                          (click)="togglePillDropdown(scoringKey)">
-                          <span class="truncate">{{ scoringLabel(question) }}</span>
-                          <svg class="size-3 shrink-0 text-[#8a8a8a]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
-                        </button>
                       </div>
-
-                      <!-- up / down: their own small white pill -->
-                      <div class="flex h-7 items-center rounded-full bg-white shadow-sm">
-
-                      <button type="button" (click)="moveQuestion(section, qi, -1)" [disabled]="qi === 0" aria-label="Move question up" title="Move up"
-                        class="grid size-7 place-items-center rounded-full text-[#6b6b6b] transition-colors hover:bg-[#e9f6f8] hover:text-[#357f8d] disabled:pointer-events-none disabled:opacity-30">
-                        <svg class="size-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m18 15-6-6-6 6" /></svg>
-                      </button>
-                      <button type="button" (click)="moveQuestion(section, qi, 1)" [disabled]="qi === section.questions.length - 1" aria-label="Move question down" title="Move down"
-                        class="grid size-7 place-items-center rounded-full text-[#6b6b6b] transition-colors hover:bg-[#e9f6f8] hover:text-[#357f8d] disabled:pointer-events-none disabled:opacity-30">
-                        <svg class="size-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
-                      </button>
-
-                      </div>
-
-                      </div><!-- /left group -->
-
-                      <!-- 3-dot + circle actions (arc, opens down-left like the course list). No hover-expand label. -->
-                      <div class="relative size-7 shrink-0" [class.z-40]="menuOpenId() === question.clientId">
-                        <button type="button" (click)="toggleMenu(question.clientId, $event)" aria-label="More actions" title="More"
-                          aria-haspopup="menu" [attr.aria-expanded]="menuOpenId() === question.clientId"
-                          class="relative z-10 grid size-7 cursor-pointer place-items-center rounded-full bg-[#61b7c5] text-white shadow-sm outline-none transition hover:bg-[#459aa7] focus-visible:ring-2 focus-visible:ring-[#64bbcb]">
-                          <svg class="size-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.6" /><circle cx="12" cy="12" r="1.6" /><circle cx="19" cy="12" r="1.6" /></svg>
-                        </button>
-
-                        <!-- Duplicate -->
-                        <button type="button" role="menuitem" title="Duplicate" aria-label="Duplicate question"
-                          (click)="duplicateQuestion(section, question)"
-                          class="absolute left-0 top-0 z-[5] grid size-7 cursor-pointer place-items-center rounded-full bg-[#61b7c5] text-white shadow-md transition-all duration-300 ease-out hover:bg-[#459aa7]"
-                          [class.opacity-0]="menuOpenId() !== question.clientId"
-                          [class.pointer-events-none]="menuOpenId() !== question.clientId"
-                          [style.transform]="menuOpenId() === question.clientId ? 'translate(0px, -42px)' : 'translate(0, 0) scale(0.5)'"
-                          [attr.tabindex]="menuOpenId() === question.clientId ? 0 : -1">
-                          <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
-                        </button>
-
-                        <!-- Copy -->
-                        <button type="button" role="menuitem" title="Copy" aria-label="Copy question"
-                          (click)="copyQuestion(question)"
-                          class="absolute left-0 top-0 z-[4] grid size-7 cursor-pointer place-items-center rounded-full bg-[#61b7c5] text-white shadow-md transition-all duration-300 ease-out hover:bg-[#459aa7]"
-                          [class.opacity-0]="menuOpenId() !== question.clientId"
-                          [class.pointer-events-none]="menuOpenId() !== question.clientId"
-                          [style.transform]="menuOpenId() === question.clientId ? 'translate(-30px, -30px)' : 'translate(0, 0) scale(0.5)'"
-                          [attr.tabindex]="menuOpenId() === question.clientId ? 0 : -1">
-                          <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="2" width="8" height="4" rx="1" /><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" /></svg>
-                        </button>
-
-                        <!-- Cut -->
-                        <button type="button" role="menuitem" title="Cut" aria-label="Cut question"
-                          (click)="cutQuestion(section, question)"
-                          class="absolute left-0 top-0 z-[3] grid size-7 cursor-pointer place-items-center rounded-full bg-[#61b7c5] text-white shadow-md transition-all duration-300 ease-out hover:bg-[#459aa7]"
-                          [class.opacity-0]="menuOpenId() !== question.clientId"
-                          [class.pointer-events-none]="menuOpenId() !== question.clientId"
-                          [style.transform]="menuOpenId() === question.clientId ? 'translate(-42px, 0px)' : 'translate(0, 0) scale(0.5)'"
-                          [attr.tabindex]="menuOpenId() === question.clientId ? 0 : -1">
-                          <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="6" r="3" /><circle cx="6" cy="18" r="3" /><path d="M20 4 8.12 15.88M14.47 14.48 20 20M8.12 8.12 12 12" /></svg>
-                        </button>
-
-                        <!-- Hide / Show -->
-                        <button type="button" role="menuitem" [attr.title]="question.hidden ? 'Show' : 'Hide'" [attr.aria-label]="question.hidden ? 'Show question' : 'Hide question'"
-                          (click)="toggleHidden(question)"
-                          class="absolute left-0 top-0 z-[2] grid size-7 cursor-pointer place-items-center rounded-full bg-[#61b7c5] text-white shadow-md transition-all duration-300 ease-out hover:bg-[#459aa7]"
-                          [class.opacity-0]="menuOpenId() !== question.clientId"
-                          [class.pointer-events-none]="menuOpenId() !== question.clientId"
-                          [style.transform]="menuOpenId() === question.clientId ? 'translate(-30px, 30px)' : 'translate(0, 0) scale(0.5)'"
-                          [attr.tabindex]="menuOpenId() === question.clientId ? 0 : -1">
-                          @if (question.hidden) {
-                            <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></svg>
-                          } @else {
-                            <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68M6.61 6.61A13.53 13.53 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61M2 2l20 20" /></svg>
-                          }
-                        </button>
-
-                        <!-- Delete -->
-                        <button type="button" role="menuitem" title="Delete" aria-label="Delete question"
-                          (click)="requestDeleteQuestion(section, question)"
-                          class="absolute left-0 top-0 z-[1] grid size-7 cursor-pointer place-items-center rounded-full bg-[#61b7c5] text-white shadow-md transition-all duration-300 ease-out hover:bg-red-500"
-                          [class.opacity-0]="menuOpenId() !== question.clientId"
-                          [class.pointer-events-none]="menuOpenId() !== question.clientId"
-                          [style.transform]="menuOpenId() === question.clientId ? 'translate(0px, 42px)' : 'translate(0, 0) scale(0.5)'"
-                          [attr.tabindex]="menuOpenId() === question.clientId ? 0 : -1">
-                          <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
-                        </button>
-                      </div>
-                    </div>
+                    }
                   </div>
 
-
-                  <ng-container *ngTemplateOutlet="questionBody; context: { $implicit: question }" />
+                  <!-- Body: only when expanded -->
+                  @if (isExpanded(question.clientId)) {
+                    <ng-container *ngTemplateOutlet="questionBody; context: { $implicit: question }" />
+                  }
                 </article>
             } @empty {
               <div class="flex min-h-[380px] items-center justify-center text-center">
@@ -254,21 +265,69 @@
 
           <!-- RIGHT: Add Question only -->
           <section class="min-h-[515px] self-start rounded-2xl bg-[#f6f6f6] px-4 py-4 lg:sticky lg:top-0">
-            <div class="mb-5 flex flex-wrap items-center justify-between gap-2">
+            <div class="relative z-20 mb-5 flex flex-wrap items-center justify-between gap-2">
               <h2 class="text-sm font-semibold">Add Question</h2>
-              <div class="flex items-center gap-2">
-                <select [ngModel]="draft().type" (ngModelChange)="changeDraftType($event)" aria-label="Question type"
-                  class="h-7 cursor-pointer rounded-full border-0 bg-white px-3 text-xs text-[#505050] shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-[#64bbcb]">
-                  @for (t of typeOptions; track t.value) {
-                    <option [value]="t.value">{{ t.label }}</option>
-                  }
-                </select>
-                <select [ngModel]="draft().scoringType" (ngModelChange)="changeDraftScoring($event)" aria-label="Scoring type"
-                  class="h-7 cursor-pointer rounded-full border-0 bg-white px-3 text-xs text-[#505050] shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-[#64bbcb]">
-                  @for (c of scoringChoices(draft()); track c.value) {
-                    <option [value]="c.value">{{ c.label }}</option>
-                  }
-                </select>
+              <div class="flex items-center gap-2 text-xs text-[#505050]">
+
+                <!-- Question type dropdown (same component look as the left list) -->
+                @let draftTypeKey = 'type-' + draft().clientId;
+                <div class="relative z-30 h-7 w-32" (click)="$event.stopPropagation()">
+                  <div class="dd-clip dd-sm"
+                    [class.dd-open]="pillDropdown() === draftTypeKey"
+                    [class.dd-closing]="isPillDropdownUsed(draftTypeKey) && pillDropdown() !== draftTypeKey"
+                    [attr.inert]="pillDropdown() === draftTypeKey ? null : ''"
+                    [attr.aria-hidden]="pillDropdown() !== draftTypeKey"
+                    role="menu" aria-label="Question type">
+                    <div class="dd-panel">
+                      <div class="dd-spacer" aria-hidden="true"></div>
+                      @for (t of typeOptions; track t.value; let i = $index) {
+                        <button type="button" role="menuitem" class="dd-item"
+                          [style.--i]="i" [style.--r]="typeOptions.length - 1 - i"
+                          [class.font-semibold]="draft().type === t.value"
+                          (click)="pickQuestionType(draft(), t.value)">{{ t.label }}</button>
+                      }
+                    </div>
+                  </div>
+                  <button type="button" aria-haspopup="menu" aria-label="Question type"
+                    [attr.aria-expanded]="pillDropdown() === draftTypeKey"
+                    class="relative z-10 flex h-7 w-full cursor-pointer items-center justify-between gap-2 rounded-full border-0 bg-white px-3 text-xs text-[#505050] outline-none transition hover:bg-[#e9f6f8] focus-visible:ring-2 focus-visible:ring-[#64bbcb]"
+                    [class]="pillDropdown() === draftTypeKey ? 'shadow-[0_8px_10px_-4px_rgba(0,0,0,.35)]' : 'shadow-sm hover:shadow-md'"
+                    (click)="togglePillDropdown(draftTypeKey)">
+                    <span class="truncate">{{ questionTypeLabel(draft().type) }}</span>
+                    <svg class="size-3 shrink-0 text-[#8a8a8a]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+                  </button>
+                </div>
+
+                <!-- Scoring dropdown (same component look as the left list) -->
+                @let draftScoringKey = 'scoring-' + draft().clientId;
+                @let draftScoringItems = scoringChoices(draft());
+                <div class="relative z-30 h-7 w-[7.5rem]" (click)="$event.stopPropagation()">
+                  <div class="dd-clip dd-sm"
+                    [class.dd-open]="pillDropdown() === draftScoringKey"
+                    [class.dd-closing]="isPillDropdownUsed(draftScoringKey) && pillDropdown() !== draftScoringKey"
+                    [attr.inert]="pillDropdown() === draftScoringKey ? null : ''"
+                    [attr.aria-hidden]="pillDropdown() !== draftScoringKey"
+                    role="menu" aria-label="Scoring type">
+                    <div class="dd-panel">
+                      <div class="dd-spacer" aria-hidden="true"></div>
+                      @for (s of draftScoringItems; track s.value; let i = $index) {
+                        <button type="button" role="menuitem" class="dd-item"
+                          [style.--i]="i" [style.--r]="draftScoringItems.length - 1 - i"
+                          [class.font-semibold]="scoringLabel(draft()) === s.label"
+                          (click)="pickScoring(draft(), s.value)">{{ s.label }}</button>
+                      }
+                    </div>
+                  </div>
+                  <button type="button" aria-haspopup="menu" aria-label="Scoring type"
+                    [attr.aria-expanded]="pillDropdown() === draftScoringKey"
+                    class="relative z-10 flex h-7 w-full cursor-pointer items-center justify-between gap-2 rounded-full border-0 bg-white px-3 text-xs text-[#505050] outline-none transition hover:bg-[#e9f6f8] focus-visible:ring-2 focus-visible:ring-[#64bbcb]"
+                    [class]="pillDropdown() === draftScoringKey ? 'shadow-[0_8px_10px_-4px_rgba(0,0,0,.35)]' : 'shadow-sm hover:shadow-md'"
+                    (click)="togglePillDropdown(draftScoringKey)">
+                    <span class="truncate">{{ scoringLabel(draft()) }}</span>
+                    <svg class="size-3 shrink-0 text-[#8a8a8a]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+                  </button>
+                </div>
+
               </div>
             </div>
 

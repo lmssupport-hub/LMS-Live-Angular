@@ -17,6 +17,11 @@ interface Breadcrumb {
   queryParams?: Record<string, string>;
   /** true = plain text style (no pill), used for simple 2-level crumbs */
   plain?: boolean;
+  /**
+   * Click handler for crumbs that change in-page state instead of the URL
+   * (e.g. "Role List" while on Permission / Assign List, which all share /admin-dashboard/role).
+   */
+  action?: () => void;
 }
 
 @Component({
@@ -83,9 +88,9 @@ export class AdminDashboard {
         this.packagesApi.getMySubscription().pipe(
           map((s) => ({ s, fetchedAt: Date.now() })),
           catchError((err) => {
-  console.error('my-subscription failed', err);
-  return EMPTY;
-}),
+            console.error('my-subscription failed', err);
+            return EMPTY;
+          }),
         ))),
     ),
     { initialValue: null },
@@ -208,17 +213,23 @@ export class AdminDashboard {
     // Flow: Content Management > Role List
     //       Content Management > Role List > Permission
     //       Content Management > Role List > Assign List
+    // "Role List" is clickable on Permission / Assign List: it asks RoleManagement to go back
+    // (an in-page state change, NOT a URL navigation).
     if (/^\/admin-dashboard\/role\/?$/.test(path)) {
       const step = this.rolePageState.step();
       const crumbs: Breadcrumb[] = [
         { label: 'Content Management', link: null, plain: true },
-        { label: 'Role List', link: null, plain: true },
+        {
+          label: 'Role List',
+          link: null,
+          action: step ? () => this.rolePageState.backToList() : undefined,
+          plain: true,
+        },
       ];
       if (step === 'permission') crumbs.push({ label: 'Permission', link: null, plain: true });
       if (step === 'assign') crumbs.push({ label: 'Assign List', link: null, plain: true });
       return crumbs;
     }
-
 
     // Edit Profile (/admin-dashboard/edit-profile)
     // Flow: Dashboard > Edit Profile > User Profile Management
@@ -230,7 +241,7 @@ export class AdminDashboard {
       ];
     }
 
-    // NEW - Change Password (/admin-dashboard/change-password)
+    // Change Password (/admin-dashboard/change-password)
     // Flow: Dashboard > Change Password
     if (/^\/admin-dashboard\/change-password\/?$/.test(path)) {
       return [
@@ -239,7 +250,6 @@ export class AdminDashboard {
       ];
     }
     return [];
-
   });
 
   /** Finds a route param (e.g. `courseId`) anywhere in the activated route tree, falling back to the query string. */

@@ -15,7 +15,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { moveItemInArray } from '@angular/cdk/drag-drop';
-import { EMPTY, Subject, catchError, debounceTime, distinctUntilChanged, finalize, switchMap, tap } from 'rxjs';
+import { EMPTY, Observable, Subject, catchError, debounceTime, distinctUntilChanged, finalize, of, switchMap, tap } from 'rxjs';
 
 import {
   ErrorContext,
@@ -29,6 +29,7 @@ import {
   isNumber,
   toUiError,
   uniqueCopyText,
+  validateBankName,
   validateQuestion,
   validateSections,
 } from '../../services/question-bank.service';
@@ -102,10 +103,14 @@ export class QuestionBankComponent implements OnInit {
   readonly scoringOpenId = signal<string | null>(null);
   /** Question whose "more actions" dropdown is open. */
   readonly menuOpenId = signal<string | null>(null);
-  /**
-   * NEW: section whose "Section points" panel is shown (picked from the Scoring dropdown).
-   * UI-only: the backend ScoringType stays 'basic' | 'advanced'.
-   */
+
+  /** NEW: questions expanded in the left list (collapsed by default: only the name shows). */
+  readonly expandedIds = signal<ReadonlySet<string>>(new Set());
+
+  /** NEW: Question Bank name shown (and editable) in the header. */
+  readonly bankName = signal('');
+  /** Last bank name known by the server (to detect a rename). */
+  private serverBankName = '';
 
   readonly loading = signal(false);
   readonly saving = signal(false);
@@ -135,11 +140,11 @@ export class QuestionBankComponent implements OnInit {
   );
   readonly canExport = computed(() => this.sections().some(s => s.questions.some(q => q.id !== null)));
 
-  /** NEW: bumped on every edit so the memoized section totals recompute (question objects are mutated in place). */
+  /** Bumped on every edit so the memoized totals recompute (question objects are mutated in place). */
   private readonly revision = signal(0);
 
   /**
-   * NEW: every question of the bank as ONE flat list (left panel). Sections still exist in the data
+   * Every question of the bank as ONE flat list (left panel). Sections still exist in the data
    * (the API stores questions inside a question section) but they are no longer shown: new questions
    * always go into the first section, and a bank that already has several sections is simply flattened.
    */
@@ -148,13 +153,13 @@ export class QuestionBankComponent implements OnInit {
     return this.sections().flatMap(section => section.questions.map(question => ({ section, question, number: ++number })));
   });
 
-  /** NEW: total of the questions' maximum scores, shown above the question list. */
+  /** Total of the questions' maximum scores, shown above the question list. */
   readonly totalPoints = computed(() => {
     this.revision(); // dependency: re-run after in-place edits
     return this.sections().reduce((sum, s) => sum + s.questions.reduce((t, q) => t + this.questionMaxScore(q), 0), 0);
   });
 
-  /** NEW: the question being typed in the right panel ("Add Question"). It joins the list on the left when added. */
+  /** The question being typed in the right panel ("Add Question"). It joins the list on the left when added. */
   readonly draft = signal<QuestionVm>(createQuestion('single'));
 
   private courseId = 0;
@@ -222,6 +227,7 @@ export class QuestionBankComponent implements OnInit {
         this.existingLoading.set(false);
       });
 
+    this.loadBankName(scope);
     this.loadFromServer();
   }
 
@@ -241,7 +247,54 @@ export class QuestionBankComponent implements OnInit {
   @HostListener('document:keydown.escape')
   closeMenu(): void {
     if (this.menuOpenId()) this.menuOpenId.set(null);
-    if (this.pillDropdown()) this.pillDropdown.set(null); // NEW
+    if (this.pillDropdown()) this.pillDropdown.set(null);
+  }
+
+  // ───── NEW: expand / collapse a question row in the left list ─────
+  isExpanded(id: string): boolean {
+    return this.expandedIds().has(id);
+  }
+
+  toggleExpand(id: string): void {
+    this.menuOpenId.set(null);
+    this.pillDropdown.set(null);
+    this.expandedIds.update(set => {
+      const next = new Set(set);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  // ───── NEW: Question Bank name (header) ─────
+  onBankNameChange(value: string): void {
+    this.bankName.set(value);
+    this.markDirty(); // enables Save and keeps the unsaved-changes guard
+  }
+
+  private loadBankName(scope: BankScope): void {
+    this.service
+      .getBank(scope)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: bank => {
+          this.serverBankName = bank.name;
+          this.bankName.set(bank.name);
+        },
+        error: err => this.handleError(err, 'load'),
+      });
+  }
+
+  /** Renames the bank only when the name really changed. */
+  private renameIfNeeded(scope: BankScope): Observable<unknown> {
+    const name = this.bankName().trim().replace(/\s+/g, ' ');
+    if (name === this.serverBankName) return of(null);
+    return this.service.renameBank(scope, name).pipe(
+      tap(bank => {
+        this.serverBankName = bank.name;
+        this.bankName.set(bank.name);
+      }),
+    );
   }
 
   /** Score inputs: a number input's max="100" doesn't stop typing, so clamp on every keystroke. */
@@ -258,11 +311,11 @@ export class QuestionBankComponent implements OnInit {
 
   toggleMenu(id: string, event: Event): void {
     event.stopPropagation(); // don't let the document click handler close it straight away
-    this.pillDropdown.set(null); // NEW
+    this.pillDropdown.set(null);
     this.menuOpenId.update(current => (current === id ? null : id));
   }
 
-  // ───── NEW: Question type / Scoring dropdowns (filter-style animated dropdown) ─────
+  // ───── Question type / Scoring dropdowns (filter-style animated dropdown) ─────
   /** Key of the open dropdown: 'type-<clientId>' or 'scoring-<clientId>'. */
   readonly pillDropdown = signal<string | null>(null);
   /** Dropdowns opened at least once: only these get the "closing" animation (so nothing flashes on page load). */
@@ -302,7 +355,7 @@ export class QuestionBankComponent implements OnInit {
   }
 
   /**
-   * NEW: highest score one question can give, based on its own scoring type (used for the section total).
+   * Highest score one question can give, based on its own scoring type (used for the total).
    *  - hidden question           -> 0 (not delivered to learners)
    *  - Basic / Short Text        -> correctScore
    *  - Advanced, Multiple Answer -> sum of the correct options' points
@@ -363,6 +416,7 @@ export class QuestionBankComponent implements OnInit {
   reloadLatest(): void {
     if (this.scope) this.service.clearDraft(this.scope);
     this.banner.set(null);
+    this.loadBankName(this.scope as BankScope);
     this.loadFromServer();
   }
 
@@ -372,7 +426,7 @@ export class QuestionBankComponent implements OnInit {
     if (question) question.dirty = true;
     this.dirty.set(true);
     this.editVersion++;
-    this.revision.update(v => v + 1); // NEW: refresh the section totals
+    this.revision.update(v => v + 1); // refresh the totals
     if (this.draftTimer) clearTimeout(this.draftTimer);
     this.draftTimer = setTimeout(() => this.flushDraft(), 400);
   }
@@ -600,6 +654,13 @@ export class QuestionBankComponent implements OnInit {
     const scope = this.scope;
     if (!scope) return;
 
+    // NEW: the bank name must be valid before anything is sent
+    const nameIssue = validateBankName(this.bankName());
+    if (nameIssue) {
+      this.notifyError(nameIssue);
+      return;
+    }
+
     const issue = validateSections(this.sections());
     if (issue) {
       this.showIssue(issue);
@@ -611,9 +672,9 @@ export class QuestionBankComponent implements OnInit {
     this.banner.set(null);
     this.highlightId.set(null);
 
-    this.service
-      .saveBank(scope, this.sections(), this.baselineSectionIds)
+    this.renameIfNeeded(scope)
       .pipe(
+        switchMap(() => this.service.saveBank(scope, this.sections(), this.baselineSectionIds)),
         finalize(() => this.saving.set(false)),
         takeUntilDestroyed(this.destroyRef),
       )
@@ -673,11 +734,10 @@ export class QuestionBankComponent implements OnInit {
     this.notifyError(issue.message);
 
     if (issue.questionClientId) {
-      // Score / feedback fields live in the collapsed "Scoring" block: open it so the user sees the problem.
-      if (/score|feedback/i.test(issue.message)) this.scoringOpenId.set(issue.questionClientId);
-      setTimeout(() =>
-        document.getElementById(`q-${issue.questionClientId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }),
-      );
+      const id = issue.questionClientId;
+      this.expandedIds.update(set => new Set(set).add(id)); // open the question with the problem
+      if (/score|feedback/i.test(issue.message)) this.scoringOpenId.set(id);
+      setTimeout(() => document.getElementById(`q-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
     }
   }
 

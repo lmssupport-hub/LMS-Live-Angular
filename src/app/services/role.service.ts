@@ -45,7 +45,17 @@ export interface Role {
   status: RoleStatus;
   createdAt: string;
   updatedAt: string;
+  /** Users who accepted an invite for this role (pending invites are not counted). */
   assignedUsers?: number;
+}
+
+/** One row of GET /api/roles/{id}/users. */
+export interface RoleUser {
+  /** null for an invite that has not been accepted yet. */
+  id: number | null;
+  name: string;
+  email: string;
+  status: 'Active' | 'Inactive' | 'Invited';
 }
 
 export interface RoleRequest {
@@ -83,6 +93,24 @@ export type RolePageStep = 'permission' | 'assign' | null;
 @Injectable({ providedIn: 'root' })
 export class RolePageState {
   readonly step = signal<RolePageStep>(null);
+
+  private backToListHandler: (() => void) | null = null;
+
+  /**
+   * RoleManagement registers HOW to return to the role list (it owns the real state).
+   * Returns an unregister function.
+   */
+  registerBackToList(handler: () => void): () => void {
+    this.backToListHandler = handler;
+    return () => {
+      if (this.backToListHandler === handler) this.backToListHandler = null;
+    };
+  }
+
+  /** Called by the header breadcrumb ("Role List" crumb). */
+  backToList(): void {
+    this.backToListHandler?.();
+  }
 }
 
 @Injectable({ providedIn: 'root' })
@@ -100,6 +128,11 @@ export class RoleService {
 
   getById(id: number): Observable<Role> {
     return this.http.get<Role>(`${this.baseUrl}/${id}`);
+  }
+
+  /** Users (and pending invites) of one role: the "View users" screen. */
+  getUsers(id: number): Observable<RoleUser[]> {
+    return this.http.get<RoleUser[]>(`${this.baseUrl}/${id}/users`);
   }
 
   create(request: RoleRequest): Observable<Role> {

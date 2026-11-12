@@ -101,7 +101,9 @@
       } @else {
         <div class="grid grid-cols-1 gap-7 md:grid-cols-2 xl:grid-cols-3">
           @for (course of filteredCourses(); track course.id) {
-            <article class="group relative h-64 rounded-2xl text-white shadow-lg">
+            <!-- pb-9 leaves room for the action bar that peeks out under the card -->
+            <div class="relative pb-9">
+            <article class="group relative z-10 h-64 rounded-2xl text-white shadow-lg">
               <!-- clipping wrapper: keeps image zoom inside the rounded card -->
               <div class="absolute inset-0 overflow-hidden rounded-2xl bg-neutral-800">
                 @if (cardThumbnail(course)) {
@@ -112,10 +114,12 @@
                 <div class="absolute inset-0 bg-gradient-to-b from-black/5 via-black/20 to-black/90"></div>
               </div>
 
-              <span
-                class="absolute left-3 top-3 rounded-full px-3 py-1 text-[9px] font-semibold uppercase tracking-wide text-white shadow-sm"
-                [ngClass]="statusBadgeClasses(course.status)"
-              >{{ courseStatusLabel(course.status) }}</span>
+              @if (canManage()) {
+                <span
+                  class="absolute left-3 top-3 rounded-full px-3 py-1 text-[9px] font-semibold uppercase tracking-wide text-white shadow-sm"
+                  [ngClass]="statusBadgeClasses(course.status)"
+                >{{ courseStatusLabel(course.status) }}</span>
+              }
 
               @if (canOrganize() || canSeeEnrollments() || canDelete()) {
                 <!-- 3-dot stays top-right; actions open in an arc around it, inside the card -->
@@ -212,7 +216,8 @@
                   }
                 </div>
               }
-              <div class="absolute inset-x-4 bottom-3">
+              <!-- info panel -->
+              <div class="absolute inset-x-0 bottom-0 rounded-b-2xl bg-black/45 px-4 pb-3 pt-3 backdrop-blur-[2px]">
                 @if (cardThumbnail(course)) {
                   <h2 class="text-sm font-medium">{{ course.name }}</h2>
                 }
@@ -220,28 +225,55 @@
                   <p class="mt-1 line-clamp-2 text-[9px] leading-snug text-neutral-200">{{ course.description }}</p>
                 }
                 <div class="mt-3 flex items-end gap-2">
-                  <dl class="grid min-w-0 flex-1 grid-cols-4 gap-1.5">
+                  <dl class="grid min-w-0 flex-1 grid-cols-3 gap-1.5">
                     <div><dt class="text-[10px]">Category</dt><dd class="mt-1 truncate text-[9px]">{{ course.categoryName }}</dd></div>
-                    <div><dt class="text-[10px]">Course Level</dt><dd class="mt-1 truncate text-[9px]">{{ levelLabel(course.level) }}</dd></div>
-                    <div><dt class="text-[10px]">Instructor</dt><dd class="mt-1 truncate text-[9px]">{{ course.instructorName }}</dd></div>
-                    <div><dt class="text-[10px]">Status</dt><dd class="mt-1 truncate text-[9px]">{{ courseStatusLabel(course.status) }}</dd></div>
+                    <div>
+                      <dt class="text-[10px]">Course Level</dt>
+                      <dd class="mt-1 flex items-center gap-1 text-[9px]">
+                        <span class="truncate">{{ levelLabel(course.level) }}</span>
+                        <span class="flex shrink-0 gap-0.5" aria-hidden="true">
+                          @for (dot of [1, 2, 3]; track dot) {
+                            <i class="block h-1 w-2 rounded-full" [class]="dot <= levelDots(course.level) ? 'bg-green-500' : 'bg-white'"></i>
+                          }
+                        </span>
+                      </dd>
+                    </div>
+                    <div>
+                      <dt class="text-[10px]">Instructor</dt>
+                      <dd class="mt-1 flex items-center gap-1 text-[9px]">
+                        <svg class="size-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+                        <span class="truncate">{{ course.instructorName }}</span>
+                      </dd>
+                    </div>
                   </dl>
-                  @if (canManage()) {
-                    <button type="button" class="h-6 shrink-0 cursor-pointer rounded-full border border-transparent bg-white px-4 text-[9px] text-[#333] font-medium transition-all duration-300 ease-out enabled:hover:border-[#7fb9c7] enabled:hover:bg-[#4694A4] enabled:hover:text-[#f4fbfc] enabled:hover:shadow-[0_8px_18px_-2px_rgba(70,160,180,0.65),0_3px_8px_rgba(120,200,215,0.3)] enabled:focus-visible:border-[#7fb9c7] enabled:focus-visible:bg-[#4694A4] enabled:focus-visible:text-[#f4fbfc] enabled:focus-visible:shadow-[0_8px_18px_-2px_rgba(70,160,180,0.65),0_3px_8px_rgba(120,200,215,0.3)] focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50" (click)="openViewModal(course)" [attr.aria-label]="'View ' + course.name">
-                      View
-                    </button>
-                  } @else if (course.enrolled) {
-                    <button type="button" class="h-6 shrink-0 cursor-pointer rounded-full bg-white px-4 text-[9px] font-medium text-neutral-700 shadow-sm transition hover:bg-[#61b7c5] hover:text-white" (click)="startCourse(course)" [attr.aria-label]="'Start course ' + course.name">
-                      Start course
-                    </button>
-                  } @else {
-                    <button type="button" class="h-6 shrink-0 cursor-pointer rounded-full bg-white px-4 text-[9px] font-medium text-neutral-700 shadow-sm transition hover:bg-[#61b7c5] hover:text-white disabled:cursor-not-allowed disabled:opacity-50" [disabled]="enrollingCourseId() !== null" (click)="enrollInCourse(course)" [attr.aria-label]="'Enroll in ' + course.name">
-                      {{ enrollingCourseId() === course.id ? 'Enrolling...' : 'Enroll' }}
-                    </button>
-                  }
+                  <!-- Free / Paid $price pill -->
+                  <span class="h-6 shrink-0 rounded-lg px-3 text-[9px] font-semibold leading-6 text-white shadow-sm" [ngClass]="priceBadgeClasses(course)">{{ priceLabel(course) }}</span>
                 </div>
               </div>
             </article>
+
+            <!-- Action bar under the card: View (admin) | Enroll | Start Course + Unenroll | Completed (learner) -->
+            <div class="absolute inset-x-0 bottom-0 z-0 flex h-[4.5rem] items-end rounded-2xl text-[11px] font-medium text-white" [ngClass]="cardBarClass(course)">
+              <div class="flex h-9 w-full items-center">
+                @if (canManage()) {
+                  <button type="button" class="h-9 flex-1 cursor-pointer rounded-b-2xl outline-none transition hover:bg-black/10 focus-visible:bg-black/10" (click)="openViewModal(course)" [attr.aria-label]="'View ' + course.name">View</button>
+                } @else if (isCompleted(course)) {
+                  <button type="button" class="h-9 flex-1 cursor-pointer rounded-b-2xl outline-none transition hover:bg-black/10 focus-visible:bg-black/10" (click)="startCourse(course)" [attr.aria-label]="'Completed. Open ' + course.name">Completed</button>
+                } @else if (course.enrolled) {
+                  <button type="button" class="h-9 flex-1 cursor-pointer rounded-bl-2xl outline-none transition hover:bg-black/10 focus-visible:bg-black/10" (click)="startCourse(course)" [attr.aria-label]="'Start course ' + course.name">Start Course</button>
+                  <button type="button" class="flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-br-2xl px-5 outline-none transition hover:bg-black/10 focus-visible:bg-black/10 disabled:cursor-not-allowed disabled:opacity-50" [disabled]="unenrollingCourseId() !== null" (click)="requestUnenroll(course)" [attr.aria-label]="'Unenroll from ' + course.name">
+                    {{ unenrollingCourseId() === course.id ? 'Unenrolling...' : 'Unenroll' }}
+                    <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12h8"/></svg>
+                  </button>
+                } @else {
+                  <button type="button" class="flex h-9 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-b-2xl outline-none transition hover:bg-black/10 focus-visible:bg-black/10 disabled:cursor-not-allowed disabled:opacity-50" [disabled]="enrollingCourseId() !== null" (click)="enrollInCourse(course)" [attr.aria-label]="'Enroll in ' + course.name">
+                    {{ enrollingCourseId() === course.id ? 'Enrolling...' : 'Enroll' }}
+                    <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>
+                  </button>
+                }
+              </div>
+            </div>
+            </div>
           }
         </div>
       }
@@ -282,7 +314,7 @@
       <div class="mt-6 flex w-full items-center justify-end gap-3">
         <button type="button" class="rounded-lg bg-neutral-100 px-4 py-2 text-sm text-neutral-700 transition hover:bg-neutral-200" (click)="answerConfirmation(false)">Cancel</button>
         <button type="button" class="rounded-lg bg-[#ff5d59] px-4 py-2 text-sm text-white" (click)="answerConfirmation(true)">
-          {{ deleteTarget() ? 'Delete course' : 'Discard changes' }}
+          {{ deleteTarget() ? 'Delete course' : unenrollTarget() ? 'Unenroll' : 'Discard changes' }}
         </button>
       </div>
     </section>

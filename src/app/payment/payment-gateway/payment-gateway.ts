@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, HostListener, OnInit, computed, inject, signal } from '@angular/core';
 import { CurrencyPipe } from '@angular/common';
 import {
   AbstractControl,
@@ -13,8 +13,6 @@ import { Router } from '@angular/router';
 import { finalize } from 'rxjs';
 import { PackageRecord, PackageService } from '../../services/package.service';
 import { CheckoutService } from '../../services/checkout.service';
-// Adjust this path to where your OnlineBanking component lives (it is used as <app-online-banking /> in the template).
-import { OnlineBanking } from '../online-banking/online-banking';
 
 /** Adjust to match app.routes.ts. */
 const SUBSCRIPTION_PATH = '/admin-dashboard/subscription';
@@ -23,7 +21,7 @@ const serverActionErrorMessage =
   'Unable to complete the requested action due to a server error. Please try again later.';
 const isServerError = (status?: number): boolean => status === 0 || (status ?? 0) >= 500;
 
-type PaymentMethod = 'stripe' | 'card' | 'paypal' | 'bank';
+type PaymentMethod = 'stripe' | 'wallet' | 'card' | 'paypal';
 type ModalName = 'bank' | 'paypal' | 'wallet';
 type PaypalStep = 'email' | 'password';
 
@@ -49,7 +47,7 @@ function cardNumberLength(control: AbstractControl<string>): ValidationErrors | 
 
 @Component({
   selector: 'app-payment-gateway',
-  imports: [ReactiveFormsModule, CurrencyPipe, A11yModule, OnlineBanking],
+  imports: [ReactiveFormsModule, CurrencyPipe, A11yModule],
   templateUrl: './payment-gateway.html',
   styleUrl: './payment-gateway.css',
 })
@@ -71,8 +69,8 @@ export class PaymentGateway implements OnInit {
     return plan ? this.checkout.convert(plan.price) : 0;
   });
 
-  protected readonly paymentMethod = signal<PaymentMethod>('card');
-  protected readonly expandedPaymentMethod = signal<PaymentMethod | null>('card');
+  protected readonly paymentMethod = signal<PaymentMethod | null>(null);
+  protected readonly expandedPaymentMethod = signal<PaymentMethod | null>(null);
   protected readonly submitting = signal(false);
   protected readonly paymentError = signal('');
 
@@ -125,6 +123,44 @@ export class PaymentGateway implements OnInit {
     postalCode: { required: 'Postal code is required.' },
     acceptedTerms: { required: 'You must accept the Terms of Service and Privacy Policy.' },
   };
+
+  // ---- Country dropdown (same look as the Create Course dropdowns) ----------------
+  protected readonly countryMenuOpen = signal(false);
+
+  protected countryLabel(): string {
+    const code = this.billingForm.controls.country.value;
+    return this.countryOptions.find((c) => c.code === code)?.name ?? '';
+  }
+
+  protected toggleCountryMenu(): void {
+    // The error must not pop up while the menu is opening: only mark it touched on close.
+    if (this.countryMenuOpen()) this.closeCountryMenu();
+    else this.countryMenuOpen.set(true);
+  }
+
+  private closeCountryMenu(): void {
+    this.countryMenuOpen.set(false);
+    this.billingForm.controls.country.markAsTouched();
+  }
+
+  protected chooseCountry(code: string): void {
+    this.billingForm.controls.country.setValue(code);
+    this.billingForm.controls.country.markAsDirty();
+    this.countryMenuOpen.set(false);
+  }
+
+  /** Click outside the dropdown, or Escape, closes it. */
+  @HostListener('document:click', ['$event'])
+  protected onDocumentClick(event: Event): void {
+    if (this.countryMenuOpen() && !(event.target as HTMLElement | null)?.closest('[data-country-dropdown]')) {
+      this.closeCountryMenu();
+    }
+  }
+
+  @HostListener('document:keydown.escape')
+  protected onEscape(): void {
+    if (this.countryMenuOpen()) this.closeCountryMenu();
+  }
 
   // ---- Discount ------------------------------------------------------------
   protected readonly discountCode = new FormControl('', { nonNullable: true });
@@ -225,10 +261,9 @@ export class PaymentGateway implements OnInit {
       return;
     }
     this.otpRequested.set(true);
-    this.otpVerified.set(false);
     this.verificationForm.reset();
     // TEMP (test mode): no SMS is sent yet. Remove this hint when a real gateway sends the code.
-    this.otpMessage.set('Test mode: enter the test verification code to continue.');
+    this.otpMessage.set('Test mode: enter the test verification code, then press Pay.');
   }
 
   /**
@@ -269,6 +304,10 @@ export class PaymentGateway implements OnInit {
     if (!plan) return;
     this.paymentError.set('');
 
+    if (this.paymentMethod() === null) {
+      this.paymentError.set('Please select a payment method.');
+      return;
+    }
     if (this.paymentMethod() !== 'card') {
       this.paymentError.set(NOT_CONNECTED_MESSAGE);
       return;
@@ -285,8 +324,9 @@ export class PaymentGateway implements OnInit {
       );
       return;
     }
-    if (!this.otpVerified()) {
-      this.paymentError.set('Please request and enter the verification code before paying.');
+    if (this.verificationForm.invalid) {
+      this.verificationForm.markAllAsTouched();
+      this.paymentError.set('Please enter the verification code sent by Send OTP before paying.');
       return;
     }
 

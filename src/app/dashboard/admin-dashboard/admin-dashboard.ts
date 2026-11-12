@@ -4,7 +4,7 @@ import { ActivatedRouteSnapshot, NavigationEnd, Router, RouterLink, RouterLinkAc
 import { EMPTY, interval, timer } from 'rxjs';
 import { catchError, filter, map, startWith, switchMap } from 'rxjs/operators';
 
-import { AuthService } from '../../services/auth';
+import { AuthService,FEATURE } from '../../services/auth';
 import { ADMIN_MENU, isMenuVisible } from '../../config/admin-menu';
 import { PackageService } from '../../services/package.service';
 import { RolePageState } from '../../services/role.service';
@@ -177,18 +177,23 @@ export class AdminDashboard {
       /^\/admin-dashboard\/courses\/(\d+)\/preview\/?$/.exec(path) ??
       /^\/admin-dashboard\/courses\/(\d+)\/sections\/\d+\/content\/?$/.exec(path);
     if (previewMatch) {
-      return [
-        { label: 'Content Management', link: null, plain: true },
-        { label: 'Course List', link: courseList, plain: true },
-        {
-          label: 'Organize Modules',
-          link: courseList,
-          queryParams: { organize: previewMatch[1] },
-          plain: true,
-        },
-        { label: 'Course Preview', link: null, plain: true },
-      ];
-    }
+  const crumbs: Breadcrumb[] = [
+    { label: 'Content Management', link: null, plain: true },
+    { label: 'Course List', link: courseList, plain: true },
+  ];
+  // "Organize Modules" only for roles that may open it (admin / instructor with Organize access).
+  // A learner opening "Start Course" must not see it.
+  if (this.auth.can(FEATURE.COURSE_ORGANIZE, 'update')) {
+    crumbs.push({
+      label: 'Organize Modules',
+      link: courseList,
+      queryParams: { organize: previewMatch[1] },
+      plain: true,
+    });
+  }
+  crumbs.push({ label: 'Course Preview', link: null, plain: true });
+  return crumbs;
+}
 
     // Question Bank page (any route under /admin-dashboard that contains "question-bank" / "questionbank").
     // Flow: Content Management > Course List > Organize Modules > Question Bank
@@ -209,12 +214,6 @@ export class AdminDashboard {
       ];
     }
 
-    // Role Management (/admin-dashboard/role). Its views share one URL, so the step comes from RolePageState.
-    // Flow: Content Management > Role List
-    //       Content Management > Role List > Permission
-    //       Content Management > Role List > Assign List
-    // "Role List" is clickable on Permission / Assign List: it asks RoleManagement to go back
-    // (an in-page state change, NOT a URL navigation).
     if (/^\/admin-dashboard\/role\/?$/.test(path)) {
       const step = this.rolePageState.step();
       const crumbs: Breadcrumb[] = [

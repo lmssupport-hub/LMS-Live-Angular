@@ -89,6 +89,12 @@ export class CreateCourseModal {
     instructorId: { required: 'Instructor selection is required.' },
     level: { required: 'Course Level is required.' },
     status: { required: 'Course Status is required.' },
+    // NEW
+    price: {
+      required: 'Price is required for a paid course.',
+      min: 'Price must be greater than 0.',
+      max: 'Price is too high.',
+    },
   };
  
   /**
@@ -151,6 +157,34 @@ export class CreateCourseModal {
   chooseLevel(level: CourseLevel): void {
     this.levelSelected.emit(level);
     this.openDropdown.set(null);
+  }
+
+  // ---------- Free / Paid ----------
+  /** NEW: true when the "Paid" side of the toggle is selected. */
+  isPaid(): boolean {
+    return !!this.form?.controls['paid']?.value;
+  }
+
+  /**
+   * NEW: Free / Paid toggle. The parent (CourseManagement) listens to `paid.valueChanges`
+   * and switches the price validators / clears the price box, so this only flips the value.
+   */
+  setPaid(paid: boolean): void {
+    if (this.viewOnly) return;
+    this.form.controls['paid'].setValue(paid);
+    this.form.controls['paid'].markAsDirty();
+  }
+
+  /** NEW: text of the pill in the live preview ("Free $ 0" / "Paid $ 100"). */
+  pricePillLabel(): string {
+    if (!this.isPaid()) return 'Free $ 0';
+    const price = this.form?.controls['price']?.value;
+    return `Paid $ ${price ?? 0}`;
+  }
+
+  /** NEW: Paid = yellow, Free = green. */
+  pricePillClasses(): string {
+    return this.isPaid() ? 'bg-amber-400' : 'bg-green-500';
   }
 
   // ---------- thumbnail (file name chip) ----------

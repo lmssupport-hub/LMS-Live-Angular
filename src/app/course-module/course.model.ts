@@ -29,11 +29,17 @@ export interface Course {
   instructorName: string;
   level: CourseLevel;
   status: CourseStatus;
+  /** NEW: Free / Paid course. */
+  paid: boolean;
+  /** NEW: price in USD. Always 0 for a free course. */
+  price: number;
   thumbnailUrl?: string | null;
   createdAt: string;
   updatedAt: string;
   /** Learner view: true = enrolled (show "Start course"), false = not yet (show "Enroll"). Null/absent for managers. */
   enrolled?: boolean | null;
+  /** NEW: learner view, only when enrolled: drives the Start Course / Completed bar. */
+  enrollmentStatus?: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | null;
 }
 
 export interface CourseRequest {
@@ -43,6 +49,10 @@ export interface CourseRequest {
   instructorId: number | null;
   level: CourseLevel | '';
   status: CourseStatus | '';
+  /** NEW */
+  paid: boolean;
+  /** NEW: send 0 when the course is free. */
+  price: number | null;
 }
 
 export const COURSE_CATEGORIES: CourseCategory[] = [
@@ -67,5 +77,7 @@ export function emptyCourseRequest(): CourseRequest {
     instructorId: null,
     level: '',
     status: '',
+    paid: false,
+    price: null,
   };
 }

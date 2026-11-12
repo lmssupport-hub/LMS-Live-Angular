@@ -189,3 +189,134 @@
     to   { opacity: 1; transform: translateX(0); }
   }
 }
+
+/* ===== Payment method accordion: details open inline under the selected row ===== */
+.pm-group { margin-bottom: 20px; }
+.pm-group:last-child { margin-bottom: 0; }
+
+/* Height animates 0 -> auto via grid rows, so the rows below glide down/up */
+.pm-collapse {
+  display: grid;
+  grid-template-rows: 0fr;
+  visibility: hidden;
+  transition: grid-template-rows 520ms cubic-bezier(0.64, 0, 0.78, 0.39),
+              visibility 0s linear 520ms;
+}
+.pm-collapse.pm-open {
+  grid-template-rows: 1fr;
+  visibility: visible;
+  transition: grid-template-rows 650ms cubic-bezier(0.22, 0.61, 0.36, 1),
+              visibility 0s;
+}
+.pm-collapse-inner { min-height: 0; overflow: hidden; } /* clip only, never a scrollbar */
+.pm-body { padding-top: 20px; padding-bottom: 2px; }
+
+/* Items travel down WITH the panel, one after another (same feel as dd-item).
+   Child combinators so a nested panel never re-triggers its parent's items. */
+.pm-body > *,
+.pm-body > .pm-stagger > * {
+  opacity: 0;
+  transform: translateY(-14px);
+  transition: opacity 250ms ease, transform 250ms ease,
+              background-color 150ms, border-color 150ms, color 150ms;
+}
+.pm-open > .pm-collapse-inner > .pm-body > *,
+.pm-open > .pm-collapse-inner > .pm-body > .pm-stagger > * {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 600ms cubic-bezier(0.22, 0.61, 0.36, 1),
+              transform 650ms cubic-bezier(0.22, 0.61, 0.36, 1),
+              background-color 150ms, border-color 150ms, color 150ms;
+}
+.pm-open > .pm-collapse-inner > .pm-body > :nth-child(1),
+.pm-open > .pm-collapse-inner > .pm-body > .pm-stagger > :nth-child(1) { transition-delay: 60ms; }
+.pm-open > .pm-collapse-inner > .pm-body > :nth-child(2),
+.pm-open > .pm-collapse-inner > .pm-body > .pm-stagger > :nth-child(2) { transition-delay: 110ms; }
+.pm-open > .pm-collapse-inner > .pm-body > :nth-child(3),
+.pm-open > .pm-collapse-inner > .pm-body > .pm-stagger > :nth-child(3) { transition-delay: 160ms; }
+.pm-open > .pm-collapse-inner > .pm-body > :nth-child(4),
+.pm-open > .pm-collapse-inner > .pm-body > .pm-stagger > :nth-child(4) { transition-delay: 210ms; }
+.pm-open > .pm-collapse-inner > .pm-body > :nth-child(n+5),
+.pm-open > .pm-collapse-inner > .pm-body > .pm-stagger > :nth-child(n+5) { transition-delay: 260ms; }
+
+/* Card form grid: 4 equal columns, 14px gap. Card Number = 2 cols, Expiry = 1, CVC = 1;
+   First/Last = 2 + 2; so every row lines up on the same left and right edge. */
+.pm-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  column-gap: 14px;
+  row-gap: 20px;
+}
+.pm-span-2 { grid-column: span 2; }
+.pm-grid > * { min-width: 0; }
+@media (max-width: 639px) {
+  .pm-grid { grid-template-columns: minmax(0, 1fr); }
+  .pm-span-2 { grid-column: auto; }
+}
+/* only the card-form labels; the method rows use their own flex labels */
+.pm-grid > label { display: block; min-width: 0; }
+
+/* Fields: one soft grey everywhere (payment panels + Billing & Receipt) */
+.pm-body .gateway-input,
+.pm-billing .gateway-input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  background-color: #f5f5f5;
+  border: 0;
+  border-radius: 14px;
+  padding-left: 20px;
+  padding-right: 16px;
+  font-size: 12px;
+  color: #444b4d;
+  box-shadow: none;
+}
+/* every field + Send OTP: one height */
+.pm-body .gateway-input,
+.pm-billing .gateway-input { height: 40px; min-height: 40px; }
+.pm-body > button { min-height: 40px; height: 40px; }
+
+.pm-billing .sm\:w-\[128px\] { width: 128px; }
+.pm-body span.gateway-input { display: flex; align-items: center; }
+.pm-body .gateway-input::placeholder,
+.pm-billing .gateway-input::placeholder { color: #b3b3b3; }
+/* inset ring: an outline would be cut off by the panel's overflow:hidden */
+.pm-body .gateway-input:focus,
+.pm-billing .gateway-input:focus { background-color: #f0f0f0; outline: none; box-shadow: inset 0 0 0 2px #319eaf; }
+
+/* Validation text stays small and under the field */
+.pm-body span.gateway-error,
+.pm-billing span.gateway-error {
+  display: block;
+  margin-top: 6px;
+  font-size: 10px;
+  line-height: 1.3;
+  color: #c2413b;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pm-collapse, .pm-collapse.pm-open, .pm-body > *, .pm-body > .pm-stagger > *,
+  .pm-open > .pm-collapse-inner > .pm-body > *, .pm-open > .pm-collapse-inner > .pm-body > .pm-stagger > * {
+    transition-duration: 1ms !important;
+    transition-delay: 0s !important;
+  }
+}
+
+/* Shorter rows everywhere on the payment page (method rows, wallet rows, Pay) */
+app-payment-gateway .min-h-12 { min-height: 44px; }
+.pm-group > div:first-child { min-height: 44px; }
+
+/* Order Summary: Apply Discount Code field (text was touching the left edge) */
+app-payment-gateway #discount-code {
+  height: 40px;
+  min-height: 40px;
+  padding-left: 20px;
+  padding-right: 8px;
+  font-size: 12px;
+  color: #444b4d;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+app-payment-gateway #discount-code::placeholder { color: #b3b3b3; }
+app-payment-gateway #discount-code:focus { outline: none; box-shadow: inset 0 0 0 2px #319eaf; border-radius: 14px; }

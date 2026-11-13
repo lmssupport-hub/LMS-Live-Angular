@@ -154,6 +154,15 @@ export const routes: Routes = [
         title: 'Course Management',
       },
 
+      // NEW - learner pays for a paid course (same Payment page design, separate from Subscription payment)
+      {
+        path: 'courses/:courseId/payment',
+        canActivate: [menuGuard(MENU.COURSE)],
+        loadComponent: () =>
+          import('./course-module/course-payment/course-payment').then((m) => m.CoursePayment),
+        title: 'Payment Method',
+      },
+
       {
   path: 'courses/:courseId/enrollments',
   canActivate: [featureGuard([FEATURE.ENROLLED_LIST, 'read'])],
@@ -170,6 +179,15 @@ export const routes: Routes = [
             (m) => m.CourseManagement,
           ),
         title: 'Organize Modules',
+      },
+
+      // NEW - learner "Attempt Quiz" (the route below is the instructor's Question Bank editor)
+      {
+        path: 'courses/:courseId/sections/:sectionId/question-banks/:bankId/attempt',
+        canActivate: [featureGuard(...COURSE_ACCESS)],
+        loadComponent: () =>
+          import('./course-module/quiz-attempt/quiz-attempt').then((m) => m.QuizAttemptPage),
+        title: 'Quiz',
       },
 
       {

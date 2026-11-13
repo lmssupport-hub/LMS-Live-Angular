@@ -15,6 +15,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { environment } from '../../../environments/environment';
 import { Course } from '../course.model';
 import { Section, SectionManagementService } from '../../services/Section management.service';
+import { CourseProgress, SectionProgressService, SectionProgressStatus } from '../../services/section-progress.service';
 
 type ViewMode = 'desktop' | 'tablet' | 'mobile';
 
@@ -44,10 +45,14 @@ export class CoursePreview implements OnInit, AfterViewInit {
   private readonly router = inject(Router);
   private readonly location = inject(Location);
   private readonly sectionService = inject(SectionManagementService);
+  private readonly progressService = inject(SectionProgressService);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly course = signal<Course | null>(null);
   readonly sections = signal<Section[]>([]);
+  /** Learner progress (null / tracked = false for admins and instructors: no rings). */
+  readonly progress = signal<CourseProgress | null>(null);
+  readonly showProgress = computed(() => this.progress()?.tracked === true);
   readonly loading = signal(false);
   readonly error = signal('');
 
@@ -149,12 +154,49 @@ export class CoursePreview implements OnInit, AfterViewInit {
         next: list => {
           this.sections.set([...list].sort((a, b) => a.sectionOrder - b.sectionOrder));
           this.loading.set(false);
+          this.loadProgress();
         },
         error: (err: unknown) => {
           this.loading.set(false);
           this.error.set(err instanceof Error && err.message ? err.message : GENERIC_ERROR);
         },
       });
+  }
+
+  /** Rings are a nice-to-have: if this call fails the module list still works, just without rings. */
+  private loadProgress(): void {
+    const course = this.course();
+    if (!course) return;
+    this.progressService
+      .getProgress(course.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: p => this.progress.set(p),
+        error: () => this.progress.set(null),
+      });
+  }
+
+  /** NOT_STARTED when the learner has no row for this module yet. */
+  statusOf(section: Section): SectionProgressStatus {
+    return this.progress()?.sections.find(i => i.sectionId === section.id)?.status ?? 'NOT_STARTED';
+  }
+
+  /** 0-100 for the ring. */
+  percentOf(section: Section): number {
+    const value = this.progress()?.sections.find(i => i.sectionId === section.id)?.percent ?? 0;
+    return Math.max(0, Math.min(100, Math.round(value)));
+  }
+
+  /** SVG stroke-dasharray that fills `percent` % of the ring (circle r = 10.5 -> length 65.97). */
+  ringDash(section: Section): string {
+    const length = 2 * Math.PI * 10.5;
+    return `${((length * this.percentOf(section)) / 100).toFixed(2)} ${length.toFixed(2)}`;
+  }
+
+  statusLabel(section: Section): string {
+    const percent = this.percentOf(section);
+    if (percent >= 100) return 'Completed';
+    return percent > 0 ? `${percent}% completed` : 'Not started';
   }
 
   private readStoredCourse(courseId: number): Course | null {

@@ -21,9 +21,15 @@ import { catchError } from 'rxjs/operators';
 
 import { Section, SectionManagementService } from '../../services/Section management.service';
 import { MultimediaManagementService } from '../../services/multimedia-management.service';
+import { CourseProgress, SectionProgressService } from '../../services/section-progress.service';
 import { QuestionBankService } from '../../services/question-bank.service';
+import { QuizAttemptService } from '../../services/quiz-attempt.service';
+import { CourseManagementService } from '../../services/course-management.service'; // adjust the path/file name to your project
+import { AuthService, FEATURE } from '../../services/auth';
+import { environment } from '../../../environments/environment'; // adjust the path to your project
 import { ApiBankResponse } from '../question-bank.model';
 import { MultimediaResource, extensionOf, trustedMediaUrl } from '../multimedia.model';
+import { QuizAttemptPage } from '../quiz-attempt/quiz-attempt'; // adjust the path to your project
 
 type ViewMode = 'desktop' | 'tablet' | 'mobile';
 type TabKind = 'Multimedia' | 'Question Bank';
@@ -55,7 +61,7 @@ const OFFICE_EXTENSIONS: ReadonlySet<string> = new Set(['docx', 'pptx', 'xlsx'])
 
 @Component({
   selector: 'app-course-content-viewer',
-  imports: [],
+  imports: [QuizAttemptPage],
   host: { class: 'block' },
   templateUrl: './course-content-viewer.html',
   styleUrl: './course-content-viewer.css',
@@ -68,13 +74,37 @@ export class CourseContentViewer implements OnInit, AfterViewInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly sanitizer = inject(DomSanitizer);
   private readonly sectionService = inject(SectionManagementService);
+  private readonly progressService = inject(SectionProgressService);
   private readonly multimediaService = inject(MultimediaManagementService);
   private readonly questionBankService = inject(QuestionBankService);
+  private readonly quizService = inject(QuizAttemptService);
+  private readonly courseService = inject(CourseManagementService);
+  private readonly auth = inject(AuthService);
 
-  private courseId = 0;
+  /** Admins / instructors who may organize modules manage the quiz; everyone else (learners) attempts it. */
+  private isLearnerView(): boolean {
+    return !this.auth.can(FEATURE.COURSE_ORGANIZE, 'update');
+  }
+
+  /** Used by the template: learners see the quiz inline, admins / instructors get the Question Bank button. */
+  readonly learnerView = computed(() => this.isLearnerView());
+
+  /** Public: the template passes it to <app-quiz-attempt>. */
+  courseId = 0;
+
+  /** Course thumbnail, shown on the "Ready to take the quiz?" page. */
+  readonly courseThumbnail = signal<string | null>(null);
 
   // ---------- data ----------
   readonly sections = signal<Section[]>([]);
+  /** Learner progress (tracked = false for admins / instructors: the Complete button is hidden). */
+  readonly progress = signal<CourseProgress | null>(null);
+  readonly savingProgress = signal(false);
+  readonly canTrackProgress = computed(() => this.progress()?.tracked === true);
+  readonly currentSectionCompleted = computed(() => {
+    const id = this.selectedSectionId();
+    return this.progress()?.sections.find(i => i.sectionId === id)?.status === 'COMPLETED';
+  });
   readonly selectedSectionId = signal<number | null>(null);
   readonly tabs = signal<ContentTab[]>([]);
   readonly activeTabKey = signal<string>('');
@@ -171,7 +201,11 @@ export class CourseContentViewer implements OnInit, AfterViewInit {
       // Could not fetch/render locally (CORS, corrupt file...) -> fall back to the online viewer for this tab.
       if (token === this.docxToken) this.docxFailedKey.set(tabKey);
     } finally {
-      if (token === this.docxToken) this.docxLoading.set(false);
+      if (token === this.docxToken) {
+        this.docxLoading.set(false);
+        // a short document that fits on screen counts as fully read; a long one counts what is visible
+        setTimeout(() => this.updateDocxFraction(host), 300);
+      }
     }
   }
 
@@ -250,6 +284,16 @@ export class CourseContentViewer implements OnInit, AfterViewInit {
   readonly pageBg = signal('#f6f6f6');
 
   readonly stacked = computed(() => this.viewMode() !== 'desktop');
+  /**
+   * The inline quiz (Start Quiz / questions / Score) must fit the content area without scrolling, so the
+   * content area does not scroll for it. Everything else (and small / stacked screens) keeps scrolling.
+   */
+  readonly contentClass = computed(() => {
+    if (this.stacked()) return 'overflow-y-auto max-h-[70vh]';
+    const quizFits = this.activeTab()?.kind === 'Question Bank' && this.learnerView() && this.fitHeight() !== null;
+    return quizFits ? 'overflow-hidden' : 'overflow-y-auto';
+  });
+
   readonly frameWidthClass = computed(() => {
     switch (this.viewMode()) {
       case 'tablet':
@@ -264,13 +308,36 @@ export class CourseContentViewer implements OnInit, AfterViewInit {
   ngOnInit(): void {
     this.courseId = Number(this.route.snapshot.paramMap.get('courseId'));
     this.selectedSectionId.set(Number(this.route.snapshot.paramMap.get('sectionId')) || null);
+    this.loadCourseThumbnail();
     this.loadSections();
+    this.markCurrentSection('IN_PROGRESS');
+    // save the last bit of progress when the learner leaves the page
+    this.destroyRef.onDestroy(() => this.flushSave());
   }
 
   ngAfterViewInit(): void {
     this.pageBg.set(this.detectPageBg());
     setTimeout(() => this.updateFit());
     setTimeout(() => this.updateFit(), 200);
+  }
+
+  /** The course thumbnail is the image of the quiz "Ready to take the quiz?" page. */
+  private loadCourseThumbnail(): void {
+    if (!this.courseId) return;
+    this.courseService
+      .getCourseById(this.courseId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: course => this.courseThumbnail.set(this.resolveThumbnailUrl(course.thumbnailUrl)),
+        error: () => this.courseThumbnail.set(null),
+      });
+  }
+
+  /** Same rule as CourseManagement.resolveThumbnailUrl: the backend sends a relative path like "/uploads/thumbnails/x.png". */
+  private resolveThumbnailUrl(thumbnailUrl: string | null | undefined): string | null {
+    if (!thumbnailUrl) return null;
+    if (thumbnailUrl.startsWith('blob:') || /^https?:\/\//i.test(thumbnailUrl)) return thumbnailUrl;
+    return `${environment.apiBaseUrl}${thumbnailUrl}`;
   }
 
   // ---------- layout fit (same approach as the course preview page) ----------
@@ -349,9 +416,10 @@ export class CourseContentViewer implements OnInit, AfterViewInit {
       resources: this.multimediaService
         .getResources(this.courseId, sectionId)
         .pipe(catchError(() => of([] as MultimediaResource[]))),
-      banks: this.questionBankService
-        .listBanks(this.courseId, sectionId)
-        .pipe(catchError(() => of([] as ApiBankResponse[]))),
+      banks: (this.isLearnerView()
+        ? this.quizService.listForSection(this.courseId, sectionId)
+        : this.questionBankService.listBanks(this.courseId, sectionId)
+      ).pipe(catchError(() => of([] as ApiBankResponse[]))),
     })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(({ resources, banks }) => {
@@ -392,13 +460,161 @@ export class CourseContentViewer implements OnInit, AfterViewInit {
   onSectionChange(event: Event): void {
     const id = Number((event.target as HTMLSelectElement).value);
     if (!id) return;
+    this.openSection(id);
+  }
+
+  /** Switches to another course section (dropdown, or "Go to next unit" from the embedded quiz). */
+  private openSection(id: number): void {
+    this.flushSave();
     this.selectedSectionId.set(id);
+    this.markCurrentSection('IN_PROGRESS');
     // keep the URL in sync so a refresh stays on the same section (no extra history entry)
     void this.router.navigate(
       ['/admin-dashboard', 'courses', this.courseId, 'sections', id, 'content'],
       { replaceUrl: true },
     );
     this.loadTabs();
+  }
+
+  /** Event of the embedded quiz: 'course' = back to the course preview, a number = next course section. */
+  onQuizLeave(target: 'course' | number): void {
+    if (typeof target === 'number') {
+      this.openSection(target);
+    } else {
+      void this.router.navigate(['/admin-dashboard', 'courses', this.courseId, 'preview']);
+    }
+  }
+
+  /**
+   * Learner progress: opening a module marks it In progress, the button marks it Completed.
+   * Failures are ignored for IN_PROGRESS (the content still opens); the button shows nothing for admins.
+   */
+  private markCurrentSection(status: 'IN_PROGRESS' | 'COMPLETED'): void {
+    const sectionId = this.selectedSectionId();
+    if (!this.courseId || sectionId === null) return;
+    this.savingProgress.set(true);
+    this.progressService
+      .update(this.courseId, sectionId, { status })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: p => {
+          this.progress.set(p);
+          this.savingProgress.set(false);
+        },
+        error: () => this.savingProgress.set(false),
+      });
+  }
+
+  // ---------- percent progress (0-100 %, moves in small steps while the learner watches / reads) ----------
+  //
+  // Each tab of the module is worth (100 / number of tabs) %. How much of a tab counts:
+  //   video / audio ......... how far the playback has got (currentTime / duration)
+  //   Word (.docx) .......... how far the learner has scrolled
+  //   image, PDF, Office, quiz, other .. 100 % as soon as the tab is opened (these viewers are embedded
+  //                            iframes of other sites, the browser cannot tell how far the learner got)
+  // Module percent = sum of the tab shares. It is sent to the server at most every few seconds; the server
+  // only ever raises a module's percent.
+
+  private static readonly SAVE_INTERVAL_MS = 3000;
+
+  /** tab key -> 0..1 share seen in this visit, for the section named in fractionsSectionId. */
+  private fractions = new Map<string, number>();
+  private fractionsSectionId: number | null = null;
+  private readonly lastSent = new Map<number, number>();
+  private pending: { sectionId: number; percent: number } | null = null;
+  private saveTimer: ReturnType<typeof setTimeout> | null = null;
+  private lastSaveAt = 0;
+
+  /** Re-runs when the active tab / its viewer changes (or once progress tracking is known to apply, i.e. a learner). */
+  private readonly trackTabViews = effect(() => {
+    const tab = this.activeTab();
+    const media = this.activeMedia();
+    if (!tab || !this.canTrackProgress()) return;
+    const reportsOwnProgress =
+      tab.kind === 'Multimedia' && (media?.kind === 'video' || media?.kind === 'audio' || media?.kind === 'docx');
+    untracked(() => {
+      this.setTabFraction(tab.key, reportsOwnProgress ? 0 : 1);
+    });
+  });
+
+  /** Video / audio: called on every timeupdate. */
+  onMediaProgress(event: Event): void {
+    const el = event.target as HTMLMediaElement;
+    if (!this.canTrackProgress() || !el.duration || !Number.isFinite(el.duration)) return;
+    this.setTabFraction(this.activeTabKey(), el.currentTime / el.duration);
+  }
+
+  onMediaEnded(): void {
+    if (this.canTrackProgress()) this.setTabFraction(this.activeTabKey(), 1);
+  }
+
+  /** Word document: how far down the learner has scrolled. */
+  onDocxScroll(event: Event): void {
+    this.updateDocxFraction(event.target as HTMLElement);
+  }
+
+  private updateDocxFraction(el: HTMLElement): void {
+    if (!this.canTrackProgress() || this.docxLoading() || !el.scrollHeight) return;
+    const fitsOnScreen = el.scrollHeight - el.clientHeight <= 4; // short document: all of it is visible
+    const seen = fitsOnScreen ? 1 : (el.scrollTop + el.clientHeight) / el.scrollHeight;
+    this.setTabFraction(this.activeTabKey(), seen);
+  }
+
+  private fractionsFor(sectionId: number): Map<string, number> {
+    if (this.fractionsSectionId !== sectionId) {
+      this.flushSave(); // send what the previous section had before starting a new tally
+      this.fractionsSectionId = sectionId;
+      this.fractions = new Map<string, number>();
+    }
+    return this.fractions;
+  }
+
+  private setTabFraction(key: string, fraction: number): void {
+    const sectionId = this.selectedSectionId();
+    const total = this.tabs().length;
+    if (!this.courseId || sectionId === null || !key || total === 0) return;
+    const map = this.fractionsFor(sectionId);
+    const value = Math.max(0, Math.min(1, fraction));
+    if (value <= (map.get(key) ?? -1)) return; // only ever goes up
+    map.set(key, value);
+    let sum = 0;
+    map.forEach(v => (sum += v));
+    this.queueSave(sectionId, Math.min(100, Math.round((sum / total) * 100)));
+  }
+
+  private queueSave(sectionId: number, percent: number): void {
+    const saved = this.progress()?.sections.find(i => i.sectionId === sectionId)?.percent ?? 0;
+    if (percent <= Math.max(saved, this.lastSent.get(sectionId) ?? 0)) return; // nothing new to save
+    this.pending = { sectionId, percent };
+    const wait = CourseContentViewer.SAVE_INTERVAL_MS - (Date.now() - this.lastSaveAt);
+    if (percent >= 100 || wait <= 0) {
+      this.flushSave();
+    } else if (!this.saveTimer) {
+      this.saveTimer = setTimeout(() => this.flushSave(), wait);
+    }
+  }
+
+  /** Sends the latest pending percent now (also used when the section changes and when the page closes). */
+  private flushSave(): void {
+    if (this.saveTimer) {
+      clearTimeout(this.saveTimer);
+      this.saveTimer = null;
+    }
+    const job = this.pending;
+    if (!job || !this.courseId) return;
+    this.pending = null;
+    this.lastSaveAt = Date.now();
+    this.lastSent.set(job.sectionId, job.percent);
+    this.progressService.update(this.courseId, job.sectionId, { percent: job.percent }).subscribe({
+      next: p => this.progress.set(p),
+      error: () => this.lastSent.delete(job.sectionId), // progress is best-effort; try again on the next change
+    });
+  }
+
+  /** "Mark as completed" button. */
+  completeCurrentSection(): void {
+    if (this.savingProgress() || this.currentSectionCompleted()) return;
+    this.markCurrentSection('COMPLETED');
   }
 
   selectTab(key: string): void {
@@ -410,6 +626,7 @@ export class CourseContentViewer implements OnInit, AfterViewInit {
     if (next) this.activeTabKey.set(next.key);
   }
 
+  /** Admins / instructors only: opens the Question Bank editor. Learners attempt the quiz inline (<app-quiz-attempt>). */
   openQuiz(bankId: number | undefined): void {
     const sectionId = this.selectedSectionId();
     if (!bankId || sectionId === null) return;

@@ -115,6 +115,25 @@
           </svg>
         </div>
 
+        <!-- Learner only: Mark as completed -->
+        @if (canTrackProgress()) {
+        <button
+          type="button"
+          data-no-teal-hover
+          class="flex h-[27px] shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-3.5 text-[10px] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[#61b7c5]/40 disabled:cursor-not-allowed"
+          [class]="currentSectionCompleted() ? 'bg-[#d6eef2] text-[#2f8a99]' : 'bg-[#61b7c5] text-white hover:bg-[#489daa]'"
+          [disabled]="savingProgress() || currentSectionCompleted()"
+          (click)="completeCurrentSection()"
+        >
+          @if (currentSectionCompleted()) {
+          <svg viewBox="0 0 20 20" class="size-3 fill-none stroke-current" stroke-width="2.4" aria-hidden="true"><path d="m4.5 10.5 3.5 3.5 7.5-8" stroke-linecap="round" stroke-linejoin="round" /></svg>
+          Completed
+          } @else {
+          Mark as completed
+          }
+        </button>
+        }
+
         <!-- Prev / tabs / next -->
         <nav class="flex min-w-0 flex-1 items-center gap-3" aria-label="Section content">
           <button
@@ -173,7 +192,7 @@
       </header>
 
       <!-- ============ Content (only this area scrolls) ============ -->
-      <div class="cv-scroll min-h-0 flex-1 overflow-y-auto pb-6 pl-8 pr-6 pt-2" [class]="stacked() ? 'max-h-[70vh]' : ''">
+      <div class="cv-scroll min-h-0 flex-1 pb-6 pl-8 pr-6 pt-2" [class]="contentClass()">
         @if (error()) {
         <div class="rounded-lg bg-red-50 p-3 text-center text-xs text-red-700" role="alert">
           {{ error() }}
@@ -207,10 +226,10 @@
                   <img [src]="media.url" [alt]="activeTab()?.resource?.name" class="mx-auto max-h-[68vh] max-w-full rounded-xl bg-[#f6f6f6] object-contain" />
                 }
                 @case ('video') {
-                  <video [src]="media.url" class="mx-auto max-h-[68vh] w-full rounded-xl bg-black" controls preload="metadata"></video>
+                  <video [src]="media.url" class="mx-auto max-h-[68vh] w-full rounded-xl bg-black" controls preload="metadata" (timeupdate)="onMediaProgress($event)" (ended)="onMediaEnded()"></video>
                 }
                 @case ('audio') {
-                  <audio [src]="media.url" class="w-full max-w-md" controls preload="metadata"></audio>
+                  <audio [src]="media.url" class="w-full max-w-md" controls preload="metadata" (timeupdate)="onMediaProgress($event)" (ended)="onMediaEnded()"></audio>
                 }
                 @case ('pdf') {
                   <iframe [src]="media.frameUrl" title="PDF viewer" class="h-[68vh] w-full rounded-xl border-0 bg-[#f6f6f6]"></iframe>
@@ -223,7 +242,7 @@
                 }
                 @case ('docx') {
                   <div class="relative h-[68vh] w-full">
-                    <div #docxHost class="h-full w-full overflow-auto rounded-xl bg-[#f6f6f6]"></div>
+                    <div #docxHost class="h-full w-full overflow-auto rounded-xl bg-[#f6f6f6]" (scroll)="onDocxScroll($event)"></div>
                     @if (docxLoading()) {
                     <div
                       class="absolute inset-0 grid place-content-center justify-items-center gap-3 rounded-xl bg-[#f6f6f6]"
@@ -286,12 +305,27 @@
             }
           }
           @case ('Question Bank') {
-            <h1 class="mb-2 text-[26px] font-medium leading-tight text-[#4b4b4b]">{{ activeTab()?.label }}</h1>
-            <button
-              type="button"
-              class="h-8 rounded-full bg-[#61b7c5] px-6 text-[10px] font-medium text-white hover:bg-[#489daa]"
-              (click)="openQuiz(activeTab()?.bankId)"
-            >Attempt Quiz</button>
+            @if (learnerView()) {
+              <!-- Learner: the Attempt Quiz design is shown right here (course thumbnail on the intro page).
+                   The @for re-creates the quiz when the learner switches to another question bank tab. -->
+              @for (tab of [activeTab()]; track tab?.key) {
+                <app-quiz-attempt
+                  [courseId]="courseId"
+                  [sectionId]="selectedSectionId()"
+                  [bankId]="tab?.bankId ?? null"
+                  [thumbnail]="courseThumbnail()"
+                  [embedded]="true"
+                  (leave)="onQuizLeave($event)"
+                />
+              }
+            } @else {
+              <h1 class="mb-2 text-[26px] font-medium leading-tight text-[#4b4b4b]">{{ activeTab()?.label }}</h1>
+              <button
+                type="button"
+                class="h-8 rounded-full bg-[#61b7c5] px-6 text-[10px] font-medium text-white hover:bg-[#489daa]"
+                (click)="openQuiz(activeTab()?.bankId)"
+              >Open Question Bank</button>
+            }
           }
         }
         }

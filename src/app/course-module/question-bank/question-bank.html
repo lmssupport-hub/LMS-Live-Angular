@@ -48,15 +48,17 @@
         </div>
       }
 
-      <!-- Only this area scrolls -->
-      <div class="min-h-0 flex-1 overflow-y-auto">
+      <!-- Small screens: this area scrolls. Desktop (lg+): the page does not scroll; the left list and the
+           right "Add Question" panel each manage their own height. -->
+      <div class="min-h-0 flex-1 overflow-y-auto lg:overflow-hidden">
       @if (loading()) {
         <p class="py-16 text-center text-sm text-gray-400">Loading...</p>
       } @else {
-        <div class="grid grid-cols-1 gap-5 lg:grid-cols-2" [attr.inert]="saving() ? '' : null">
+        <div class="grid grid-cols-1 gap-5 lg:h-full lg:grid-cols-2 lg:grid-rows-[minmax(0,1fr)]" [attr.inert]="saving() ? '' : null">
 
-          <!-- LEFT: all questions (one flat list, no sections). Collapsed = name only; click a row to expand and edit. -->
-          <section class="min-h-[515px] rounded-2xl bg-[#f6f6f6] px-4 py-4">
+          <!-- LEFT: all questions (one flat list, no sections). Collapsed = name only; click a row to expand and edit.
+               Only this list scrolls on desktop. -->
+          <section class="min-h-[515px] rounded-2xl bg-[#f6f6f6] px-4 py-4 lg:h-full lg:min-h-0 lg:overflow-y-auto">
             <div class="mb-5 flex items-start justify-between gap-2">
               <div>
                 <h2 class="text-sm font-semibold">Questions</h2>
@@ -263,9 +265,10 @@
             }
           </section>
 
-          <!-- RIGHT: Add Question only -->
-          <section class="min-h-[515px] self-start rounded-2xl bg-[#f6f6f6] px-4 py-4 lg:sticky lg:top-0">
-            <div class="relative z-20 mb-5 flex flex-wrap items-center justify-between gap-2">
+          <!-- RIGHT: Add Question only. Fixed to the available height: the page does not scroll on desktop;
+               only the form area inside scrolls if the screen is too short, and "+ Add Question" stays pinned. -->
+          <section class="flex min-h-[515px] flex-col rounded-2xl bg-[#f6f6f6] px-4 py-4 lg:h-full lg:min-h-0">
+            <div class="relative z-20 mb-3 flex shrink-0 flex-wrap items-center justify-between gap-2">
               <h2 class="text-sm font-semibold">Add Question</h2>
               <div class="flex items-center gap-2 text-xs text-[#505050]">
 
@@ -331,9 +334,13 @@
               </div>
             </div>
 
-            <ng-container *ngTemplateOutlet="questionBody; context: { $implicit: draft() }" />
+            <!-- Form area: takes the remaining height (scrolls only if the screen is too short) -->
+            <div class="min-h-0 flex-1 lg:overflow-y-auto lg:pr-1">
+              <ng-container *ngTemplateOutlet="questionBody; context: { $implicit: draft() }" />
+            </div>
 
-            <div class="mt-6 flex justify-center">
+            <!-- "+ Add Question" stays pinned at the bottom of the panel -->
+            <div class="mt-3 flex shrink-0 justify-center">
               <button type="button" (click)="addQuestion()" [disabled]="busy()"
                 class="h-8 rounded-full bg-white px-6 text-xs hover:bg-[#e9f6f8] disabled:opacity-50">+ Add Question</button>
             </div>

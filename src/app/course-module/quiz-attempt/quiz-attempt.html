@@ -1,0 +1,468 @@
+@if (loading()) {
+  <section class="min-h-full rounded-[22px] bg-white p-5 sm:p-8" aria-label="Loading quiz">
+    <div class="grid gap-6 lg:grid-cols-[1fr_250px]" role="status" aria-live="polite">
+      <div class="space-y-4">
+        <div class="h-10 w-2/3 animate-pulse rounded-full bg-[#f3f3f3]"></div>
+        <div class="h-[320px] animate-pulse rounded-2xl bg-[#f3f3f3]"></div>
+      </div>
+      <div class="space-y-4">
+        <div class="h-24 animate-pulse rounded-2xl bg-[#f3f3f3]"></div>
+        <div class="h-40 animate-pulse rounded-2xl bg-[#f3f3f3]"></div>
+      </div>
+    </div>
+  </section>
+} @else if (loadError()) {
+  <section class="min-h-full rounded-[22px] bg-white p-5 sm:p-8">
+    <div class="mx-auto mt-10 max-w-md rounded-2xl bg-[#f5f5f5] p-8 text-center" role="alert">
+      <p class="text-[13px] text-[#4b4b4b]">{{ loadError() }}</p>
+      <div class="mt-5 flex items-center justify-center gap-3">
+        <button type="button" class="h-8 rounded-full bg-white px-5 text-[10px] font-medium text-[#444b4d] outline-none focus-visible:ring-2 focus-visible:ring-[#61b7c5]/50" (click)="backToCourse()">Back to course</button>
+        <button type="button" class="h-8 rounded-full bg-[#61b7c5] px-5 text-[10px] font-medium text-white outline-none hover:bg-[#489daa] focus-visible:ring-2 focus-visible:ring-[#61b7c5]/50" (click)="load()">Retry</button>
+      </div>
+    </div>
+  </section>
+} @else if (notStarted()) {
+  <!-- ===== Intro: Ready to take the quiz? (fits the available height, no scrolling) ===== -->
+  <div class="flex min-h-full flex-col lg:h-full">
+    <div class="shrink-0">
+      <h1 class="text-[22px] font-medium leading-tight text-[#4b4b4b]">Attempt Quiz</h1>
+      <p class="mt-0.5 text-[12px] text-[#5e6769]">Put your learning into practice by completing the quiz and reviewing your results</p>
+    </div>
+
+    <section class="mt-3 flex min-h-0 flex-1 flex-col rounded-[22px] bg-white p-4 sm:p-5" aria-labelledby="quiz-intro-title">
+      <!-- the image takes whatever height is left -->
+      <div class="relative min-h-[200px] flex-1 overflow-hidden rounded-2xl bg-[#f3f3f3]">
+        @if (thumbnailSrc(); as thumbnail) {
+          <img [src]="thumbnail" [alt]="attempt()?.courseName ?? 'Course thumbnail'" class="absolute inset-0 h-full w-full object-cover" />
+        } @else {
+          <div class="absolute inset-0 grid place-items-center bg-gradient-to-b from-[#2e3b4e] to-[#0b0f14] px-6 text-center">
+            <span class="text-[36px] font-semibold text-white/80">{{ attempt()?.courseName }}</span>
+          </div>
+        }
+      </div>
+
+      <div class="shrink-0 px-4 pb-1 pt-4 text-center">
+        <h2 id="quiz-intro-title" class="text-[26px] font-medium leading-tight text-[#4b4b4b]">Ready to take the quiz?</h2>
+        <p class="mt-1.5 text-[13px] text-[#4b4b4b]">Test your knowledge and see how well you’ve understood the course content</p>
+        @if (actionError()) {
+          <p class="mx-auto mt-3 max-w-md rounded-xl bg-red-50 px-4 py-2 text-[11px] text-red-700" role="alert">{{ actionError() }}</p>
+        }
+        <button
+          type="button"
+          class="mt-4 h-[34px] min-w-[122px] rounded-full bg-[#61b7c5] px-6 text-[11px] font-medium text-white outline-none transition-colors hover:bg-[#489daa] focus-visible:ring-2 focus-visible:ring-[#61b7c5]/60 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+          [disabled]="busy()"
+          (click)="startQuiz()"
+        >{{ busy() ? 'Starting…' : 'Start Quiz' }}</button>
+      </div>
+    </section>
+  </div>
+} @else if (finished()) {
+  <!-- ===== Score (fits the available height, no scrolling) ===== -->
+  <section class="flex min-h-full flex-col rounded-[22px] bg-white p-4 sm:p-6 lg:h-full" aria-labelledby="score-title">
+    <div class="relative mx-auto flex w-full max-w-[1130px] flex-1 flex-col lg:min-h-0">
+      <button
+        type="button"
+        class="absolute right-0 top-0 z-20 flex h-[30px] items-center gap-1.5 rounded-full bg-[#f3f3f3] px-4 text-[10px] text-[#4b4b4b] outline-none transition-colors hover:bg-[#e9e9e9] focus-visible:ring-2 focus-visible:ring-[#61b7c5]/60 print:hidden"
+        (click)="print()"
+      >
+        <svg viewBox="0 0 20 20" class="size-3 fill-none stroke-current" stroke-width="1.8" aria-hidden="true"><path d="M10 13V3m0 0L6.5 6.5M10 3l3.5 3.5M4 11v5h12v-5" stroke-linecap="round" stroke-linejoin="round" /></svg>
+        Print
+      </button>
+
+      <h1 id="score-title" class="shrink-0 text-center text-[40px] font-semibold leading-none text-[#61b7c5] lg:text-[44px]">Score</h1>
+
+      <!-- score ring (size follows the screen height) -->
+      <div class="relative z-10 mx-auto mt-3 grid size-[260px] shrink-0 place-items-center rounded-full bg-white lg:size-[min(300px,34vh)]">
+        <svg viewBox="0 0 340 340" class="size-[88%]" role="img" [attr.aria-label]="attempt()?.maxScore ? 'Score ' + attempt()?.score + ' out of ' + attempt()?.maxScore : 'Quiz submitted'">
+          <defs>
+            <linearGradient id="score-ring-gradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#61b7c5" />
+              <stop offset="1" stop-color="#cde9ee" />
+            </linearGradient>
+          </defs>
+          <circle cx="170" cy="170" r="125" fill="none" stroke="#f5f5f5" stroke-width="42" />
+          @if (scoreFraction() > 0) {
+          <circle
+            cx="170" cy="170" r="125" fill="none" stroke="url(#score-ring-gradient)" stroke-width="42" stroke-linecap="round"
+            transform="matrix(-1 0 0 1 340 0) rotate(-90 170 170)"
+            [attr.stroke-dasharray]="ringDash()"
+          />
+          }
+        </svg>
+        <p class="absolute text-[30px] font-semibold text-[#666] lg:text-[38px]">
+          @if (attempt()?.maxScore) {
+            {{ attempt()?.score }}/{{ attempt()?.maxScore }}
+          } @else {
+            <span class="text-[20px]">Submitted</span>
+          }
+        </p>
+      </div>
+
+      <!-- grey panel (starts at the middle of the ring) -->
+      <div class="relative mt-4 flex flex-1 flex-col rounded-2xl bg-[#f5f5f5] px-6 pb-4 pt-5 lg:mt-[calc(min(300px,34vh)/-2)] lg:min-h-0 lg:pt-[calc(min(300px,34vh)/2+8px)]">
+        <!-- left: date + attempts -->
+        <div class="mx-auto mb-3 w-full max-w-[260px] rounded-[26px] bg-white px-6 py-5 text-[13px] text-[#4b4b4b] lg:absolute lg:left-0 lg:top-[calc(min(300px,34vh)*0.3)] lg:mb-0 lg:w-[210px] lg:max-w-none lg:rounded-l-none">
+          <p>Date - {{ attempt()?.submittedAt | date: 'dd/MM/yyyy' }}</p>
+          <p class="mt-3">Attempts - {{ pad(attempt()?.attemptNumber ?? 1) }}/{{ pad(attempt()?.maxAttempts ?? 1) }}</p>
+        </div>
+
+        <!-- right: time taken -->
+        <div class="mx-auto mb-3 w-full max-w-[260px] rounded-[26px] bg-white px-6 py-5 text-[#4b4b4b] lg:absolute lg:right-0 lg:top-[calc(min(300px,34vh)*0.3)] lg:mb-0 lg:w-[220px] lg:max-w-none lg:rounded-r-none">
+          <p class="text-[13px]">Time Taken</p>
+          <p class="mt-0.5 text-[24px] font-light leading-tight">{{ timerText() }} <span>Hrs</span></p>
+        </div>
+
+        <div class="my-auto flex flex-col items-center gap-4">
+          <div class="w-fit space-y-3 text-[14px] text-[#4b4b4b]">
+            <p class="grid grid-cols-[150px_auto_auto] items-center gap-2">
+              <span>Correct Answer</span><span aria-hidden="true">-</span>
+              <button type="button" class="font-medium text-[#3e8d99] underline outline-none focus-visible:ring-2 focus-visible:ring-[#61b7c5]/60" (click)="openReview('correct')">View</button>
+            </p>
+            <p class="grid grid-cols-[150px_auto_auto] items-center gap-2">
+              <span>Incorrect Answer</span><span aria-hidden="true">-</span>
+              <button type="button" class="font-medium text-[#3e8d99] underline outline-none focus-visible:ring-2 focus-visible:ring-[#61b7c5]/60" (click)="openReview('incorrect')">View</button>
+            </p>
+          </div>
+
+          <div class="flex flex-wrap items-center justify-center gap-3">
+            @if (canRetest()) {
+              <button
+                type="button"
+                class="h-[38px] min-w-[110px] rounded-full bg-[#61b7c5] px-8 text-[13px] text-white outline-none transition-colors hover:bg-[#489daa] focus-visible:ring-2 focus-visible:ring-[#61b7c5]/60 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+                [disabled]="busy()"
+                (click)="retest()"
+              >{{ busy() ? 'Please wait…' : 'Retest' }}</button>
+            }
+            <button
+              type="button"
+              class="h-[38px] rounded-full bg-[#61b7c5] px-8 text-[13px] text-white outline-none transition-colors hover:bg-[#489daa] focus-visible:ring-2 focus-visible:ring-[#61b7c5]/60 focus-visible:ring-offset-2"
+              (click)="goNextUnit()"
+            >{{ attempt()?.nextSectionId ? 'Go to next unit' : 'Back to course' }}</button>
+          </div>
+
+          @if (actionError()) {
+            <p class="rounded-xl bg-red-50 px-4 py-2 text-center text-[11px] text-red-700" role="alert">{{ actionError() }}</p>
+          }
+        </div>
+      </div>
+    </div>
+  </section>
+} @else if (!sections().length) {
+  <section class="min-h-full rounded-[22px] bg-white p-5 sm:p-8">
+    <div class="mx-auto mt-10 max-w-md rounded-2xl bg-[#f5f5f5] p-8 text-center">
+      <h2 class="text-[18px] font-medium text-[#4b4b4b]">No questions yet</h2>
+      <p class="mt-1 text-[11px] text-[#6d7476]">Nothing has been added to this quiz.</p>
+      <button type="button" class="mt-5 h-8 rounded-full bg-[#61b7c5] px-6 text-[10px] font-medium text-white outline-none hover:bg-[#489daa] focus-visible:ring-2 focus-visible:ring-[#61b7c5]/50" (click)="backToCourse()">Back to course</button>
+    </div>
+  </section>
+} @else {
+  <!-- ===== Quiz (fits the available height, no scrolling) ===== -->
+  <section class="flex min-h-full flex-col rounded-[22px] bg-white p-4 sm:p-5 lg:h-full" aria-labelledby="quiz-title">
+    <h1 id="quiz-title" class="sr-only">{{ attempt()?.bankName ?? 'Quiz' }}</h1>
+    <div class="grid gap-x-6 gap-y-3 lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(0,1fr)_250px] lg:grid-rows-[auto_minmax(0,1fr)_auto_auto]">
+
+      <!-- ===== Sections bar ===== -->
+      <nav aria-label="Quiz sections" class="flex min-w-0 items-center gap-6 overflow-x-auto py-1 lg:row-start-1">
+        <span class="shrink-0 text-[16px] font-medium text-[#4b4b4b]">Sections</span>
+        <ol class="flex min-w-0 items-center">
+          @for (section of sections(); track section.id; let i = $index; let last = $last) {
+            <li class="flex items-center">
+              <button
+                type="button"
+                class="grid size-[36px] shrink-0 place-items-center rounded-full text-[13px] font-semibold outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[#61b7c5]/60 focus-visible:ring-offset-2"
+                [class]="i <= sectionIndex() ? 'bg-[#61b7c5] text-white' : 'bg-[#f3f3f3] text-[#8a9092] hover:bg-[#e9e9e9]'"
+                [attr.aria-current]="i === sectionIndex() ? 'step' : null"
+                [attr.aria-label]="'Section ' + (i + 1) + ' of ' + sections().length + ': ' + section.name + (section.submitted ? ', submitted' : '')"
+                [attr.title]="section.name"
+                (click)="goToSection(i)"
+              >{{ i + 1 }}</button>
+              @if (!last) {
+                <span class="relative mx-0 h-[6px] w-[48px] shrink-0 overflow-hidden rounded-full bg-[#f1f1f1] sm:w-[74px]" aria-hidden="true">
+                  <span
+                    class="absolute inset-y-0 left-0 rounded-full bg-[#61b7c5] transition-[width] duration-300 motion-reduce:transition-none"
+                    [style.width.%]="i < sectionIndex() ? 100 : i === sectionIndex() ? currentSectionProgress() * 0.3 : 0"
+                  ></span>
+                </span>
+              }
+            </li>
+          }
+        </ol>
+      </nav>
+
+      <!-- ===== Timer ===== -->
+      <div class="rounded-2xl bg-[#f5f5f5] px-6 py-3 lg:col-start-2 lg:row-span-1 lg:row-start-1">
+        <p class="text-[15px] font-medium text-[#4b4b4b]">Timer</p>
+        <p class="text-[28px] font-light leading-tight text-[#4b4b4b]" role="timer" aria-live="off">
+          {{ timerText() }} <span class="text-[20px]">Hrs</span>
+        </p>
+      </div>
+
+      <!-- ===== Question card ===== -->
+      <div class="min-w-0 lg:col-start-1 lg:row-span-2 lg:row-start-2 lg:min-h-0">
+        @if (currentQuestion(); as question) {
+          <article class="rounded-2xl bg-[#f5f5f5] p-5 sm:p-6 lg:h-full lg:overflow-y-auto" [attr.aria-labelledby]="'q-title-' + question.id">
+            <div class="flex items-start justify-between gap-4">
+              <h2 [id]="'q-title-' + question.id" class="text-[18px] font-medium text-[#4b4b4b]">Question {{ questionIndex() + 1 }}</h2>
+              <span class="shrink-0 rounded-full bg-white px-4 py-1.5 text-[10px] text-[#7d8385]">{{ typeLabel() }}</span>
+            </div>
+
+            <p class="mt-3 whitespace-pre-line break-words text-[16px] leading-[1.5] text-[#4b4b4b]">{{ question.text }}</p>
+
+            @if (locked()) {
+              <p class="mt-3 inline-flex rounded-full bg-white px-4 py-1.5 text-[10px] text-[#5e6769]" role="status">
+                {{ finished() ? 'Quiz submitted' : 'Section submitted' }} · answers are locked
+              </p>
+            }
+
+            <h3 class="mt-5 text-[15px] font-medium text-[#4b4b4b]">Answers</h3>
+
+            @if (question.type === 'SHORT_TEXT') {
+              <label class="mt-2 block">
+                <span class="sr-only">Your answer</span>
+                <textarea
+                  class="min-h-[110px] w-full resize-none rounded-xl bg-white px-5 py-3 text-[14px] text-[#4b4b4b] outline-none placeholder:text-[#9aa0a2] focus-visible:ring-2 focus-visible:ring-[#61b7c5]/60 disabled:cursor-not-allowed disabled:opacity-70"
+                  maxlength="500"
+                  placeholder="Type your answer"
+                  [value]="currentAnswer().text ?? ''"
+                  [disabled]="locked()"
+                  (input)="onTextInput(question, $event)"
+                ></textarea>
+              </label>
+            } @else {
+              <div class="mt-2 space-y-2.5" [attr.role]="question.type === 'SINGLE_ANSWER' ? 'radiogroup' : 'group'" [attr.aria-labelledby]="'q-title-' + question.id">
+                @for (option of question.options; track option.id) {
+                  <label
+                    class="flex min-h-[44px] items-center gap-5 rounded-xl bg-white px-6 py-2.5 text-[14px] text-[#4b4b4b] transition-colors focus-within:ring-2 focus-within:ring-[#61b7c5]/60"
+                    [class]="locked() ? 'cursor-not-allowed opacity-70' : 'cursor-pointer hover:bg-[#fbfbfb]'"
+                  >
+                    <input
+                      class="peer sr-only"
+                      [type]="question.type === 'SINGLE_ANSWER' ? 'radio' : 'checkbox'"
+                      [name]="'q-' + question.id"
+                      [checked]="isSelected(option.id)"
+                      [disabled]="locked()"
+                      (change)="selectOption(question, option.id)"
+                    />
+                    <span
+                      class="grid size-[20px] shrink-0 place-items-center border-2 transition-colors"
+                      [class]="(question.type === 'SINGLE_ANSWER' ? 'rounded-full ' : 'rounded-md ') + (isSelected(option.id) ? 'border-[#61b7c5] bg-[#61b7c5]' : 'border-[#d6d9da] bg-[#f3f3f3]')"
+                      aria-hidden="true"
+                    >
+                      @if (isSelected(option.id)) {
+                        @if (question.type === 'SINGLE_ANSWER') {
+                          <span class="size-[8px] rounded-full bg-white"></span>
+                        } @else {
+                          <svg viewBox="0 0 20 20" class="size-3 fill-none stroke-white" stroke-width="3" aria-hidden="true"><path d="m4.5 10.5 3.5 3.5 7.5-8" stroke-linecap="round" stroke-linejoin="round" /></svg>
+                        }
+                      }
+                    </span>
+                    <span class="min-w-0 break-words">{{ option.text }}</span>
+                  </label>
+                }
+              </div>
+            }
+          </article>
+        }
+      </div>
+
+      <!-- ===== Question palette ===== -->
+      <div class="flex flex-col rounded-2xl bg-[#f5f5f5] px-5 pb-2 pt-4 lg:col-start-2 lg:row-start-2 lg:min-h-0">
+        <div
+          #paletteHost
+          class="grid max-h-[290px] grid-cols-4 content-start justify-items-center gap-x-3 gap-y-3 overflow-y-auto px-1 py-1 lg:max-h-none lg:min-h-0 lg:flex-1"
+          role="group"
+          aria-label="Questions"
+        >
+          @for (item of palette(); track item.question.id) {
+            <button
+              type="button"
+              class="grid size-[38px] place-items-center rounded-full text-[14px] font-semibold outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[#61b7c5] focus-visible:ring-offset-2"
+              [class]="paletteClass(item)"
+              [attr.aria-label]="paletteLabel(item)"
+              [attr.aria-current]="item.current ? 'true' : null"
+              (click)="goToQuestion(item.index)"
+            >{{ item.index + 1 }}</button>
+          }
+        </div>
+        <div class="mt-1 flex shrink-0 items-center justify-center gap-8 text-[#8a9092]">
+          <button type="button" class="grid size-6 place-items-center rounded outline-none hover:text-[#4b4b4b] focus-visible:ring-2 focus-visible:ring-[#61b7c5]" aria-label="Scroll questions up" (click)="scrollPalette(-1)">
+            <svg viewBox="0 0 20 20" class="size-3.5 fill-none stroke-current" stroke-width="2.4" aria-hidden="true"><path d="m5 12.5 5-5 5 5" stroke-linecap="round" stroke-linejoin="round" /></svg>
+          </button>
+          <button type="button" class="grid size-6 place-items-center rounded outline-none hover:text-[#4b4b4b] focus-visible:ring-2 focus-visible:ring-[#61b7c5]" aria-label="Scroll questions down" (click)="scrollPalette(1)">
+            <svg viewBox="0 0 20 20" class="size-3.5 fill-none stroke-current" stroke-width="2.4" aria-hidden="true"><path d="m5 7.5 5 5 5-5" stroke-linecap="round" stroke-linejoin="round" /></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- ===== Legend ===== -->
+      <div class="rounded-2xl bg-[#f5f5f5] px-6 py-4 lg:col-start-2 lg:row-start-3">
+        <ul class="mx-auto w-fit space-y-2.5 text-[12px] text-[#4b4b4b]">
+          <li class="flex items-center gap-4"><span class="size-[16px] rounded-full bg-[#61b7c5]" aria-hidden="true"></span>Completed</li>
+          <li class="flex items-center gap-4"><span class="size-[16px] rounded-full bg-[#ff5a5a]" aria-hidden="true"></span>Incomplete</li>
+          <li class="flex items-center gap-4"><span class="size-[16px] rounded-full bg-[#ffc94d]" aria-hidden="true"></span>Not Saved</li>
+        </ul>
+      </div>
+
+      <!-- ===== Actions ===== -->
+      <div class="flex flex-wrap items-center justify-center gap-3 lg:col-start-1 lg:row-start-4 lg:pl-[280px]" [class]="multiSection() ? 'lg:justify-between' : 'lg:justify-start'">
+        <div class="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            class="h-[33px] min-w-[122px] rounded-full bg-[#f3f3f3] px-5 text-[11px] text-[#4b4b4b] outline-none transition-colors hover:bg-[#e9e9e9] focus-visible:ring-2 focus-visible:ring-[#61b7c5]/60 disabled:cursor-not-allowed disabled:text-[#b4b8b9] disabled:hover:bg-[#f3f3f3]"
+            [disabled]="isFirst()"
+            (click)="previous()"
+          >Previous</button>
+          <button
+            type="button"
+            class="h-[33px] min-w-[122px] rounded-full bg-[#f3f3f3] px-5 text-[11px] text-[#4b4b4b] outline-none transition-colors hover:bg-[#e9e9e9] focus-visible:ring-2 focus-visible:ring-[#61b7c5]/60 disabled:cursor-not-allowed disabled:text-[#b4b8b9] disabled:hover:bg-[#f3f3f3]"
+            [disabled]="isLast()"
+            (click)="next()"
+          >Next</button>
+        </div>
+        @if (multiSection()) {
+        <button
+          type="button"
+          class="h-[33px] min-w-[122px] rounded-full bg-[#f3f3f3] px-5 text-[11px] text-[#4b4b4b] outline-none transition-colors hover:bg-[#e9e9e9] focus-visible:ring-2 focus-visible:ring-[#61b7c5]/60 disabled:cursor-not-allowed disabled:text-[#b4b8b9] disabled:hover:bg-[#f3f3f3]"
+          [disabled]="locked() || busy()"
+          (click)="askSubmitSection()"
+        >Submit Section</button>
+        }
+      </div>
+
+      <div class="flex justify-center lg:col-start-2 lg:row-start-4">
+        <button
+          type="button"
+          class="h-[33px] w-[122px] rounded-full bg-[#61b7c5] text-[11px] font-medium text-white outline-none transition-colors hover:bg-[#489daa] focus-visible:ring-2 focus-visible:ring-[#61b7c5]/60 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+          [disabled]="busy()"
+          (click)="askFinish()"
+        >Finish</button>
+      </div>
+    </div>
+
+
+    @if (actionError()) {
+      <p class="mt-3 shrink-0 rounded-xl bg-red-50 px-4 py-2 text-center text-[11px] text-red-700" role="alert">{{ actionError() }}</p>
+    }
+  </section>
+}
+
+<!-- ===== Review: Correct / Incorrect Answer - View ===== -->
+@if (reviewKind(); as kind) {
+  <div class="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4 print:hidden" (click)="closeReview()">
+    <div
+      class="flex max-h-[85vh] w-full max-w-2xl flex-col rounded-2xl bg-white shadow-xl"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="review-title"
+      cdkTrapFocus
+      [cdkTrapFocusAutoCapture]="true"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="flex items-center justify-between gap-4 border-b border-[#eee] px-6 py-4">
+        <h2 id="review-title" class="text-[16px] font-semibold text-[#414749]">
+          {{ kind === 'correct' ? 'Correct answers' : 'Incorrect answers' }}
+          @if (review()) { <span class="font-normal text-[#6d7476]">({{ reviewQuestions().length }})</span> }
+        </h2>
+        <button type="button" class="grid size-8 place-items-center rounded-full bg-[#f3f3f3] text-[#4b4b4b] outline-none hover:bg-[#e9e9e9] focus-visible:ring-2 focus-visible:ring-[#61b7c5]/60" aria-label="Close" (click)="closeReview()">
+          <svg viewBox="0 0 20 20" class="size-3.5 fill-none stroke-current" stroke-width="2.2" aria-hidden="true"><path d="m5 5 10 10M15 5 5 15" stroke-linecap="round" /></svg>
+        </button>
+      </div>
+
+      <div class="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-5">
+        @if (reviewLoading()) {
+          <p class="py-8 text-center text-[12px] text-[#6d7476]" role="status">Loading…</p>
+        } @else if (reviewError()) {
+          <p class="rounded-xl bg-red-50 px-4 py-3 text-center text-[12px] text-red-700" role="alert">{{ reviewError() }}</p>
+        } @else if (!reviewQuestions().length) {
+          <p class="py-8 text-center text-[12px] text-[#6d7476]">
+            {{ kind === 'correct' ? 'No correct answers.' : 'No incorrect answers. Well done!' }}
+          </p>
+        } @else {
+          @for (item of reviewQuestions(); track item.question.id) {
+            <article class="rounded-xl bg-[#f5f5f5] p-4">
+              <p class="text-[10px] text-[#6d7476]">Question {{ item.number }} · {{ item.question.sectionName }}</p>
+              <p class="mt-1 whitespace-pre-line break-words text-[14px] text-[#4b4b4b]">{{ item.question.text }}</p>
+
+              @if (item.question.type === 'SHORT_TEXT') {
+                <dl class="mt-3 space-y-2 text-[12px]">
+                  <div class="rounded-lg bg-white px-4 py-2.5">
+                    <dt class="text-[10px] text-[#6d7476]">Your answer</dt>
+                    <dd class="text-[#4b4b4b]">{{ item.question.answered ? item.question.givenText : 'Not answered' }}</dd>
+                  </div>
+                  @if (item.question.expectedAnswer) {
+                    <div class="rounded-lg bg-[#e3f3f6] px-4 py-2.5">
+                      <dt class="text-[10px] text-[#2f6f7b]">Correct answer</dt>
+                      <dd class="text-[#2b4f57]">{{ item.question.expectedAnswer }}</dd>
+                    </div>
+                  }
+                </dl>
+              } @else {
+                <ul class="mt-3 space-y-2 text-[12px]">
+                  @for (option of item.question.options; track option.id) {
+                    <li
+                      class="flex items-center justify-between gap-3 rounded-lg px-4 py-2.5"
+                      [class]="option.correct ? 'bg-[#e3f3f6] text-[#2b4f57]' : option.selected ? 'bg-red-50 text-red-800' : 'bg-white text-[#4b4b4b]'"
+                    >
+                      <span class="min-w-0 break-words">{{ option.text }}</span>
+                      <span class="shrink-0 text-[10px] font-medium">
+                        @if (option.correct && option.selected) { Your answer · Correct }
+                        @else if (option.correct) { Correct answer }
+                        @else if (option.selected) { Your answer }
+                      </span>
+                    </li>
+                  }
+                </ul>
+                @if (!item.question.answered) {
+                  <p class="mt-2 text-[11px] text-[#6d7476]">Not answered</p>
+                }
+              }
+
+              @if (item.question.feedback) {
+                <p class="mt-3 rounded-lg bg-white px-4 py-2.5 text-[11px] text-[#5e6769]">{{ item.question.feedback }}</p>
+              }
+            </article>
+          }
+        }
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ===== Confirm dialog (Submit Section / Finish) ===== -->
+@if (confirm(); as kind) {
+  <div class="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4" (click)="closeConfirm()">
+    <div
+      class="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="quiz-confirm-title"
+      aria-describedby="quiz-confirm-text"
+      cdkTrapFocus
+      [cdkTrapFocusAutoCapture]="true"
+      (click)="$event.stopPropagation()"
+    >
+      <h2 id="quiz-confirm-title" class="text-[16px] font-semibold text-[#414749]">
+        {{ kind === 'section' ? 'Submit this section?' : 'Finish the quiz?' }}
+      </h2>
+      <p id="quiz-confirm-text" class="mt-2 text-[12px] leading-5 text-[#6d7476]">
+        @if (kind === 'section') {
+          @if (unansweredInSection() > 0) {
+            You have {{ unansweredInSection() }} unanswered {{ unansweredInSection() === 1 ? 'question' : 'questions' }} in this section.
+          }
+          After you submit, the answers of this section can't be changed.
+        } @else {
+          @if (unansweredTotal() > 0) {
+            You have {{ unansweredTotal() }} of {{ totalQuestions() }} {{ totalQuestions() === 1 ? 'question' : 'questions' }} unanswered.
+          }
+          After you finish, you can't change any answer.
+        }
+      </p>
+      <div class="mt-6 flex justify-end gap-3">
+        <button type="button" class="h-8 rounded-full bg-[#f3f3f3] px-5 text-[11px] text-[#4b4b4b] outline-none hover:bg-[#e9e9e9] focus-visible:ring-2 focus-visible:ring-[#61b7c5]/60 disabled:opacity-60" [disabled]="busy()" (click)="closeConfirm()">Cancel</button>
+        <button type="button" class="h-8 rounded-full bg-[#61b7c5] px-5 text-[11px] font-medium text-white outline-none hover:bg-[#489daa] focus-visible:ring-2 focus-visible:ring-[#61b7c5]/60 focus-visible:ring-offset-2 disabled:opacity-60" [disabled]="busy()" (click)="confirmAction()">
+          {{ busy() ? 'Please wait…' : kind === 'section' ? 'Submit Section' : 'Finish' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

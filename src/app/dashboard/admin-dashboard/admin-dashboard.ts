@@ -195,6 +195,18 @@ export class AdminDashboard {
   return crumbs;
 }
 
+    // Learner "Attempt Quiz" (/courses/:courseId/sections/:sectionId/question-banks/:bankId/attempt)
+    // Flow: Content Management > Course List > Course Preview > Quiz
+    const quizMatch = /^\/admin-dashboard\/courses\/(\d+)\/sections\/\d+\/question-banks\/\d+\/attempt\/?$/.exec(path);
+    if (quizMatch) {
+      return [
+        { label: 'Content Management', link: null, plain: true },
+        { label: 'Course List', link: courseList, plain: true },
+        { label: 'Course Preview', link: ['/admin-dashboard', 'courses', quizMatch[1], 'preview'], plain: true },
+        { label: 'Quiz', link: null, plain: true },
+      ];
+    }
+
     // Question Bank page (any route under /admin-dashboard that contains "question-bank" / "questionbank").
     // Flow: Content Management > Course List > Organize Modules > Question Bank
     if (/^\/admin-dashboard\/.*question-?bank/i.test(path)) {

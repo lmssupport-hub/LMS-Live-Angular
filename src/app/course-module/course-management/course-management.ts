@@ -19,6 +19,7 @@ import {
   MAX_THUMBNAIL_BYTES,
 } from '../course.model';
 import { CourseManagementService } from '../../services/course-management.service';
+import { CourseCheckoutService } from '../../services/course-checkout.service';
  
 import { AuthService, FEATURE } from '../../services/auth';
 import { environment } from '../../../environments/environment';
@@ -37,6 +38,8 @@ export class CourseManagement {
   private readonly authService = inject(AuthService);
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
+  // NEW: hand-over to the course Payment page (paid courses)
+  private readonly courseCheckout = inject(CourseCheckoutService);
   // NEW: used to keep the Organize screen in sync with the URL (?organize=<courseId>)
   private readonly route = inject(ActivatedRoute);
   readonly ddUsed = signal(false);
@@ -139,6 +142,12 @@ export class CourseManagement {
   readonly unenrollTarget = signal<Course | null>(null);
  
   constructor() {
+    // NEW: coming back from the course Payment page after a successful payment.
+    if (history.state?.enrolled === true) {
+      this.successMessage.set('Payment successful. You are enrolled - you can start the course now.');
+      setTimeout(() => this.successMessage.set(null), 4000);
+    }
+
     // NEW: the URL is the source of truth for the Organize screen.
     // ?organize=<id> opens it, no param closes it (header breadcrumb / browser back).
     effect(() => {
@@ -612,6 +621,14 @@ export class CourseManagement {
   /** NEW: "Enroll" on a published course the learner is not enrolled in yet. The card then shows "Start course". */
   enrollInCourse(course: Course): void {
     if (this.enrollingCourseId() !== null) return;
+    // NEW: PAID course -> go to the Payment page first; the learner is enrolled after a successful payment.
+    // FREE course -> enroll directly (no payment step).
+    if (course.paid) {
+      this.permissionError.set(null);
+      this.courseCheckout.start(course.id);
+      void this.router.navigate(['/admin-dashboard', 'courses', course.id, 'payment']);
+      return;
+    }
     this.enrollingCourseId.set(course.id);
     this.permissionError.set(null);
     this.courseManagementService.selfEnroll(course.id).subscribe({

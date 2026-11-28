@@ -2,7 +2,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { PackageService, PackageRecord } from '../../services/package.service';
-import { RouterLink } from '@angular/router';
+
 
 type Plan = {
   id: number;
@@ -16,7 +16,7 @@ type Plan = {
 @Component({
   selector: 'app-plans',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+    imports: [CommonModule],
   templateUrl: './plans.html',
 })
 export class Plans implements OnInit {

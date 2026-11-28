@@ -1,36 +1,7 @@
 
 <div class="min-h-screen w-full overflow-hidden rounded-[24px] bg-white font-sans text-[#555555]">
 
-  <!-- HEADER -->
-  <header class="flex min-h-[105px] w-full items-center justify-between gap-4 bg-white px-6 py-5 md:px-10 lg:px-12">
-
-    <!-- LOGO -->
-    <a routerLink="/vativa-home" class="flex shrink-0 items-center">
-      <img
-        src="/imgcomponent/trans%20logo%201.png"
-        alt="VativaHub Logo"
-        class="h-12 w-auto object-contain"
-      />
-    </a>
-
-    <!-- NAVIGATION -->
-    <nav class="hidden items-center gap-8 rounded-full bg-[#f5f5f5] px-9 py-4 text-sm text-[#777777] md:flex">
-      <a routerLink="/vativa-home" class="transition hover:text-[#5d75e8]">Home</a>
-      <a routerLink="/about-us" class="transition hover:text-[#5d75e8]">About Us</a>
-      <a routerLink="/vativa-home" fragment="services" class="transition hover:text-[#5d75e8]">Our Service</a>
-      <a routerLink="/plans" class="transition hover:text-[#5d75e8]">Plans</a>
-      <a routerLink="/contact-us" class="transition hover:text-[#5d75e8]">Contact Us</a>
-    </nav>
-
-    <!-- CONTACT BUTTON -->
-    <a
-      href="mailto:info@vativahub.com"
-      class="hidden rounded-full bg-[#5d75e8] px-6 py-3 text-sm font-medium text-white transition hover:bg-[#4962d5] md:inline-block"
-    >
-      Ready For Your Queries
-    </a>
-
-  </header>
+ 
 
   <!-- BANNER -->
   <section class="relative flex min-h-[187px] items-center overflow-visible bg-[#7889e8] px-8 md:min-h-[187px] md:px-10 lg:px-[7%]">
@@ -73,58 +44,3 @@
 
   </main>
 
- <!-- ========== FOOTER ========== -->
-<footer class="bg-[#f4f4f4] pb-[min(2.8vw,40px)] text-center font-['DM_Sans',sans-serif]">
-
-  <!-- Legal links -->
-  <nav
-    class="flex flex-wrap justify-center gap-x-[clamp(14px,5.3vw,75px)] gap-y-2 px-5 pt-[min(2.67vw,38px)] text-[clamp(12px,1.41vw,20px)] font-medium text-[#9b9b9b]"
-    aria-label="Legal links"
-  >
-    <a class="transition-colors hover:text-[#5268d4]" routerLink="/terms-and-conditions">Term &amp; Conditions</a>
-    <a class="transition-colors hover:text-[#5268d4]" routerLink="/privacy-policy">Privacy Policy</a>
-    <a class="transition-colors hover:text-[#5268d4]" routerLink="/refund-cancellation">Refund &amp; Cancellation</a>
-    <a class="transition-colors hover:text-[#5268d4]" routerLink="/plan-policy">Plan Policy</a>
-  </nav>
-
-  <!-- Social -->
-  <div class="mt-[min(1.83vw,26px)] flex items-center justify-center gap-[min(1.3vw,18px)] text-[clamp(10px,.92vw,13px)] text-[#9b9b9b]">
-    <span>We are always in connect with</span>
-
-    <div class="flex items-center gap-[min(1.2vw,17px)] text-[#8b8b8b]">
-      <!-- Facebook -->
-      <a href="https://www.facebook.com/" target="_blank" rel="noopener noreferrer" aria-label="Facebook"
-         class="block h-[min(1.76vw,25px)] w-[min(1.76vw,25px)] transition-colors hover:text-[#5268d4]">
-        <svg viewBox="0 0 24 24" class="h-full w-full" aria-hidden="true">
-          <circle cx="12" cy="12" r="12" fill="currentColor" />
-          <text x="13.2" y="21" text-anchor="middle" font-size="22" font-weight="700" fill="#f4f4f4" font-family="DM Sans, sans-serif">f</text>
-        </svg>
-      </a>
-
-      <!-- LinkedIn -->
-      <a href="https://www.linkedin.com/" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn"
-         class="block h-[min(1.62vw,23px)] w-[min(1.62vw,23px)] transition-colors hover:text-[#5268d4]">
-        <svg viewBox="0 0 24 24" class="h-full w-full" aria-hidden="true">
-          <rect width="24" height="24" rx="4" fill="currentColor" />
-          <text x="12" y="18.5" text-anchor="middle" font-size="15" font-weight="700" fill="#f4f4f4" font-family="DM Sans, sans-serif">in</text>
-        </svg>
-      </a>
-
-      <!-- WhatsApp -->
-      <a href="https://wa.me/" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp"
-         class="block h-[min(1.69vw,24px)] w-[min(1.69vw,24px)] transition-colors hover:text-[#5268d4]">
-        <svg viewBox="0 0 24 24" class="h-full w-full" aria-hidden="true">
-          <path d="M12 0.5C5.65 0.5 0.5 5.65 0.5 12c0 2.1.57 4.07 1.56 5.77L0.5 23.5l5.88-1.54A11.46 11.46 0 0 0 12 23.5c6.35 0 11.5-5.15 11.5-11.5S18.35 0.5 12 0.5z" fill="currentColor" />
-          <g transform="translate(5.2 5.2) scale(.6)">
-            <path fill="#f4f4f4" d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z" />
-          </g>
-        </svg>
-      </a>
-    </div>
-  </div>
-
-  <!-- Copyright -->
-  <p class="mt-[min(1.9vw,27px)] text-[clamp(10px,.98vw,14px)] text-[#9b9b9b]">
-    VativaHub <span class="ml-[min(.9vw,13px)]">2026</span>
-  </p>
-</footer>

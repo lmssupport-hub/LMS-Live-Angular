@@ -326,6 +326,15 @@ if (/^\/admin-dashboard\/my-certificate\/?$/.test(path)) {
     { label: 'My Certificate', link: null, plain: true },
   ];
 }
+    // Purchase History (/admin-dashboard/purchase-history) - learners
+    // Flow: Dashboard > Purchase History
+    if (/^\/admin-dashboard\/purchase-history\/?$/.test(path)) {
+      return [
+        { label: 'Dashboard', link: ['/admin-dashboard', 'learner-dashboard-home'], plain: true },
+        { label: 'Purchase History', link: null, plain: true },
+      ];
+    }
+
     // Change Password (/admin-dashboard/change-password)
     // Flow: Dashboard > Change Password
     if (/^\/admin-dashboard\/change-password\/?$/.test(path)) {

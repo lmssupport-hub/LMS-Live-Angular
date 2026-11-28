@@ -1,0 +1,96 @@
+  <header class="relative z-20 mx-auto flex max-w-[1440px] items-center justify-between gap-5 px-5 py-5 lg:px-12">
+    <a class="flex shrink-0 items-center gap-2" routerLink="/vativa-home" aria-label="VativaHub home">
+      <img
+        ngSrc="/imgcomponent/Vativa logo.png"
+        width="48"
+        height="48"
+        alt=""
+        class="h-10 w-10 object-contain"
+      />
+      <span class="leading-tight">
+        <span class="block text-sm font-semibold tracking-wide text-[#4c4c4c]">VATIVAHUB</span>
+        <span class="block text-[8px] tracking-[0.16em] text-[#6b6b6b]">DESIGN &amp; DEVELOPMENT</span>
+      </span>
+    </a>
+
+    <nav
+      class="hidden items-center gap-1 rounded-full bg-[#f5f5f5] px-4 py-2 text-[13px] text-[#686868] md:flex"
+      aria-label="Main navigation"
+    >
+      <a class="rounded-full px-5 py-2 transition-colors hover:text-[#405edb]" routerLink="/vativa-home" routerLinkActive="text-[#6279e7]">Home</a>
+      <a class="rounded-full px-5 py-2 transition-colors hover:text-[#6279e7]" routerLink="/about-us" routerLinkActive="text-[#6279e7]">About Us</a>
+      <a class="rounded-full px-5 py-2 transition-colors hover:text-[#6279e7]" routerLink="/vativa-home" fragment="services">Our Service</a>
+      <a class="rounded-full px-5 py-2 transition-colors hover:text-[#6279e7]" routerLink="/plans" routerLinkActive="text-[#6279e7]">Plans</a>
+      <a class="rounded-full px-5 py-2 transition-colors hover:text-[#6279e7]" routerLink="/contact-us" routerLinkActive="text-[#6279e7]">Contact Us</a>
+    </nav>
+
+ <div class="hidden shrink-0 items-center gap-2 md:flex">
+
+  <!-- Ready For Your Queries - First Position -->
+  <a
+    href="https://zcal.co/lms-support"
+    target="_blank"
+    rel="noopener noreferrer"
+    class="inline-flex h-[46px] items-center justify-center whitespace-nowrap rounded-full bg-[#5268d4] px-4 text-xs font-medium text-white shadow-sm transition-colors hover:bg-[#455bc2] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6079e8] lg:px-6"
+  >
+    Ready For Your Queries
+  </a>
+
+    <!-- Login -->
+  <a
+    class="inline-flex h-[46px] w-[100px] items-center justify-center whitespace-nowrap rounded-full border border-[#5268d4] px-4 text-xs font-medium text-[#5268d4] shadow-sm transition-colors hover:bg-[#f4f6ff] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6079e8]"
+    routerLink="/auth"
+    [queryParams]="{ view: 'login' }"
+  >
+    Login
+  </a>
+
+  <!-- Sign Up -->
+  <a
+    class="inline-flex h-[46px] w-[100px] items-center justify-center whitespace-nowrap rounded-full border border-[#5268d4] px-4 text-xs font-medium text-[#5268d4] shadow-sm transition-colors hover:bg-[#f4f6ff] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6079e8]"
+    routerLink="/auth"
+  >
+    Sign Up
+  </a>
+</div>
+
+    <button
+      class="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#e7e7e7] text-[#4f4f4f] transition-colors hover:bg-[#f5f5f5] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6079e8] md:hidden"
+      type="button"
+      [attr.aria-expanded]="menuOpen()"
+      aria-controls="mobile-navigation"
+      aria-label="Toggle navigation"
+      (click)="toggleMenu()"
+    >
+      <span aria-hidden="true" class="text-xl">{{ menuOpen() ? '×' : '☰' }}</span>
+    </button>
+
+    @if (menuOpen()) {
+      <nav
+        id="mobile-navigation"
+        class="absolute inset-x-5 top-full flex flex-col gap-1 rounded-2xl border border-[#ededed] bg-white p-3 text-sm shadow-lg md:hidden"
+        aria-label="Mobile navigation"
+      >
+               <a class="rounded-xl px-4 py-3 hover:bg-[#f7f7f7]" routerLink="/vativa-home" routerLinkActive="text-[#4f62c8]" (click)="closeMenu()">Home</a>
+        <a class="rounded-xl px-4 py-3 hover:bg-[#f7f7f7]" routerLink="/about-us" routerLinkActive="text-[#4f62c8]" (click)="closeMenu()">About Us</a>
+        <a class="rounded-xl px-4 py-3 hover:bg-[#f7f7f7]" routerLink="/vativa-home" fragment="services" (click)="closeMenu()">Our Service</a>
+        <a class="rounded-xl px-4 py-3 hover:bg-[#f7f7f7]" routerLink="/plans" routerLinkActive="text-[#4f62c8]" (click)="closeMenu()">Plans</a>
+        <a class="rounded-xl px-4 py-3 hover:bg-[#f7f7f7]" routerLink="/contact-us" routerLinkActive="text-[#4f62c8]" (click)="closeMenu()">Contact Us</a>
+        <a class="rounded-xl px-4 py-3 hover:bg-[#f7f7f7]" routerLink="/auth" [queryParams]="{ view: 'login' }" (click)="closeMenu()">Login</a>
+        <a class="rounded-xl px-4 py-3 hover:bg-[#f7f7f7]" routerLink="/auth" (click)="closeMenu()">Sign Up</a>
+   <a
+  href="https://zcal.co/lms-support"
+  target="_blank"
+  rel="noopener noreferrer"
+  class="rounded-xl bg-[#5268d4] px-4 py-3 text-center text-white"
+  (click)="closeMenu()"
+>
+  Ready For Your Queries
+</a>
+      </nav>
+    }
+
+   
+ 
+  </header>
+  

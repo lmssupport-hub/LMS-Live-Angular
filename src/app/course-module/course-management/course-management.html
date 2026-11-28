@@ -77,6 +77,31 @@
       }
     </div>
 
+    @if (paymentSuccess(); as payment) {
+      <div class="fixed bottom-6 right-7 z-[70] w-[min(92vw,360px)] rounded-xl bg-emerald-700 px-5 py-4 text-white shadow-xl" role="status" aria-live="polite">
+        <div class="flex items-start justify-between gap-3">
+          <p class="text-[13px] font-medium">Payment successful. You are enrolled in {{ payment.courseName }} - you can start the course now.</p>
+          <button type="button" class="-mr-1 -mt-1 grid size-6 shrink-0 place-items-center rounded-full text-white/80 outline-none transition hover:bg-white/15 hover:text-white focus-visible:ring-2 focus-visible:ring-white/70" aria-label="Close" (click)="dismissPaymentSuccess()">
+            <svg viewBox="0 0 24 24" class="size-3.5 fill-none stroke-current" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+          </button>
+        </div>
+        <button type="button" class="mt-3 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-[12px] font-medium text-emerald-800 outline-none transition hover:bg-emerald-50 focus-visible:ring-2 focus-visible:ring-white/70 disabled:cursor-wait disabled:opacity-70"
+                [disabled]="invoiceDownloading()" (click)="downloadInvoice()">
+          @if (invoiceDownloading()) {
+            <span class="size-3.5 animate-spin rounded-full border-2 border-emerald-800/30 border-t-emerald-800 motion-reduce:animate-none" aria-hidden="true"></span>
+            Preparing invoice…
+          } @else {
+            <svg viewBox="0 0 24 24" class="size-3.5 fill-none stroke-current" stroke-width="2.4" aria-hidden="true"><path d="M12 3v11m0 0-4-4m4 4 4-4M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4" stroke-linecap="round" stroke-linejoin="round" /></svg>
+            Download invoice {{ payment.invoiceNumber }}
+          }
+        </button>
+        @if (invoiceError()) {
+          <p class="mt-2 text-[12px] text-red-100" role="alert">{{ invoiceError() }}</p>
+        }
+        <p class="mt-2 text-[11px] text-white/80">You can download it again later from Profile &gt; Purchase History.</p>
+      </div>
+    }
+
     @if (successMessage()) {
       <div class="fixed bottom-6 right-7 z-[70] rounded-xl bg-emerald-700 px-5 py-3 text-white shadow-xl" role="status" aria-live="polite">{{ successMessage() }}</div>
     }

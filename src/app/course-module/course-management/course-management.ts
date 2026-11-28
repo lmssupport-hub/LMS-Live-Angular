@@ -20,6 +20,7 @@ import {
 } from '../course.model';
 import { CourseManagementService } from '../../services/course-management.service';
 import { CourseCheckoutService } from '../../services/course-checkout.service';
+import { PurchaseHistoryService, invoiceDownloadError } from '../../services/purchase-history.service';
  
 import { AuthService, FEATURE } from '../../services/auth';
 import { environment } from '../../../environments/environment';
@@ -55,6 +56,12 @@ export class CourseManagement {
   // NEW: which course card's 3-dot menu is open
   readonly openCardMenuId = signal<number | null>(null);
   readonly successMessage = signal<string | null>(null);
+
+  /** Shown after a successful course payment that issued an invoice: message + Download invoice button. */
+  readonly paymentSuccess = signal<{ courseName: string; invoiceId: number; invoiceNumber: string } | null>(null);
+  readonly invoiceDownloading = signal(false);
+  readonly invoiceError = signal('');
+  private readonly purchaseHistory = inject(PurchaseHistoryService);
   readonly permissionError = signal<string | null>(null);
   /** NEW: id of the course whose "Enroll" button is currently waiting for the server. */
   readonly enrollingCourseId = signal<number | null>(null);
@@ -144,8 +151,19 @@ export class CourseManagement {
   constructor() {
     // NEW: coming back from the course Payment page after a successful payment.
     if (history.state?.enrolled === true) {
-      this.successMessage.set('Payment successful. You are enrolled - you can start the course now.');
-      setTimeout(() => this.successMessage.set(null), 4000);
+      const state = history.state as { courseName?: string; invoiceId?: number | null; invoiceNumber?: string | null };
+      if (state.invoiceId && state.invoiceNumber) {
+        this.paymentSuccess.set({
+          courseName: state.courseName ?? '',
+          invoiceId: state.invoiceId,
+          invoiceNumber: state.invoiceNumber,
+        });
+        // read once: a refresh or the back button must not show it again
+        history.replaceState({ ...history.state, enrolled: undefined, invoiceId: undefined, invoiceNumber: undefined }, '');
+      } else {
+        this.successMessage.set('Payment successful. You are enrolled - you can start the course now.');
+        setTimeout(() => this.successMessage.set(null), 4000);
+      }
     }
 
     // NEW: the URL is the source of truth for the Organize screen.
@@ -687,5 +705,25 @@ export class CourseManagement {
  
   openQuestionBanks(courseId: number, moduleId: unknown): void {
     this.router.navigate(['/courses', courseId, 'question-banks'], { queryParams: { moduleId } });
+  }
+
+  /** Saves the invoice PDF of the purchase that was just paid. */
+  downloadInvoice(): void {
+    const success = this.paymentSuccess();
+    if (!success || this.invoiceDownloading()) return;
+    this.invoiceError.set('');
+    this.invoiceDownloading.set(true);
+    this.purchaseHistory.downloadInvoice(success.invoiceId, success.invoiceNumber).subscribe({
+      next: () => this.invoiceDownloading.set(false),
+      error: (err) => {
+        this.invoiceDownloading.set(false);
+        this.invoiceError.set(invoiceDownloadError(err));
+      },
+    });
+  }
+
+  dismissPaymentSuccess(): void {
+    this.paymentSuccess.set(null);
+    this.invoiceError.set('');
   }
 }

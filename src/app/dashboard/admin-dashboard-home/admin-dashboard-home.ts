@@ -11,7 +11,6 @@ import {
   UserDistribution,
 } from '../../services/admin-dashboard.service';
 import { AuthService } from '../../services/auth';
-
 type SeriesKey = 'logins' | 'newSignups' | 'revenue';
 type RoleKey = 'admins' | 'instructors' | 'learners';
 
@@ -324,6 +323,7 @@ function filterDailySeries(series: DashboardSeries, range: DateRange): Dashboard
     '(window:online)': 'onNetworkOnline()',
     '(document:click)': 'closePeriodControls()',
   },
+  imports: [],
 })
 export class AdminDashboardHome {
   private readonly auth = inject(AuthService);

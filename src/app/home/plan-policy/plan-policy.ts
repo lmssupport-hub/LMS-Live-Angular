@@ -12,7 +12,7 @@ type PolicySection = {
 @Component({
   selector: 'app-plan-policy',
   standalone: true,
-  imports: [RouterLink],
+  
   templateUrl: './plan-policy.html',
 })
 export class PlanPolicy {

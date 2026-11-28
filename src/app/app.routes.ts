@@ -26,46 +26,54 @@ export const routes: Routes = [
 
   // ---------- Public website (Vativa home) ----------
   {
-    path: 'vativa-home',
-    loadComponent: () => import('./home/vativa-home/vativa-home').then((m) => m.VativaHome),
-    title: 'Vativa Home',
-  },
-  {
-    path: 'about-us',
-    loadComponent: () => import('./home/about-us/about-us').then((m) => m.AboutUs),
-    title: 'About Us',
-  },
-  {
-    path: 'plans',
-    loadComponent: () => import('./home/plans/plans').then((m) => m.Plans),
-    title: 'Plans',
-  },
-  {
-    path: 'contact-us',
-    loadComponent: () => import('./home/contact-us/contact-us').then((m) => m.ContactUs),
-    title: 'Contact Us',
-  },
-  {
-    path: 'terms-and-conditions',
+    path: '',
     loadComponent: () =>
-      import('./home/terms-and-conditions/terms-and-conditions').then((m) => m.TermsAndConditions),
-    title: 'Terms & Conditions',
-  },
-  {
-    path: 'privacy-policy',
-    loadComponent: () => import('./home/privacy-policy/privacy-policy').then((m) => m.PrivacyPolicy),
-    title: 'Privacy Policy',
-  },
-  {
-    path: 'refund-cancellation',
-    loadComponent: () =>
-      import('./home/refund-cancellation/refund-cancellation').then((m) => m.RefundCancellation),
-    title: 'Refund & Cancellation',
-  },
-  {
-    path: 'plan-policy',
-    loadComponent: () => import('./home/plan-policy/plan-policy').then((m) => m.PlanPolicy),
-    title: 'Plan Policy',
+      import('./home/public-layout/public-layout').then((m) => m.PublicLayout),
+    children: [
+      {
+        path: 'vativa-home',
+        loadComponent: () => import('./home/vativa-home/vativa-home').then((m) => m.VativaHome),
+        title: 'Vativa Home',
+      },
+      {
+        path: 'about-us',
+        loadComponent: () => import('./home/about-us/about-us').then((m) => m.AboutUs),
+        title: 'About Us',
+      },
+      {
+        path: 'plans',
+        loadComponent: () => import('./home/plans/plans').then((m) => m.Plans),
+        title: 'Plans',
+      },
+      {
+        path: 'contact-us',
+        loadComponent: () => import('./home/contact-us/contact-us').then((m) => m.ContactUs),
+        title: 'Contact Us',
+      },
+      {
+        path: 'terms-and-conditions',
+        loadComponent: () =>
+          import('./home/terms-and-conditions/terms-and-conditions').then((m) => m.TermsAndConditions),
+        title: 'Terms & Conditions',
+      },
+      {
+        path: 'privacy-policy',
+        loadComponent: () =>
+          import('./home/privacy-policy/privacy-policy').then((m) => m.PrivacyPolicy),
+        title: 'Privacy Policy',
+      },
+      {
+        path: 'refund-cancellation',
+        loadComponent: () =>
+          import('./home/refund-cancellation/refund-cancellation').then((m) => m.RefundCancellation),
+        title: 'Refund & Cancellation',
+      },
+      {
+        path: 'plan-policy',
+        loadComponent: () => import('./home/plan-policy/plan-policy').then((m) => m.PlanPolicy),
+        title: 'Plan Policy',
+      },
+    ],
   },
 
 
@@ -346,6 +354,15 @@ export const routes: Routes = [
   loadComponent: () =>
     import('./certificate-module/my-certificate/my-certificate').then((m) => m.MyCertificate),
   title: 'My Certificate',
+},
+
+// Learner profile -> Purchase History (paid courses + invoice download) - learners only
+{
+  path: 'purchase-history',
+  canActivate: [learnerHomeGuard],
+  loadComponent: () =>
+    import('./profile/purchase-history/purchase-history').then((m) => m.PurchaseHistory),
+  title: 'Purchase History',
 },
 
 {

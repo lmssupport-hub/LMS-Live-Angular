@@ -1,7 +1,5 @@
 import { NgOptimizedImage } from '@angular/common';
-import { RouterLink } from '@angular/router';
-import { ChangeDetectionStrategy, Component, signal, inject } from '@angular/core';
-import { Router } from '@angular/router';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 type SocialNetwork = {
   name: 'Facebook' | 'LinkedIn' | 'Instagram';
   url: string | null;
@@ -16,7 +14,7 @@ type TeamMember = {
 
 @Component({
   selector: 'app-about-us',
- imports: [NgOptimizedImage, RouterLink],
+   imports: [NgOptimizedImage],
   templateUrl: './about-us.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
@@ -24,12 +22,11 @@ type TeamMember = {
   },
 })
 export class AboutUs {
-  private router = inject(Router);
-  navigateTo(path: string): void {
-  this.router.navigate([path], {
-    skipLocationChange: true
-  });
-}
+
+    scrollToTop() {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
   readonly openSocialMenu = signal<number | null>(null);
 
   readonly team: TeamMember[] = [

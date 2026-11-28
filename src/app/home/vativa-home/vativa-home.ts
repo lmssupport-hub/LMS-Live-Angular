@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
+
 type Service = {
   cardTitle: string;
   title: string;
@@ -41,7 +42,7 @@ type Testimonial = {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class VativaHome implements AfterViewInit, OnDestroy {
-  readonly menuOpen = signal(false);
+  
 
   // ===== Services =====
   readonly servicePanelOpen = signal(false);
@@ -55,10 +56,9 @@ export class VativaHome implements AfterViewInit, OnDestroy {
   private testimonialInterval: ReturnType<typeof setInterval> | undefined;
 
   // ===== FAQ =====
-  readonly faqSet = signal(0); // 0 = cards 1-3, 1 = cards 4-6
+    readonly faqSet = signal(1); // 0 = cards 1-3, 1 = cards 4-6
   readonly faqPos = signal(-1); // highlight aagura card (0-5), -1 = none
-  private faqHover = -1;
-  private faqStep = -1;
+    private faqVisible = false;
   private readonly faqSection = viewChild.required<ElementRef<HTMLElement>>('faqSection');
   private faqObserver: IntersectionObserver | undefined;
   private faqAnimationInterval: ReturnType<typeof setInterval> | undefined;
@@ -193,41 +193,38 @@ export class VativaHome implements AfterViewInit, OnDestroy {
       return;
     }
 
-    this.faqObserver = new IntersectionObserver(([entry]) => {
+       this.faqObserver = new IntersectionObserver(([entry]) => {
       if (!entry) {
         return;
       }
 
-      if (entry.isIntersecting) {
-        this.startFaqAnimation();
-      } else {
-        this.stopFaqAnimation();
+      if (entry.intersectionRatio >= 0.35 && !this.faqVisible) {
+        this.faqVisible = true;
+            this.showFaq(3); // 3 = "Yep" card
+        this.startFaqTimer();
+      } else if (!entry.isIntersecting) {
+        this.resetFaq();
       }
-    }, { threshold: 0.35 });
+    }, { threshold: [0, 0.35] });
 
     this.faqObserver.observe(this.faqSection().nativeElement);
   }
 
   ngOnDestroy(): void {
     this.faqObserver?.disconnect();
-    this.stopFaqAnimation();
+        this.stopFaqTimer();
     if (this.testimonialInterval !== undefined) {
       clearInterval(this.testimonialInterval);
     }
   }
 
-  toggleMenu(): void {
-    this.menuOpen.update((open) => !open);
-  }
-
-  closeMenu(): void {
-    this.menuOpen.set(false);
-  }
+ 
 
   // ===== Services =====
   selectService(index: number): void {
     this.selectedServiceIndex.set(index);
   }
+  
 
   onCardClick(index: number): void {
     if (index === this.selectedServiceIndex()) {
@@ -240,7 +237,13 @@ export class VativaHome implements AfterViewInit, OnDestroy {
   closeServicePanel(): void {
     this.servicePanelOpen.set(false);
   }
-
+// ===== Page =====
+scrollToTop(): void {
+  if (typeof window === 'undefined') {
+    return;
+  }
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
   openServicePanel(): void {
     this.servicePanelOpen.set(true);
   }
@@ -269,9 +272,9 @@ export class VativaHome implements AfterViewInit, OnDestroy {
   }
 
   tabY(index: number): number {
-    const step = this.tabOrder.indexOf(this.selectedServiceIndex());
-    return 104 + step * 29 + this.tabShift(index);
-  }
+  // active tab = panel centre (top-1/2); mathadhu neighbour-ah shift mattum
+  return this.tabShift(index);
+}
 
   serviceCardOffset(index: number): number {
     const total = this.services.length;
@@ -329,7 +332,7 @@ export class VativaHome implements AfterViewInit, OnDestroy {
     });
   }
 
-  // mouse scroll pannina panel/tab move aagum
+    // mouse scroll pannina panel/tab move aagum
   onPanelWheel(event: WheelEvent): void {
     if (!this.servicePanelOpen()) {
       return;
@@ -353,6 +356,47 @@ export class VativaHome implements AfterViewInit, OnDestroy {
     setTimeout(() => (this.wheelLocked = false), 800);
   }
 
+  // carousel-la left/right scroll (trackpad swipe / shift + wheel) panna card maarum
+    
+  private justDragged = false;
+  dragStartX: number | null = null;
+
+  /** Trackpad / shift+wheel left-right */
+  onCarouselWheel(event: WheelEvent): void {
+    // Vertical scroll-na page scroll aaga vidanum
+    if (Math.abs(event.deltaX) <= Math.abs(event.deltaY) || Math.abs(event.deltaX) < 8) return;
+
+    event.preventDefault();
+    if (this.wheelLocked) return;
+
+    this.wheelLocked = true;
+    setTimeout(() => (this.wheelLocked = false), 700); // card animation (duration-700) mudiyura varai
+
+    this.stepService(event.deltaX > 0 ? 1 : -1);
+  }
+
+  /** Mouse drag / touch swipe */
+  onCarouselPointerDown(event: PointerEvent): void {
+    this.dragStartX = event.clientX;
+  }
+
+  onCarouselPointerUp(event: PointerEvent): void {
+    if (this.dragStartX === null) return;
+    const dx = event.clientX - this.dragStartX;
+    this.dragStartX = null;
+
+    if (Math.abs(dx) > 50) {
+      this.justDragged = true; // drag-ku aprm card click aagi panel open aagama irukka
+      setTimeout(() => (this.justDragged = false), 0);
+      this.stepService(dx < 0 ? 1 : -1);
+    }
+  }
+
+  private stepService(direction: 1 | -1): void {
+    const next = this.selectedServiceIndex() + direction;
+    if (next < 0 || next >= this.services.length) return;
+    this.selectService(next);
+  }
   // ===== Testimonials =====
   private advanceTestimonial(): void {
     const n = this.testimonials.length;
@@ -368,45 +412,57 @@ export class VativaHome implements AfterViewInit, OnDestroy {
     }
   }
 
-  // ===== FAQ =====
+   // ===== FAQ =====
   toggleFaqSet(): void {
-    this.faqSet.update((s) => (s === 0 ? 1 : 0));
-    this.faqHover = -1;
-    this.faqStep = -1;
-    this.faqPos.set(-1);
+    const nextSet = this.faqSet() === 0 ? 1 : 0;
+
+    if (!this.faqVisible) {
+      this.faqSet.set(nextSet);
+      this.faqPos.set(-1);
+      return;
+    }
+
+    // andha page-oda first card-la irundhu start
+    this.showFaq(nextSet * 3);
+    this.startFaqTimer();
   }
 
   hoverFaq(index: number): void {
-    this.faqHover = index;
+    this.stopFaqTimer();
     this.faqPos.set(index);
   }
 
   leaveFaq(): void {
-    this.faqHover = -1;
-    this.faqPos.set(-1);
+    if (this.faqVisible) {
+      this.startFaqTimer();
+    } else {
+      this.faqPos.set(-1);
+    }
   }
 
-  private startFaqAnimation(): void {
-    if (this.faqAnimationInterval !== undefined) {
-      return;
-    }
+  private showFaq(index: number): void {
+    this.faqPos.set(index);
+    this.faqSet.set(index < 3 ? 0 : 1);
+  }
 
+  private startFaqTimer(): void {
+    this.stopFaqTimer();
     this.faqAnimationInterval = setInterval(() => {
-      if (this.faqHover >= 0) {
-        return; // mouse card mela irundha auto-cycle pause
-      }
-      this.faqStep = ((this.faqStep + 2) % 4) - 1; // -1, 0, 1, 2, -1 ...
-      this.faqPos.set(this.faqStep < 0 ? -1 : this.faqSet() * 3 + this.faqStep);
+      this.showFaq((this.faqPos() + 1) % this.faqCards.length);
     }, 2000);
   }
 
-  private stopFaqAnimation(): void {
+  private stopFaqTimer(): void {
     if (this.faqAnimationInterval !== undefined) {
       clearInterval(this.faqAnimationInterval);
       this.faqAnimationInterval = undefined;
     }
+  }
 
-    this.faqStep = -1;
+  private resetFaq(): void {
+    this.faqVisible = false;
+    this.stopFaqTimer();
     this.faqPos.set(-1);
+    this.faqSet.set(0);
   }
 }

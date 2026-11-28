@@ -53,6 +53,9 @@ export interface CoursePurchaseResult {
   taxRate: number;
   taxAmount: number;
   pricesIncludeTax: boolean;
+  /** null = no invoice was issued (built-in invoicing is off). */
+  invoiceId: number | null;
+  invoiceNumber: string | null;
   purchasedAt: string;
   enrollmentStatus: string;
 }

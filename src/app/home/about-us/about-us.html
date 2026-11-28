@@ -1,61 +1,14 @@
 <main id="top" class="min-h-screen overflow-hidden bg-white font-['DM_Sans',sans-serif] text-[#3d3d3d]">
-  <header
-    class="relative z-20 flex flex-col items-center justify-between gap-3 bg-white px-5 py-3 md:h-14 md:flex-row md:py-0 lg:h-20"
-  >
-    <a href="#top" aria-label="VativaHub home" class="shrink-0">
-      <img
-        ngSrc="/imgcomponent/trans%20logo%201.png"
-        width="316"
-        height="228"
-        priority
-        alt="VativaHub"
-        class="h-10 w-14 object-contain md:h-11 md:w-[4.5rem] lg:h-14 lg:w-24"
-      />
-    </a>
 
-    <nav
-      aria-label="Main navigation"
-      class="flex items-center justify-center gap-1 rounded-full bg-[#f5f5f5] px-2 py-1 text-[10px] text-[#777] sm:gap-3 sm:px-5 md:absolute md:left-1/2 md:-translate-x-1/2 md:gap-7 md:px-6 md:py-2 lg:gap-10 lg:px-10 lg:py-3 lg:text-[16px]"
-    >
-      <a routerLink="/vativa-home" class="rounded-full px-2 py-1 transition-colors hover:text-[#5d78e4] lg:px-3 lg:py-1.5">Home</a>
-      <a href="#who-we-are" aria-current="page" class="rounded-full px-2 py-1 text-[#5d78e4] lg:px-3 lg:py-1.5"
-        >About Us</a
-      >
-      <a routerLink="/vativa-home" fragment="services" class="rounded-full px-2 py-1 transition-colors hover:text-[#5d78e4] lg:px-3 lg:py-1.5">
-        Our Service
-      </a>
-      <a
-        href="#"
-        (click)="navigateTo('/plans'); $event.preventDefault()"
-        class="rounded-full px-2 py-1 transition-colors hover:text-[#5d78e4] lg:px-3 lg:py-1.5"
-        >Plans</a
-      >
-      <a
-        href="#"
-        (click)="navigateTo('/contact-us'); $event.preventDefault()"
-        class="rounded-full px-2 py-1 transition-colors hover:text-[#5d78e4] lg:px-3 lg:py-1.5"
-        >Contact Us</a
-      >
-    </nav>
-
-    <a
-      href="#"
-      (click)="navigateTo('/contact-us'); $event.preventDefault()"
-      class="rounded-full bg-[#5b75e3] px-4 py-2 text-[10px] text-white shadow-sm transition-colors hover:bg-[#4d67d6] lg:px-7 lg:py-3 lg:text-[16px]"
-    >
-      Ready For Your Queries
-    </a>
-  </header>
-
-  <section
+    <section
     id="who-we-are"
     aria-labelledby="who-we-are-title"
-    class="relative min-h-[calc(100vh_-_56px)] w-full overflow-hidden bg-[#616cea] text-white lg:min-h-[calc(100vh_-_80px)]"
+    class="relative min-h-[calc(100vh_-_56px)] w-full overflow-hidden bg-[#7882f2] text-white lg:min-h-screen"
   >
-    <div aria-hidden="true" class="absolute inset-x-0 bottom-0 top-[56%] bg-[#5b64d7]"></div>
-    <div aria-hidden="true" class="absolute inset-x-0 top-[56%] h-px bg-white/10"></div>
+    <div aria-hidden="true" class="absolute inset-x-0 bottom-0 top-[56%] bg-[#6e78e6] lg:top-[56.8%]"></div>
+    <div aria-hidden="true" class="absolute inset-x-0 top-[56%] h-px bg-white/10 lg:top-[56.8%]"></div>
     <div
-      class="relative mx-auto flex min-h-[calc(100vh_-_56px)] w-full max-w-[1320px] flex-col px-6 py-8 md:px-10 lg:min-h-[calc(100vh_-_80px)] lg:max-w-none lg:px-12 lg:pb-16 lg:pt-[70px]"
+      class="relative mx-auto flex min-h-[calc(100vh_-_56px)] w-full max-w-[1320px] flex-col px-6 py-8 md:px-10 lg:min-h-screen lg:max-w-none lg:px-12 lg:pb-16 lg:pt-[75px]"
     >
       <h1
         id="who-we-are-title"
@@ -63,7 +16,7 @@
       >
         Who We Are!
       </h1>
-      <p class="mt-4 text-[14px] leading-[1.5] sm:text-[18px] lg:mt-9 lg:text-[20px] lg:leading-[1.3]">
+      <p class="mt-4 text-[14px] leading-[1.5] sm:text-[18px] lg:mt-10 lg:text-[20px] lg:leading-[1.3]">
         We provide End-to-End E-learning solutions for individual trainers and supports them in
         converting Face-to-Face training into online formats.<br class="hidden md:block" />
         Our LMS is at the core of our services—built to simplify and elevate your online training.
@@ -74,7 +27,7 @@
       >
         <div
           aria-hidden="true"
-          class="relative mx-auto flex h-[min(80vw,480px)] w-full max-w-[500px] items-center justify-center"
+          class="relative mx-auto flex h-[min(80vw,480px)] w-full max-w-[500px] items-center justify-center lg:-translate-y-3"
         >
           <img
             ngSrc="/imgcomponent/about-us/iceberg-illustration.svg"
@@ -87,7 +40,7 @@
         </div>
 
         <div
-          class="relative z-10 space-y-8 pb-4 md:space-y-9 md:pl-3 lg:-translate-y-12 lg:space-y-[76px] lg:pl-0"
+          class="relative z-10 space-y-8 pb-4 md:space-y-9 md:pl-3 lg:-translate-y-6 lg:space-y-[76px] lg:pl-0"
         >
           <article>
             <h2 class="text-[32px] font-normal leading-tight lg:text-[36px]">Our Vision</h2>
@@ -110,20 +63,20 @@
   <section
     id="our-approach"
     aria-labelledby="approach-title"
-    class="min-h-screen px-5 pb-16 pt-8 sm:px-8 sm:pb-20 sm:pt-9 lg:flex lg:flex-col lg:justify-center lg:px-0 lg:py-0"
+    class="min-h-screen px-5 pb-16 pt-8 sm:px-8 sm:pb-20 sm:pt-9 lg:px-0 lg:pb-0 lg:pt-[62px]"
   >
     <div class="mx-auto max-w-[1320px] lg:w-full lg:max-w-none">
       <h2
         id="approach-title"
-        class="text-center text-[30px] font-bold leading-tight text-[#5f67e9] sm:text-[34px] lg:text-[64px] lg:leading-[1.1]"
+        class="text-center text-[30px] font-bold leading-tight text-[#5f69ea] sm:text-[34px] lg:text-[64px] lg:leading-[1.1]"
       >
         Our Approach
       </h2>
-      <p class="mt-2 text-center text-[11px] text-[#515151] lg:mt-1 lg:text-[19px]">
+      <p class="mt-2 text-center text-[11px] text-[#515151] lg:mt-4 lg:text-[19px]">
         We follow a client-centric approach focused on
       </p>
 
-      <div class="relative mx-auto mt-8 max-w-[1180px] md:mt-12 lg:mt-[91px] lg:max-w-none">
+      <div class="relative mx-auto mt-8 max-w-[1180px] md:mt-12 lg:mt-[85px] lg:max-w-none">
         <svg
           aria-hidden="true"
           viewBox="0 0 1180 220"
@@ -133,7 +86,7 @@
           <path
             d="M0 105 C85 145 125 165 200 140 S405 28 490 60 690 170 760 164 960 105 1040 80 1110 72 1180 123"
             fill="none"
-            stroke="#5f67e9"
+            stroke="#5f69ea"
             stroke-dasharray="9 8"
             stroke-linecap="round"
             stroke-width="4"
@@ -141,6 +94,7 @@
           />
         </svg>
 
+        <!-- Mobile list -->
         <div class="grid gap-8 md:hidden">
           <article class="flex items-center gap-4">
             <span class="text-6xl font-bold leading-none text-[#ededed]">1</span>
@@ -152,7 +106,7 @@
             </div>
             <span
               aria-hidden="true"
-              class="flex h-12 w-12 items-center justify-center rounded-full border border-[#ededed] bg-white text-[#5f67e9] shadow-sm"
+              class="flex h-12 w-12 items-center justify-center rounded-full border border-[#ededed] bg-white text-[#5f69ea] shadow-sm"
             >
               <svg viewBox="0 0 24 24" class="h-6 w-6" fill="currentColor">
                 <path d="M4 3h2v18H4zM7 5h12l-2 4 2 4H7z" />
@@ -169,7 +123,7 @@
             </div>
             <span
               aria-hidden="true"
-              class="flex h-12 w-12 items-center justify-center rounded-full border border-[#ededed] bg-white text-[#5f67e9] shadow-sm"
+              class="flex h-12 w-12 items-center justify-center rounded-full border border-[#ededed] bg-white text-[#5f69ea] shadow-sm"
             >
               <svg viewBox="0 0 24 24" class="h-6 w-6" fill="currentColor">
                 <path d="M3 19h18v2H3zm2-2h4V9H5zm6 0h4V4h-4zm6 0h4V1h-4z" />
@@ -186,15 +140,23 @@
             </div>
             <span
               aria-hidden="true"
-              class="flex h-12 w-12 items-center justify-center rounded-full border border-[#ededed] bg-white text-[#5f67e9] shadow-sm"
+              class="flex h-12 w-12 items-center justify-center rounded-full border border-[#ededed] bg-white text-[#5f69ea] shadow-sm"
             >
-              <svg viewBox="0 0 24 24" class="h-6 w-6" fill="currentColor">
-                <path d="M3 4h18v16H3zm4 11 3.5-4 2.5 2 4-5 1.5 1.2-5.3 6.6-2.5-2L8.5 17z" />
+              <svg viewBox="0 0 24 24" class="h-6 w-6" fill="none">
+                <rect x="2" y="5" width="20" height="14" rx="2.5" fill="currentColor" />
+                <polyline
+                  points="6,15 10,11 13,14 18,8.5"
+                  stroke="white"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
               </svg>
             </span>
           </article>
         </div>
 
+        <!-- Desktop curve layout -->
         <div class="relative hidden h-[250px] text-[#4d4d4d] md:block lg:h-[440px]">
           <article class="absolute left-[5%] top-[6px] flex items-start gap-3 lg:top-[28px] lg:gap-6">
             <span class="text-[62px] font-bold leading-[0.95] text-[#ededed] lg:text-[128px] lg:leading-none"
@@ -213,7 +175,7 @@
           </article>
           <span
             aria-hidden="true"
-            class="absolute left-[14%] top-[112px] flex h-12 w-12 items-center justify-center rounded-full border border-[#ededed] bg-white text-[#5f67e9] shadow-sm md:h-[54px] md:w-[54px] lg:left-[13.5%] lg:top-[234px] lg:h-[104px] lg:w-[104px] lg:shadow-md"
+            class="absolute left-[14%] top-[112px] flex h-12 w-12 items-center justify-center rounded-full border border-[#ededed] bg-white text-[#5f69ea] shadow-sm md:h-[54px] md:w-[54px] lg:left-[13.5%] lg:top-[234px] lg:h-[104px] lg:w-[104px] lg:shadow-md"
           >
             <svg viewBox="0 0 24 24" class="h-6 w-6 lg:h-14 lg:w-14" fill="currentColor">
               <path d="M4 3h2v18H4zM7 5h12l-2 4 2 4H7z" />
@@ -235,7 +197,7 @@
           </article>
           <span
             aria-hidden="true"
-            class="absolute left-[49%] top-[70px] flex h-12 w-12 items-center justify-center rounded-full border border-[#ededed] bg-white text-[#5f67e9] shadow-sm md:h-[54px] md:w-[54px] lg:left-[47.5%] lg:top-[147px] lg:h-[104px] lg:w-[104px] lg:shadow-md"
+            class="absolute left-[49%] top-[70px] flex h-12 w-12 items-center justify-center rounded-full border border-[#ededed] bg-white text-[#5f69ea] shadow-sm md:h-[54px] md:w-[54px] lg:left-[47.5%] lg:top-[147px] lg:h-[104px] lg:w-[104px] lg:shadow-md"
           >
             <svg viewBox="0 0 24 24" class="h-6 w-6 lg:h-14 lg:w-14" fill="currentColor">
               <path d="M3 19h18v2H3zm2-2h4V9H5zm6 0h4V4h-4zm6 0h4V1h-4z" />
@@ -259,10 +221,17 @@
           </article>
           <span
             aria-hidden="true"
-            class="absolute left-[78%] top-[103px] flex h-12 w-12 items-center justify-center rounded-full border border-[#ededed] bg-white text-[#5f67e9] shadow-sm md:h-[54px] md:w-[54px] lg:left-[76.2%] lg:top-[183px] lg:h-[104px] lg:w-[104px] lg:shadow-md"
+            class="absolute left-[78%] top-[103px] flex h-12 w-12 items-center justify-center rounded-full border border-[#ededed] bg-white text-[#5f69ea] shadow-sm md:h-[54px] md:w-[54px] lg:left-[76.2%] lg:top-[183px] lg:h-[104px] lg:w-[104px] lg:shadow-md"
           >
-            <svg viewBox="0 0 24 24" class="h-6 w-6 lg:h-14 lg:w-14" fill="currentColor">
-              <path d="M3 4h18v16H3zm4 11 3.5-4 2.5 2 4-5 1.5 1.2-5.3 6.6-2.5-2L8.5 17z" />
+            <svg viewBox="0 0 24 24" class="h-6 w-6 lg:h-14 lg:w-14" fill="none">
+              <rect x="2" y="5" width="20" height="14" rx="2.5" fill="currentColor" />
+              <polyline
+                points="6,15 10,11 13,14 18,8.5"
+                stroke="white"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
             </svg>
           </span>
         </div>
@@ -318,49 +287,61 @@
                   class="h-full w-full rounded-full bg-[#d2d2d2]"
                 ></div>
               }
+              <div class="absolute right-[10.5%] top-[5.8%] z-10 h-[38px] w-10">
+                <!-- white pill that grows downward from the notch -->
+                <div
+                  aria-hidden="true"
+                  class="absolute left-0 top-0 h-[134px] w-10 origin-top rounded-[20px] bg-white transition-transform duration-700 ease-out motion-reduce:transition-none"
+                  [class]="openSocialMenu() === index ? 'scale-y-100' : 'scale-y-0'"
+                ></div>
 
-              <button
-                type="button"
-                [attr.aria-label]="'Toggle ' + member.name + ' social links'"
-                [attr.aria-expanded]="openSocialMenu() === index"
-                aria-haspopup="true"
-                (click)="toggleSocialMenu(index)"
-                class="absolute -right-1 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-white text-[16px] font-light leading-none text-[#5e78e2] shadow-sm transition-transform hover:scale-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5e78e2]"
-              >
-                {{ openSocialMenu() === index ? '−' : '+' }}
-              </button>
+                <button
+                  type="button"
+                  [attr.aria-label]="'Toggle ' + member.name + ' social links'"
+                  [attr.aria-expanded]="openSocialMenu() === index"
+                  aria-haspopup="true"
+                  (click)="toggleSocialMenu(index)"
+                  class="relative flex h-[38px] w-10 items-center justify-center rounded-[14px] bg-white text-[#5e78e2] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5e78e2]"
+                >
+                  @if (openSocialMenu() === index) {
+                    <svg aria-hidden="true" viewBox="0 0 16 16" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M1.5 8h13" />
+                    </svg>
+                  } @else {
+                    <svg aria-hidden="true" viewBox="0 0 16 16" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M1.5 8h13M8 1.5v13" />
+                    </svg>
+                  }
+                </button>
 
-              @if (openSocialMenu() === index) {
                 <div
                   role="group"
                   [attr.aria-label]="member.name + ' social media links'"
-                  class="absolute right-0 top-10 z-20 flex w-10 flex-col items-center gap-2 rounded-xl bg-white py-2 shadow-lg ring-1 ring-black/5"
+                  [attr.aria-hidden]="openSocialMenu() !== index"
+                  [attr.inert]="openSocialMenu() === index ? null : ''"
+                  class="absolute left-0 right-0 top-[42px] flex flex-col items-center gap-[11px]"
+                  [class.pointer-events-none]="openSocialMenu() !== index"
                 >
-                  @for (social of member.socials; track social.name) {
+                  @for (social of member.socials; track social.name; let i = $index) {
                     @if (social.url) {
                       <a
                         [href]="social.url"
                         target="_blank"
                         rel="noopener noreferrer"
                         [attr.aria-label]="member.name + ' on ' + social.name"
-                        class="flex h-6 w-6 items-center justify-center rounded-full bg-[#686868] text-white transition-transform hover:scale-110"
+                        class="flex h-5 w-5 items-center justify-center rounded-full bg-[#686868] text-white transition-[opacity,transform] duration-500 ease-out hover:scale-110 motion-reduce:transition-none"
+                        [class]="openSocialMenu() === index ? 'translate-y-0 opacity-100' : '-translate-y-2 opacity-0'"
+                        [style.transition-delay.ms]="openSocialMenu() === index ? 300 + i * 150 : 0"
                       >
                         @switch (social.name) {
                           @case ('Facebook') {
-                            <span aria-hidden="true" class="text-[16px] font-bold">f</span>
+                            <span aria-hidden="true" class="text-[13px] font-bold leading-none">f</span>
                           }
                           @case ('LinkedIn') {
-                            <span aria-hidden="true" class="text-[11px] font-bold">in</span>
+                            <span aria-hidden="true" class="text-[9px] font-bold leading-none">in</span>
                           }
                           @case ('Instagram') {
-                            <svg
-                              aria-hidden="true"
-                              viewBox="0 0 24 24"
-                              class="h-4 w-4"
-                              fill="none"
-                              stroke="currentColor"
-                              stroke-width="2"
-                            >
+                            <svg aria-hidden="true" viewBox="0 0 24 24" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2">
                               <rect x="3" y="3" width="18" height="18" rx="5" />
                               <circle cx="12" cy="12" r="4" />
                               <circle cx="18" cy="6" r="1" fill="currentColor" stroke="none" />
@@ -372,24 +353,19 @@
                       <span
                         role="img"
                         [attr.aria-label]="social.name + ' profile link unavailable'"
-                        class="flex h-6 w-6 items-center justify-center rounded-full bg-[#686868] text-white"
+                        class="flex h-5 w-5 items-center justify-center rounded-full bg-[#686868] text-white transition-[opacity,transform] duration-500 ease-out motion-reduce:transition-none"
+                        [class]="openSocialMenu() === index ? 'translate-y-0 opacity-100' : '-translate-y-2 opacity-0'"
+                        [style.transition-delay.ms]="openSocialMenu() === index ? 300 + i * 150 : 0"
                       >
                         @switch (social.name) {
                           @case ('Facebook') {
-                            <span aria-hidden="true" class="text-[16px] font-bold">f</span>
+                            <span aria-hidden="true" class="text-[13px] font-bold leading-none">f</span>
                           }
                           @case ('LinkedIn') {
-                            <span aria-hidden="true" class="text-[11px] font-bold">in</span>
+                            <span aria-hidden="true" class="text-[9px] font-bold leading-none">in</span>
                           }
                           @case ('Instagram') {
-                            <svg
-                              aria-hidden="true"
-                              viewBox="0 0 24 24"
-                              class="h-4 w-4"
-                              fill="none"
-                              stroke="currentColor"
-                              stroke-width="2"
-                            >
+                            <svg aria-hidden="true" viewBox="0 0 24 24" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2">
                               <rect x="3" y="3" width="18" height="18" rx="5" />
                               <circle cx="12" cy="12" r="4" />
                               <circle cx="18" cy="6" r="1" fill="currentColor" stroke="none" />
@@ -400,7 +376,8 @@
                     }
                   }
                 </div>
-              }
+              </div>
+
             </div>
             <h3 class="mt-4 text-[11px] font-normal text-[#444] lg:mt-5 lg:text-[20px]">{{ member.name }}</h3>
             <p class="mt-1 text-[10px] text-[#666] lg:mt-1.5 lg:text-[18px]">{{ member.role }}</p>
@@ -434,48 +411,60 @@
                 ></div>
               }
 
-              <button
-                type="button"
-                [attr.aria-label]="'Toggle ' + member.name + ' social links'"
-                [attr.aria-expanded]="openSocialMenu() === offset + 3"
-                aria-haspopup="true"
-                (click)="toggleSocialMenu(offset + 3)"
-                class="absolute -right-1 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-white text-[16px] font-light leading-none text-[#5e78e2] shadow-sm transition-transform hover:scale-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5e78e2]"
-              >
-                {{ openSocialMenu() === offset + 3 ? '−' : '+' }}
-              </button>
+              <div class="absolute right-[10.5%] top-[5.8%] z-10 h-[38px] w-10">
+                <div
+                  aria-hidden="true"
+                  class="absolute left-0 top-0 h-[134px] w-10 origin-top rounded-[20px] bg-white transition-transform duration-700 ease-out motion-reduce:transition-none"
+                  [class]="openSocialMenu() === offset + 3 ? 'scale-y-100' : 'scale-y-0'"
+                ></div>
 
-              @if (openSocialMenu() === offset + 3) {
+                <button
+                  type="button"
+                  [attr.aria-label]="'Toggle ' + member.name + ' social links'"
+                  [attr.aria-expanded]="openSocialMenu() === offset + 3"
+                  aria-haspopup="true"
+                  (click)="toggleSocialMenu(offset + 3)"
+                  class="relative flex h-[38px] w-10 items-center justify-center rounded-[14px] bg-white text-[#5e78e2] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5e78e2]"
+                >
+                  @if (openSocialMenu() === offset + 3) {
+                    <svg aria-hidden="true" viewBox="0 0 16 16" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M1.5 8h13" />
+                    </svg>
+                  } @else {
+                    <svg aria-hidden="true" viewBox="0 0 16 16" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M1.5 8h13M8 1.5v13" />
+                    </svg>
+                  }
+                </button>
+
                 <div
                   role="group"
                   [attr.aria-label]="member.name + ' social media links'"
-                  class="absolute right-0 top-10 z-20 flex w-10 flex-col items-center gap-2 rounded-xl bg-white py-2 shadow-lg ring-1 ring-black/5"
+                  [attr.aria-hidden]="openSocialMenu() !== offset + 3"
+                  [attr.inert]="openSocialMenu() === offset + 3 ? null : ''"
+                  class="absolute left-0 right-0 top-[42px] flex flex-col items-center gap-[11px]"
+                  [class.pointer-events-none]="openSocialMenu() !== offset + 3"
                 >
-                  @for (social of member.socials; track social.name) {
+                  @for (social of member.socials; track social.name; let i = $index) {
                     @if (social.url) {
                       <a
                         [href]="social.url"
                         target="_blank"
                         rel="noopener noreferrer"
                         [attr.aria-label]="member.name + ' on ' + social.name"
-                        class="flex h-6 w-6 items-center justify-center rounded-full bg-[#686868] text-white transition-transform hover:scale-110"
+                        class="flex h-5 w-5 items-center justify-center rounded-full bg-[#686868] text-white transition-[opacity,transform] duration-500 ease-out hover:scale-110 motion-reduce:transition-none"
+                        [class]="openSocialMenu() === offset + 3 ? 'translate-y-0 opacity-100' : '-translate-y-2 opacity-0'"
+                        [style.transition-delay.ms]="openSocialMenu() === offset + 3 ? 300 + i * 150 : 0"
                       >
                         @switch (social.name) {
                           @case ('Facebook') {
-                            <span aria-hidden="true" class="text-[16px] font-bold">f</span>
+                            <span aria-hidden="true" class="text-[13px] font-bold leading-none">f</span>
                           }
                           @case ('LinkedIn') {
-                            <span aria-hidden="true" class="text-[11px] font-bold">in</span>
+                            <span aria-hidden="true" class="text-[9px] font-bold leading-none">in</span>
                           }
                           @case ('Instagram') {
-                            <svg
-                              aria-hidden="true"
-                              viewBox="0 0 24 24"
-                              class="h-4 w-4"
-                              fill="none"
-                              stroke="currentColor"
-                              stroke-width="2"
-                            >
+                            <svg aria-hidden="true" viewBox="0 0 24 24" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2">
                               <rect x="3" y="3" width="18" height="18" rx="5" />
                               <circle cx="12" cy="12" r="4" />
                               <circle cx="18" cy="6" r="1" fill="currentColor" stroke="none" />
@@ -487,24 +476,19 @@
                       <span
                         role="img"
                         [attr.aria-label]="social.name + ' profile link unavailable'"
-                        class="flex h-6 w-6 items-center justify-center rounded-full bg-[#686868] text-white"
+                        class="flex h-5 w-5 items-center justify-center rounded-full bg-[#686868] text-white transition-[opacity,transform] duration-500 ease-out motion-reduce:transition-none"
+                        [class]="openSocialMenu() === offset + 3 ? 'translate-y-0 opacity-100' : '-translate-y-2 opacity-0'"
+                        [style.transition-delay.ms]="openSocialMenu() === offset + 3 ? 300 + i * 150 : 0"
                       >
                         @switch (social.name) {
                           @case ('Facebook') {
-                            <span aria-hidden="true" class="text-[16px] font-bold">f</span>
+                            <span aria-hidden="true" class="text-[13px] font-bold leading-none">f</span>
                           }
                           @case ('LinkedIn') {
-                            <span aria-hidden="true" class="text-[11px] font-bold">in</span>
+                            <span aria-hidden="true" class="text-[9px] font-bold leading-none">in</span>
                           }
                           @case ('Instagram') {
-                            <svg
-                              aria-hidden="true"
-                              viewBox="0 0 24 24"
-                              class="h-4 w-4"
-                              fill="none"
-                              stroke="currentColor"
-                              stroke-width="2"
-                            >
+                            <svg aria-hidden="true" viewBox="0 0 24 24" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2">
                               <rect x="3" y="3" width="18" height="18" rx="5" />
                               <circle cx="12" cy="12" r="4" />
                               <circle cx="18" cy="6" r="1" fill="currentColor" stroke="none" />
@@ -515,7 +499,8 @@
                     }
                   }
                 </div>
-              }
+              </div>
+
             </div>
             <h3 class="mt-4 text-[11px] font-normal text-[#444] lg:mt-5 lg:text-[20px]">{{ member.name }}</h3>
             <p class="mt-1 text-[10px] text-[#666] lg:mt-1.5 lg:text-[18px]">{{ member.role }}</p>
@@ -524,60 +509,13 @@
       </div>
     </div>
   </section>
-
-  <!-- ========== FOOTER ========== -->
-  <footer class="bg-[#f4f4f4] pb-[min(2.8vw,40px)] text-center font-['DM_Sans',sans-serif]">
-
-    <!-- Legal links -->
-    <nav
-      class="flex flex-wrap justify-center gap-x-[clamp(14px,5.3vw,75px)] gap-y-2 px-5 pt-[min(2.67vw,38px)] text-[clamp(12px,1.41vw,20px)] font-medium text-[#9b9b9b]"
-      aria-label="Legal links"
-    >
-      <a class="transition-colors hover:text-[#5268d4]" routerLink="/terms-and-conditions">Term &amp; Conditions</a>
-      <a class="transition-colors hover:text-[#5268d4]" routerLink="/privacy-policy">Privacy Policy</a>
-      <a class="transition-colors hover:text-[#5268d4]" routerLink="/refund-cancellation">Refund &amp; Cancellation</a>
-      <a class="transition-colors hover:text-[#5268d4]" routerLink="/plan-policy">Plan Policy</a>
-    </nav>
-
-    <!-- Social -->
-    <div class="mt-[min(1.83vw,26px)] flex items-center justify-center gap-[min(1.3vw,18px)] text-[clamp(10px,.92vw,13px)] text-[#9b9b9b]">
-      <span>We are always in connect with</span>
-
-      <div class="flex items-center gap-[min(1.2vw,17px)] text-[#8b8b8b]">
-        <!-- Facebook -->
-        <a href="https://www.facebook.com/" target="_blank" rel="noopener noreferrer" aria-label="Facebook"
-           class="block h-[min(1.76vw,25px)] w-[min(1.76vw,25px)] transition-colors hover:text-[#5268d4]">
-          <svg viewBox="0 0 24 24" class="h-full w-full" aria-hidden="true">
-            <circle cx="12" cy="12" r="12" fill="currentColor" />
-            <text x="13.2" y="21" text-anchor="middle" font-size="22" font-weight="700" fill="#f4f4f4" font-family="DM Sans, sans-serif">f</text>
-          </svg>
-        </a>
-
-        <!-- LinkedIn -->
-        <a href="https://www.linkedin.com/" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn"
-           class="block h-[min(1.62vw,23px)] w-[min(1.62vw,23px)] transition-colors hover:text-[#5268d4]">
-          <svg viewBox="0 0 24 24" class="h-full w-full" aria-hidden="true">
-            <rect width="24" height="24" rx="4" fill="currentColor" />
-            <text x="12" y="18.5" text-anchor="middle" font-size="15" font-weight="700" fill="#f4f4f4" font-family="DM Sans, sans-serif">in</text>
-          </svg>
-        </a>
-
-        <!-- WhatsApp -->
-        <a href="https://wa.me/" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp"
-           class="block h-[min(1.69vw,24px)] w-[min(1.69vw,24px)] transition-colors hover:text-[#5268d4]">
-          <svg viewBox="0 0 24 24" class="h-full w-full" aria-hidden="true">
-            <path d="M12 0.5C5.65 0.5 0.5 5.65 0.5 12c0 2.1.57 4.07 1.56 5.77L0.5 23.5l5.88-1.54A11.46 11.46 0 0 0 12 23.5c6.35 0 11.5-5.15 11.5-11.5S18.35 0.5 12 0.5z" fill="currentColor" />
-            <g transform="translate(5.2 5.2) scale(.6)">
-              <path fill="#f4f4f4" d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z" />
-            </g>
-          </svg>
-        </a>
-      </div>
-    </div>
-
-    <!-- Copyright -->
-    <p class="mt-[min(1.9vw,27px)] text-[clamp(10px,.98vw,14px)] text-[#9b9b9b]">
-      VativaHub <span class="ml-[min(.9vw,13px)]">2026</span>
-    </p>
-  </footer>
+   <!-- Center bottom bar: click => page top-ku scroll -->
+  <button
+    type="button"
+    aria-label="Scroll to top"
+    (click)="scrollToTop()"
+    class="group fixed bottom-[-17px] left-1/2 z-50 -translate-x-1/2 cursor-pointer px-4 py-4"
+  >
+    <span class="block h-2 w-64 rounded-full bg-[#5268d4] transition-opacity group-hover:opacity-80"></span>
+  </button>
 </main>

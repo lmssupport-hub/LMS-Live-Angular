@@ -359,10 +359,17 @@ export class CoursePayment implements OnInit {
       })
       .pipe(finalize(() => this.submitting.set(false)))
       .subscribe({
-        next: () => {
+        next: (result) => {
           this.wipeSensitiveData();
           this.checkout.clear();
-          void this.router.navigate([COURSE_LIST_PATH], { state: { enrolled: true, courseName: course.courseName } });
+          void this.router.navigate([COURSE_LIST_PATH], {
+            state: {
+              enrolled: true,
+              courseName: course.courseName,
+              invoiceId: result.invoiceId ?? null,
+              invoiceNumber: result.invoiceNumber ?? null,
+            },
+          });
         },
         error: (error) => {
           // The server answers { success:false, message } for validation / payment errors.
